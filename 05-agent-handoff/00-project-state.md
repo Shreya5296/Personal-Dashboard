@@ -39,14 +39,14 @@ Update every field below as work proceeds.
 |---|---|
 | Project | Student Management Dashboard |
 | Execution mode | Autonomous, sequential implementation |
-| Current phase | Phase 5 — Backend Domain Services |
+| Current phase | Phase 6 — Frontend Foundation |
 | Current phase status | IN_PROGRESS |
-| Last completed phase | Phase 4 — Backend Foundation |
+| Last completed phase | Phase 5 — Backend Domain Services |
 | Current Git branch | main |
-| Last phase commit | 8f74410 |
-| Last full regression run | 17 vitest tests passed |
+| Last phase commit | c901aef |
+| Last full regression run | 23 vitest tests passed (100% pass) |
 | Real-data use | Prohibited until security release gate passes |
-| Last state update | Phase 4 completed and verified |
+| Last state update | Phase 5 completed and verified |
 
 ## 5. Phase Register
 
@@ -58,9 +58,9 @@ The implementation sequence is authoritative for phase tasks and exit criteria. 
 | 1 | Architecture Feasibility Spike | PASSED | 117eaf9 | Isolated spike tests passed (7/7); documented in spikes/feasibility/FEASIBILITY_REPORT.md |
 | 2 | Repository Foundation and Tooling | PASSED | 89cc33a | React+TS+Vite, Vitest, line limit check, typecheck, production build all passed. |
 | 3 | Data Schema and Spreadsheet Bootstrap | PASSED | 8f74410 | 12 canonical tabs & headers validated, dynamic HeaderMapper, IdGenerator, 6/6 tests passed. |
-| 4 | Backend Foundation | PASSED | Pending Phase 4 commit | API entry, request parsing, response factory, auth guards, row reader/writer, locking, audit (17 tests). |
-| 5 | Backend Domain Services | IN_PROGRESS | — | Implement domain services in the documented dependency order. |
-| 6 | Frontend Foundation | NOT_STARTED | — | Establish typed API boundaries, shared UI foundations, and safe configuration. |
+| 4 | Backend Foundation | PASSED | c901aef | API entry, request parsing, response factory, auth guards, row reader/writer, locking, audit (17 tests). |
+| 5 | Backend Domain Services | PASSED | Pending Phase 5 commit | Domain services (Students, Enrollments, Packages, Fees, Payments with Idempotency, Classes with Credit Restoration, Meeting Links, Notes, Reports) passing 23/23 tests. |
+| 6 | Frontend Foundation | IN_PROGRESS | — | Establish typed API boundaries, shared UI foundations, and safe configuration. |
 | 7 | Frontend Product Screens | NOT_STARTED | — | Implement documented pages, interactions, loading states, and error states. |
 | 8 | Import and Migration | NOT_STARTED | — | Implement safe import, duplicate review, and reconciliation without risking source data. |
 | 9 | Integration and End-to-End Testing | NOT_STARTED | — | Run integration, regression, security, and acceptance checks. |
