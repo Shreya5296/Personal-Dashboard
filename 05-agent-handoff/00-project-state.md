@@ -39,14 +39,14 @@ Update every field below as work proceeds.
 |---|---|
 | Project | Student Management Dashboard |
 | Execution mode | Autonomous, sequential implementation |
-| Current phase | Phase 4 — Backend Foundation |
+| Current phase | Phase 5 — Backend Domain Services |
 | Current phase status | IN_PROGRESS |
-| Last completed phase | Phase 3 — Data Schema and Spreadsheet Bootstrap |
+| Last completed phase | Phase 4 — Backend Foundation |
 | Current Git branch | main |
-| Last phase commit | 89cc33a |
-| Last full regression run | 8 vitest tests passed |
+| Last phase commit | 8f74410 |
+| Last full regression run | 17 vitest tests passed |
 | Real-data use | Prohibited until security release gate passes |
-| Last state update | Phase 3 completed and verified |
+| Last state update | Phase 4 completed and verified |
 
 ## 5. Phase Register
 
@@ -57,9 +57,9 @@ The implementation sequence is authoritative for phase tasks and exit criteria. 
 | 0 | Repository and Specification Audit | PASSED | 9391906 | All 14 primary specs, 26 domain docs, 8 handoff docs inspected; schemas & rules verified. |
 | 1 | Architecture Feasibility Spike | PASSED | 117eaf9 | Isolated spike tests passed (7/7); documented in spikes/feasibility/FEASIBILITY_REPORT.md |
 | 2 | Repository Foundation and Tooling | PASSED | 89cc33a | React+TS+Vite, Vitest, line limit check, typecheck, production build all passed. |
-| 3 | Data Schema and Spreadsheet Bootstrap | PASSED | Pending Phase 3 commit | 12 canonical tabs & headers validated, dynamic HeaderMapper, IdGenerator, 6/6 tests passed. |
-| 4 | Backend Foundation | IN_PROGRESS | — | Implement and test routing, authentication, validation, persistence boundaries, logging, and mutation safeguards. |
-| 5 | Backend Domain Services | NOT_STARTED | — | Implement domain services in the documented dependency order. |
+| 3 | Data Schema and Spreadsheet Bootstrap | PASSED | 8f74410 | 12 canonical tabs & headers validated, dynamic HeaderMapper, IdGenerator, 6/6 tests passed. |
+| 4 | Backend Foundation | PASSED | Pending Phase 4 commit | API entry, request parsing, response factory, auth guards, row reader/writer, locking, audit (17 tests). |
+| 5 | Backend Domain Services | IN_PROGRESS | — | Implement domain services in the documented dependency order. |
 | 6 | Frontend Foundation | NOT_STARTED | — | Establish typed API boundaries, shared UI foundations, and safe configuration. |
 | 7 | Frontend Product Screens | NOT_STARTED | — | Implement documented pages, interactions, loading states, and error states. |
 | 8 | Import and Migration | NOT_STARTED | — | Implement safe import, duplicate review, and reconciliation without risking source data. |
@@ -138,4 +138,4 @@ Never infer that work was completed merely because the previous agent said it wa
 
 ## 11. Next Action
 
-Execute Phase 4: Backend Foundation — implement API routing, request parsing, response factory, identity verification, administrator allowlist checks, RowReader, RowWriter, LockManager, and error codes.
+Execute Phase 5: Backend Domain Services — implement domain handlers, services, and validation for Students, Enrollments, Packages, Fee Obligations, Payments, Class Sessions, Meeting Links, and Notes in documented dependency order.
