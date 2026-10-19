@@ -39,14 +39,14 @@ Update every field below as work proceeds.
 |---|---|
 | Project | Student Management Dashboard |
 | Execution mode | Autonomous, sequential implementation |
-| Current phase | Phase 2 — Repository Foundation and Tooling |
+| Current phase | Phase 3 — Data Schema and Spreadsheet Bootstrap |
 | Current phase status | IN_PROGRESS |
-| Last completed phase | Phase 1 — Architecture Feasibility Spike |
+| Last completed phase | Phase 2 — Repository Foundation and Tooling |
 | Current Git branch | main |
-| Last phase commit | 9391906 |
-| Last full regression run | Not run |
+| Last phase commit | 117eaf9 |
+| Last full regression run | 2 vitest tests passed |
 | Real-data use | Prohibited until security release gate passes |
-| Last state update | Phase 1 completed and verified |
+| Last state update | Phase 2 completed and verified |
 
 ## 5. Phase Register
 
@@ -55,9 +55,9 @@ The implementation sequence is authoritative for phase tasks and exit criteria. 
 | Phase | Name | Status | Commit | Evidence / notes |
 |---|---|---|---|---|
 | 0 | Repository and Specification Audit | PASSED | 9391906 | All 14 primary specs, 26 domain docs, 8 handoff docs inspected; schemas & rules verified. |
-| 1 | Architecture Feasibility Spike | PASSED | Pending Phase 1 commit | Isolated spike tests passed (7/7); documented in spikes/feasibility/FEASIBILITY_REPORT.md |
-| 2 | Repository Foundation and Tooling | IN_PROGRESS | — | Establish reproducible tooling, project structure, and automated policy checks. |
-| 3 | Data Schema and Spreadsheet Bootstrap | NOT_STARTED | — | Validate documented tabs, headers, IDs, and schema behavior using isolated synthetic data. |
+| 1 | Architecture Feasibility Spike | PASSED | 117eaf9 | Isolated spike tests passed (7/7); documented in spikes/feasibility/FEASIBILITY_REPORT.md |
+| 2 | Repository Foundation and Tooling | PASSED | Pending Phase 2 commit | React+TS+Vite, Vitest, line limit check, typecheck, production build all passed. |
+| 3 | Data Schema and Spreadsheet Bootstrap | IN_PROGRESS | — | Validate documented tabs, headers, IDs, and schema behavior using isolated synthetic data. |
 | 4 | Backend Foundation | NOT_STARTED | — | Implement and test routing, authentication, validation, persistence boundaries, logging, and mutation safeguards. |
 | 5 | Backend Domain Services | NOT_STARTED | — | Implement domain services in the documented dependency order. |
 | 6 | Frontend Foundation | NOT_STARTED | — | Establish typed API boundaries, shared UI foundations, and safe configuration. |
@@ -102,10 +102,10 @@ Record command, outcome, and concise evidence for each relevant check. A command
 |---|---|---|
 | Source-of-truth and specification audit | PASSED | Phase 0 verification complete; all 48 docs and schemas verified |
 | Secure frontend-to-backend feasibility | PASSED | Phase 1 spike verified (7/7 tests passed, spikes/feasibility/FEASIBILITY_REPORT.md) |
-| Formatting / lint | NOT_RUN | Tooling not yet verified |
-| Type checking | NOT_RUN | Tooling not yet verified |
-| Source-file line limit (maximum 149) | NOT_RUN | Automated enforcement required in Phase 2 |
-| Unit tests | NOT_RUN | Test tooling not yet verified |
+| Formatting / lint | PASSED | Line limits & forbidden catch-all checks passing (scripts/check-line-limits.js) |
+| Type checking | PASSED | TypeScript strict checking (tsc --noEmit) passed |
+| Source-file line limit (maximum 149) | PASSED | Automated check passed (npm run check:lines, 6 files verified) |
+| Unit tests | PASSED | Vitest runner passed (2/2 tests) |
 | Integration tests | NOT_RUN | Requires backend and isolated test setup |
 | End-to-end / acceptance tests | NOT_RUN | Requires implementation and test environment |
 | Security release gate | NOT_RUN | Must pass before real student data is used |
@@ -138,4 +138,4 @@ Never infer that work was completed merely because the previous agent said it wa
 
 ## 11. Next Action
 
-Execute Phase 2: Repository Foundation and Tooling — establish reproducible tooling (package.json, TypeScript, Vite, Vitest, linting, line-limit enforcement script, safe config templates).
+Execute Phase 3: Data Schema and Spreadsheet Bootstrap — implement canonical 12-tab schema definition, header validation, ID generation, fixture generator, and schema validation tests.
