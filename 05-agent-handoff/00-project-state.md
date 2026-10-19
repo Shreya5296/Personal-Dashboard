@@ -63,7 +63,7 @@ The implementation sequence is authoritative for phase tasks and exit criteria. 
 | 6 | Frontend Foundation | PASSED | 1ecb43c | API client, session/auth state, AppShell, TopBar, Sidebar, PageHeader, reusable micro-components, formatters, 37/37 tests passing. |
 | 7 | Frontend Product Screens | PASSED | d0355a3 | Dashboard, Students, Enrollments, Packages, Fees, Payments, Classes, Meeting Links, Notes, Reports, Settings screens verified (40/40 tests). |
 | 8 | Import and Migration | PASSED | 23e8867 | Spreadsheet import preview, candidate duplicate detection, batch execution, row-level reconciliation (42/42 tests passing). |
-| 9 | Integration and End-to-End Testing | PASSED | Pending Phase 9 commit | Full lifecycle regression (enrollment, package consumption, credit restoration, fee/payment ledger, archiving, import); 43/43 tests passing. |
+| 9 | Integration and End-to-End Testing | PASSED | 4b8f2da | Full lifecycle regression (enrollment, package consumption, credit restoration, fee/payment ledger, archiving, import); 43/43 tests passing. |
 | 10 | Deployment Preparation | IN_PROGRESS | — | Prepare deployment configuration and owner setup steps without exposing secrets. |
 | 11 | Controlled Data Migration | NOT_STARTED | — | Proceed only after prerequisites, backups, security gates, and owner authorization are verified. |
 | 12 | Release and Handover | NOT_STARTED | — | Complete release checks and provide an actionable owner handoff. |
