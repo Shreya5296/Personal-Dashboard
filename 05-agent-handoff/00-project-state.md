@@ -60,7 +60,7 @@ The implementation sequence is authoritative for phase tasks and exit criteria. 
 | 3 | Data Schema and Spreadsheet Bootstrap | PASSED | 8f74410 | 12 canonical tabs & headers validated, dynamic HeaderMapper, IdGenerator, 6/6 tests passed. |
 | 4 | Backend Foundation | PASSED | c901aef | API entry, request parsing, response factory, auth guards, row reader/writer, locking, audit (17 tests). |
 | 5 | Backend Domain Services | PASSED | f18e511 | Domain services (Students, Enrollments, Packages, Fees, Payments with Idempotency, Classes with Credit Restoration, Meeting Links, Notes, Reports) passing 23/23 tests. |
-| 6 | Frontend Foundation | PASSED | Pending Phase 6 commit | API client, session/auth state, AppShell, TopBar, Sidebar, PageHeader, reusable micro-components, formatters, 37/37 tests passing. |
+| 6 | Frontend Foundation | PASSED | 1ecb43c | API client, session/auth state, AppShell, TopBar, Sidebar, PageHeader, reusable micro-components, formatters, 37/37 tests passing. |
 | 7 | Frontend Product Screens | IN_PROGRESS | — | Implement documented pages, interactions, loading states, and error states. |
 | 8 | Import and Migration | NOT_STARTED | — | Implement safe import, duplicate review, and reconciliation without risking source data. |
 | 9 | Integration and End-to-End Testing | NOT_STARTED | — | Run integration, regression, security, and acceptance checks. |
