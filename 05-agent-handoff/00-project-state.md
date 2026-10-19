@@ -62,7 +62,7 @@ The implementation sequence is authoritative for phase tasks and exit criteria. 
 | 5 | Backend Domain Services | PASSED | f18e511 | Domain services (Students, Enrollments, Packages, Fees, Payments with Idempotency, Classes with Credit Restoration, Meeting Links, Notes, Reports) passing 23/23 tests. |
 | 6 | Frontend Foundation | PASSED | 1ecb43c | API client, session/auth state, AppShell, TopBar, Sidebar, PageHeader, reusable micro-components, formatters, 37/37 tests passing. |
 | 7 | Frontend Product Screens | PASSED | d0355a3 | Dashboard, Students, Enrollments, Packages, Fees, Payments, Classes, Meeting Links, Notes, Reports, Settings screens verified (40/40 tests). |
-| 8 | Import and Migration | PASSED | Pending Phase 8 commit | Spreadsheet import preview, candidate duplicate detection, batch execution, row-level reconciliation (42/42 tests passing). |
+| 8 | Import and Migration | PASSED | 23e8867 | Spreadsheet import preview, candidate duplicate detection, batch execution, row-level reconciliation (42/42 tests passing). |
 | 9 | Integration and End-to-End Testing | IN_PROGRESS | — | Run integration, regression, security, and acceptance checks. |
 | 10 | Deployment Preparation | NOT_STARTED | — | Prepare deployment configuration and owner setup steps without exposing secrets. |
 | 11 | Controlled Data Migration | NOT_STARTED | — | Proceed only after prerequisites, backups, security gates, and owner authorization are verified. |
