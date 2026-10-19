@@ -1,0 +1,55 @@
+import { sendApiRequest } from '../../api/apiClient';
+import { ClassSession, ClassSessionInput, AttendanceStatus } from './classTypes';
+
+export async function fetchClasses(
+  studentId?: string,
+  token?: string | null
+): Promise<ClassSession[]> {
+  const payload: Record<string, unknown> = {};
+  if (studentId) payload.student_id = studentId;
+
+  const response = await sendApiRequest<ClassSession[]>(
+    'classes.list',
+    payload,
+    { token }
+  );
+  return response.data || [];
+}
+
+export async function scheduleClass(
+  input: ClassSessionInput,
+  token?: string | null
+): Promise<ClassSession> {
+  const response = await sendApiRequest<ClassSession>(
+    'classes.schedule',
+    input as unknown as Record<string, unknown>,
+    { token }
+  );
+  return response.data!;
+}
+
+export async function recordAttendance(
+  sessionId: string,
+  outcome: AttendanceStatus,
+  token?: string | null
+): Promise<ClassSession> {
+  const response = await sendApiRequest<ClassSession>(
+    'classes.recordAttendance',
+    { session_id: sessionId, outcome },
+    { token }
+  );
+  return response.data!;
+}
+
+export async function restoreCredit(
+  sessionId: string,
+  reason?: string,
+  token?: string | null
+): Promise<ClassSession> {
+  const response = await sendApiRequest<ClassSession>(
+    'classes.restoreCredit',
+    { session_id: sessionId, reason },
+    { token }
+  );
+  return response.data!;
+}
