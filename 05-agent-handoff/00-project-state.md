@@ -59,7 +59,7 @@ The implementation sequence is authoritative for phase tasks and exit criteria. 
 | 2 | Repository Foundation and Tooling | PASSED | 89cc33a | React+TS+Vite, Vitest, line limit check, typecheck, production build all passed. |
 | 3 | Data Schema and Spreadsheet Bootstrap | PASSED | 8f74410 | 12 canonical tabs & headers validated, dynamic HeaderMapper, IdGenerator, 6/6 tests passed. |
 | 4 | Backend Foundation | PASSED | c901aef | API entry, request parsing, response factory, auth guards, row reader/writer, locking, audit (17 tests). |
-| 5 | Backend Domain Services | PASSED | Pending Phase 5 commit | Domain services (Students, Enrollments, Packages, Fees, Payments with Idempotency, Classes with Credit Restoration, Meeting Links, Notes, Reports) passing 23/23 tests. |
+| 5 | Backend Domain Services | PASSED | f18e511 | Domain services (Students, Enrollments, Packages, Fees, Payments with Idempotency, Classes with Credit Restoration, Meeting Links, Notes, Reports) passing 23/23 tests. |
 | 6 | Frontend Foundation | IN_PROGRESS | — | Establish typed API boundaries, shared UI foundations, and safe configuration. |
 | 7 | Frontend Product Screens | NOT_STARTED | — | Implement documented pages, interactions, loading states, and error states. |
 | 8 | Import and Migration | NOT_STARTED | — | Implement safe import, duplicate review, and reconciliation without risking source data. |
