@@ -39,14 +39,14 @@ Update every field below as work proceeds.
 |---|---|
 | Project | Student Management Dashboard |
 | Execution mode | Autonomous, sequential implementation |
-| Current phase | Phase 1 — Architecture Feasibility Spike |
+| Current phase | Phase 2 — Repository Foundation and Tooling |
 | Current phase status | IN_PROGRESS |
-| Last completed phase | Phase 0 — Repository and Specification Audit |
+| Last completed phase | Phase 1 — Architecture Feasibility Spike |
 | Current Git branch | main |
-| Last phase commit | Pending initial repository commit |
+| Last phase commit | 9391906 |
 | Last full regression run | Not run |
 | Real-data use | Prohibited until security release gate passes |
-| Last state update | Phase 0 completed and verified |
+| Last state update | Phase 1 completed and verified |
 
 ## 5. Phase Register
 
@@ -54,9 +54,9 @@ The implementation sequence is authoritative for phase tasks and exit criteria. 
 
 | Phase | Name | Status | Commit | Evidence / notes |
 |---|---|---|---|---|
-| 0 | Repository and Specification Audit | PASSED | Pending initial commit | All 14 primary specs, 26 domain docs, 8 handoff docs inspected; schemas & rules verified. |
-| 1 | Architecture Feasibility Spike | IN_PROGRESS | — | Prove the secure browser-to-Apps-Script flow with synthetic data before building full app. |
-| 2 | Repository Foundation and Tooling | NOT_STARTED | — | Establish reproducible tooling, project structure, and automated policy checks. |
+| 0 | Repository and Specification Audit | PASSED | 9391906 | All 14 primary specs, 26 domain docs, 8 handoff docs inspected; schemas & rules verified. |
+| 1 | Architecture Feasibility Spike | PASSED | Pending Phase 1 commit | Isolated spike tests passed (7/7); documented in spikes/feasibility/FEASIBILITY_REPORT.md |
+| 2 | Repository Foundation and Tooling | IN_PROGRESS | — | Establish reproducible tooling, project structure, and automated policy checks. |
 | 3 | Data Schema and Spreadsheet Bootstrap | NOT_STARTED | — | Validate documented tabs, headers, IDs, and schema behavior using isolated synthetic data. |
 | 4 | Backend Foundation | NOT_STARTED | — | Implement and test routing, authentication, validation, persistence boundaries, logging, and mutation safeguards. |
 | 5 | Backend Domain Services | NOT_STARTED | — | Implement domain services in the documented dependency order. |
@@ -101,7 +101,7 @@ Record command, outcome, and concise evidence for each relevant check. A command
 | Check | Status | Last result / evidence |
 |---|---|---|
 | Source-of-truth and specification audit | PASSED | Phase 0 verification complete; all 48 docs and schemas verified |
-| Secure frontend-to-backend feasibility | IN_PROGRESS | Phase 1 feasibility spike underway; synthetic data only |
+| Secure frontend-to-backend feasibility | PASSED | Phase 1 spike verified (7/7 tests passed, spikes/feasibility/FEASIBILITY_REPORT.md) |
 | Formatting / lint | NOT_RUN | Tooling not yet verified |
 | Type checking | NOT_RUN | Tooling not yet verified |
 | Source-file line limit (maximum 149) | NOT_RUN | Automated enforcement required in Phase 2 |
@@ -117,7 +117,7 @@ Record only decisions that affect implementation. Link to the authoritative spec
 
 | ID | Question / decision | Resolution | Authority / evidence | Status |
 |---|---|---|---|---|
-| D-001 | Can the selected Vercel frontend and Apps Script backend support the documented secure authenticated browser flow? | Must be demonstrated in Phase 1 before full implementation. | `05-agent-handoff/01-implementation-sequence.md` | PENDING_VERIFICATION |
+| D-001 | Can the selected Vercel frontend and Apps Script backend support the documented secure authenticated browser flow? | Demonstrated in Phase 1: simple CORS POST via text/plain, token verification, redirect follow, JSON parsing. | `spikes/feasibility/FEASIBILITY_REPORT.md` | RESOLVED |
 
 If a conflict or missing rule affects correctness, security, privacy, financial calculations, data integrity, or scope, record it and follow the autonomous execution protocol. Do not guess or weaken an invariant.
 
@@ -138,4 +138,4 @@ Never infer that work was completed merely because the previous agent said it wa
 
 ## 11. Next Action
 
-Execute Phase 1: Architecture Feasibility Spike — build isolated spike demonstrating the authenticated browser-to-Apps-Script POST transport, token verification, and response envelope with synthetic data.
+Execute Phase 2: Repository Foundation and Tooling — establish reproducible tooling (package.json, TypeScript, Vite, Vitest, linting, line-limit enforcement script, safe config templates).
