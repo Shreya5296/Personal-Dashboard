@@ -1,0 +1,59 @@
+STUDENT MANAGEMENT DASHBOARD — RUNNING PROJECT CONTROL
+
+PROJECT
+- Product: Student Management Dashboard
+- Current stage: Documentation-first specification and handoff
+- Version: 1.0 baseline, subject to documented owner-approved changes
+- Primary user: One authorized administrator
+
+CANONICAL STACK
+- Frontend: React + TypeScript + Vite
+- Frontend hosting: Vercel, subject to plan eligibility and terms
+- Backend: Google Apps Script Web App
+- Datastore: One private Google Spreadsheet
+- Source control: Git; GitHub remote only when explicitly configured
+- Application timezone: Asia/Kolkata
+- Currency: INR for Version 1
+
+WORKING RULES
+1. Treat approved project-owner decisions as highest priority.
+2. Follow the authoritative product, architecture, security, data-model, business-rule, API, UI, testing, and deployment documents.
+3. Do not silently resolve conflicting specifications. Record the exact conflict and stop the affected work until resolved.
+4. Finish and review documentation before implementing application code.
+5. Do not scaffold, deploy, connect to production services, or import real student data before the owner authorizes implementation and the security gate passes.
+6. Keep the master spreadsheet private. All application data access must pass through the authenticated Apps Script backend.
+7. Never commit secrets, authentication tokens, private student exports, or real student/parent data.
+8. Use synthetic data for development and tests.
+9. Preserve historical records. Financial corrections and important state changes must be auditable.
+10. Every text source file under frontend src/ and public/ must remain at most 149 lines; split files by responsibility and never minify to evade the limit.
+11. Review the Git diff and status before each commit. Do not overwrite unrelated work, reset branches, or force-push without explicit authorization.
+12. Commit each completed documentation file with a descriptive message. A local commit is not a GitHub push; never claim a push unless a remote is configured and the push succeeds.
+13. When writing Markdown that may be embedded in another interface, write the literal phrase TRIPLE BACKTICK instead of a triple-backtick fence.
+14. Keep this file updated when project stage, key decisions, blockers, or next actions change.
+
+DOCUMENTATION WORKFLOW
+1. Check the repository status and existing files before editing.
+2. Follow the approved document index and implementation sequence.
+3. Verify references, filenames, folder paths, and cross-document consistency.
+4. Check for unresolved decisions and contradictory schemas, API contracts, or business rules.
+5. Save the requested file in its specified folder.
+6. Review the saved file and Git diff.
+7. Commit the completed file locally with a focused commit message.
+8. Report the exact path and commit hash; distinguish local commit from remote push.
+
+SECURITY AND RELEASE GATES
+- The cross-origin frontend-to-Apps-Script authentication and request flow must be demonstrated in a real browser before real data is used.
+- Backend identity verification, administrator authorization, input validation, and protected reads/writes are mandatory.
+- Development and production must use separate Apps Script deployments, configuration, and spreadsheets.
+- Do not release with unresolved critical/high security defects or unverified backup/recovery controls.
+- A successful UI action is not proof of persistence; verify the backend result and persisted state.
+
+CURRENT EXECUTION STATUS
+- Phase 0 (Repository and Specification Audit) completed and verified.
+- Git branch: main. Git remote origin confirmed configured (https://github.com/Shreya5296/Personal-Dashboard.git).
+- All 14 primary specs, 26 domain docs, 8 agent handoff docs, and schemas verified without contradiction.
+- Line limit rule (<= 149 lines in src/ and public/) and architecture constraints confirmed.
+- Implementation mode authorized using synthetic data and isolated local/test environments.
+
+NEXT ACTION
+- Execute Phase 1: Architecture Feasibility Spike (browser-to-Apps-Script cross-origin integration, token verification, and synthetic request/response spike).
