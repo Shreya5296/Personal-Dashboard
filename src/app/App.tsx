@@ -1,10 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { AppProviders } from './AppProviders';
+import { RequireAdmin } from '../auth/RequireAdmin';
+import { AppShell } from '../layout/AppShell';
+import { NavSection } from '../layout/Sidebar';
+import { AppRoutes } from './appRoutes';
 
 export const App: React.FC = () => {
+  const [activeSection, setActiveSection] = useState<NavSection>('dashboard');
+
   return (
-    <main style={{ padding: '2rem', fontFamily: 'var(--font-family-sans)' }}>
-      <h1>Student Management Dashboard</h1>
-      <p>System foundation ready. Loading application...</p>
-    </main>
+    <AppProviders>
+      <RequireAdmin>
+        <AppShell activeSection={activeSection} onNavigate={setActiveSection}>
+          <AppRoutes activeSection={activeSection} onNavigate={setActiveSection} />
+        </AppShell>
+      </RequireAdmin>
+    </AppProviders>
   );
 };

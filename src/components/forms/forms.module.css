@@ -1,0 +1,57 @@
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--space-4);
+  gap: var(--space-1);
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-main);
+}
+
+.requiredAsterisk {
+  color: var(--color-danger);
+  margin-left: 2px;
+}
+
+.input,
+.select,
+.textarea {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-surface);
+  color: var(--color-text-main);
+  outline: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.inputError {
+  border-color: var(--color-danger) !important;
+}
+
+.inputError:focus {
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2) !important;
+}
+
+.errorText {
+  font-size: var(--font-size-xs);
+  color: var(--color-danger);
+  margin-top: 2px;
+}
+
+.helpText {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}

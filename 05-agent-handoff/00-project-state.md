@@ -39,14 +39,14 @@ Update every field below as work proceeds.
 |---|---|
 | Project | Student Management Dashboard |
 | Execution mode | Autonomous, sequential implementation |
-| Current phase | Phase 6 — Frontend Foundation |
+| Current phase | Phase 7 — Frontend Product Screens |
 | Current phase status | IN_PROGRESS |
-| Last completed phase | Phase 5 — Backend Domain Services |
+| Last completed phase | Phase 6 — Frontend Foundation |
 | Current Git branch | main |
-| Last phase commit | c901aef |
-| Last full regression run | 23 vitest tests passed (100% pass) |
+| Last phase commit | 2c427f3 |
+| Last full regression run | 37 vitest tests passed (100% pass) |
 | Real-data use | Prohibited until security release gate passes |
-| Last state update | Phase 5 completed and verified |
+| Last state update | Phase 6 completed and verified |
 
 ## 5. Phase Register
 
@@ -60,8 +60,8 @@ The implementation sequence is authoritative for phase tasks and exit criteria. 
 | 3 | Data Schema and Spreadsheet Bootstrap | PASSED | 8f74410 | 12 canonical tabs & headers validated, dynamic HeaderMapper, IdGenerator, 6/6 tests passed. |
 | 4 | Backend Foundation | PASSED | c901aef | API entry, request parsing, response factory, auth guards, row reader/writer, locking, audit (17 tests). |
 | 5 | Backend Domain Services | PASSED | f18e511 | Domain services (Students, Enrollments, Packages, Fees, Payments with Idempotency, Classes with Credit Restoration, Meeting Links, Notes, Reports) passing 23/23 tests. |
-| 6 | Frontend Foundation | IN_PROGRESS | — | Establish typed API boundaries, shared UI foundations, and safe configuration. |
-| 7 | Frontend Product Screens | NOT_STARTED | — | Implement documented pages, interactions, loading states, and error states. |
+| 6 | Frontend Foundation | PASSED | Pending Phase 6 commit | API client, session/auth state, AppShell, TopBar, Sidebar, PageHeader, reusable micro-components, formatters, 37/37 tests passing. |
+| 7 | Frontend Product Screens | IN_PROGRESS | — | Implement documented pages, interactions, loading states, and error states. |
 | 8 | Import and Migration | NOT_STARTED | — | Implement safe import, duplicate review, and reconciliation without risking source data. |
 | 9 | Integration and End-to-End Testing | NOT_STARTED | — | Run integration, regression, security, and acceptance checks. |
 | 10 | Deployment Preparation | NOT_STARTED | — | Prepare deployment configuration and owner setup steps without exposing secrets. |
