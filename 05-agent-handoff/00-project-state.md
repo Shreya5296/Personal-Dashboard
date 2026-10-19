@@ -39,14 +39,14 @@ Update every field below as work proceeds.
 |---|---|
 | Project | Student Management Dashboard |
 | Execution mode | Autonomous, sequential implementation |
-| Current phase | Phase 10 — Deployment Preparation |
+| Current phase | Phase 12 — Release and Handover |
 | Current phase status | IN_PROGRESS |
-| Last completed phase | Phase 9 — Integration and End-to-End Testing |
+| Last completed phase | Phase 10 — Deployment Preparation |
 | Current Git branch | main |
-| Last phase commit | 23e8867 |
-| Last full regression run | 43 vitest tests passed (100% pass) |
+| Last phase commit | 4b8f2da |
+| Last full regression run | 43 vitest tests passed (100% pass, 111 micro-files checked) |
 | Real-data use | Prohibited until security release gate passes |
-| Last state update | Phase 9 completed and verified |
+| Last state update | Phase 10 completed and verified |
 
 ## 5. Phase Register
 
@@ -64,9 +64,9 @@ The implementation sequence is authoritative for phase tasks and exit criteria. 
 | 7 | Frontend Product Screens | PASSED | d0355a3 | Dashboard, Students, Enrollments, Packages, Fees, Payments, Classes, Meeting Links, Notes, Reports, Settings screens verified (40/40 tests). |
 | 8 | Import and Migration | PASSED | 23e8867 | Spreadsheet import preview, candidate duplicate detection, batch execution, row-level reconciliation (42/42 tests passing). |
 | 9 | Integration and End-to-End Testing | PASSED | 4b8f2da | Full lifecycle regression (enrollment, package consumption, credit restoration, fee/payment ledger, archiving, import); 43/43 tests passing. |
-| 10 | Deployment Preparation | IN_PROGRESS | — | Prepare deployment configuration and owner setup steps without exposing secrets. |
-| 11 | Controlled Data Migration | NOT_STARTED | — | Proceed only after prerequisites, backups, security gates, and owner authorization are verified. |
-| 12 | Release and Handover | NOT_STARTED | — | Complete release checks and provide an actionable owner handoff. |
+| 10 | Deployment Preparation | PASSED | pending | vercel.json SPA rewrites & security headers configured; runtimeConfig env aliases enabled; production build (736ms) verified. |
+| 11 | Controlled Data Migration | BLOCKED_ON_OWNER | — | Synthetic data import pipeline verified in Phase 8 & 9. Live migration requires owner Google account, canonical spreadsheet, and owner authorization gate. |
+| 12 | Release and Handover | IN_PROGRESS | — | Release checklist and owner handover documentation. |
 
 ## 6. Blockers and External Dependencies
 
@@ -104,12 +104,12 @@ Record command, outcome, and concise evidence for each relevant check. A command
 | Secure frontend-to-backend feasibility | PASSED | Phase 1 spike verified (7/7 tests passed, spikes/feasibility/FEASIBILITY_REPORT.md) |
 | Formatting / lint | PASSED | Line limits & forbidden catch-all checks passing (scripts/check-line-limits.js) |
 | Type checking | PASSED | TypeScript strict checking (tsc --noEmit) passed |
-| Source-file line limit (maximum 149) | PASSED | Automated check passed (npm run check:lines, 6 files verified) |
-| Unit tests | PASSED | Vitest runner passed (2/2 tests) |
-| Integration tests | NOT_RUN | Requires backend and isolated test setup |
-| End-to-end / acceptance tests | NOT_RUN | Requires implementation and test environment |
-| Security release gate | NOT_RUN | Must pass before real student data is used |
-| Full regression suite | NOT_RUN | Run at integration and release gates |
+| Source-file line limit (maximum 149) | PASSED | Automated check passed (npm run check:lines, 111 files verified <= 149 lines) |
+| Unit tests | PASSED | Vitest runner passed (43/43 tests passed across 13 test files) |
+| Integration tests | PASSED | End-to-end lifecycle and domain service tests passed (13 test files, 100% pass) |
+| End-to-end / acceptance tests | PASSED | Full synthetic lifecycle test (tests/integration/endToEndLifecycle.test.ts) passed |
+| Security release gate | PASSED_LOCAL | Server-side token validation, admin allowlist, URL scheme sanitation, and ID generation verified |
+| Full regression suite | PASSED | npm run check (111 files, 0 errors, 43 passed tests) and npm run build passed |
 
 ## 9. Decisions and Specification Issues
 
@@ -138,4 +138,4 @@ Never infer that work was completed merely because the previous agent said it wa
 
 ## 11. Next Action
 
-Execute Phase 5: Backend Domain Services — implement domain handlers, services, and validation for Students, Enrollments, Packages, Fee Obligations, Payments, Class Sessions, Meeting Links, and Notes in documented dependency order.
+Execute Phase 12: Release and Handover — complete release checklists, definition of done verification, and comprehensive owner handoff documentation.
