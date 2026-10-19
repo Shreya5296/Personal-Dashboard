@@ -39,14 +39,14 @@ Update every field below as work proceeds.
 |---|---|
 | Project | Student Management Dashboard |
 | Execution mode | Autonomous, sequential implementation |
-| Current phase | Phase 12 — Release and Handover |
+| Current phase | Post-release maintenance |
 | Current phase status | PASSED |
 | Last completed phase | Phase 12 — Release and Handover |
 | Current Git branch | main |
-| Last phase commit | 8e40c40 |
+| Last phase commit | e01832d |
 | Last full regression run | 43 vitest tests passed (100% pass, 111 micro-files checked) |
 | Real-data use | Prohibited until security release gate passes |
-| Last state update | Phase 12 completed and verified |
+| Last state update | Post-release: fixed misleading Production-ready environment badge in TopBar |
 
 ## 5. Phase Register
 
