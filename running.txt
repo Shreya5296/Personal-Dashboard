@@ -63,11 +63,11 @@ CURRENT EXECUTION STATUS
 - Phase 11 (Controlled Data Migration) marked BLOCKED_ON_OWNER (synthetic import pipeline verified; live production data migration requires owner Google account, master spreadsheet, and authorization gate).
 - Phase 12 (Release and Handover) completed and verified (release audit complete, 43/43 tests passing, 0 line limit violations across 111 micro-files, clean production build, complete owner setup & operational runbooks).
 - Git branch: main. Git remote origin confirmed configured.
-- Line limit rule (<= 149 lines in src/ and public/) and architecture constraints confirmed (111 files verified).
+- Line limit rule (<= 149 lines in src/ and public/) and architecture constraints confirmed (112 files verified).
 - Implementation mode authorized using synthetic data and isolated local/test environments.
 
 NEXT ACTION
-- Script Properties verified: SPREADSHEET_ID (1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8) exact match, ADMIN_EMAILS (ashreya0502@gmail.com) exact match, 12 canonical tabs confirmed.
-- Backend security hardening complete: diagnostic removed, mock token bypass strictly blocked in production runtime, token audience/issuer/expiry/email verification enforced.
-- All 63 backend files synchronized to Apps Script. 49/49 tests passing.
-- Next step: Owner creates the Web App deployment in Apps Script editor and copies the /exec URL to local .env.local.
+- Script Properties verified: SPREADSHEET_ID exact match, ADMIN_EMAILS exact match, 12 tabs initialized.
+- Backend security hardening complete: diagnostic removed, mock token bypass blocked in production runtime, audience/issuer/expiry/email verification enforced, 63 files synchronized to Apps Script.
+- Frontend Google Identity Services integration complete (GoogleSignInButton.tsx, index.html).
+- Next step: Owner creates Google OAuth 2.0 Web Client ID in Google Cloud Console, adds GOOGLE_CLIENT_ID to Apps Script Script Properties, creates Web App deployment, and configures local .env.local.

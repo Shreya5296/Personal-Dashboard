@@ -44,9 +44,9 @@ Update every field below as work proceeds.
 | Last completed phase | Phase 12 — Release and Handover |
 | Current Git branch | main |
 | Last phase commit | e01832d |
-| Last full regression run | 49 vitest tests passed (100% pass, 111 micro-files checked) |
+| Last full regression run | 49 vitest tests passed (100% pass, 112 micro-files checked) |
 | Real-data use | Prohibited until security release gate passes |
-| Last state update | Backend security hardening complete: synthetic mock bypass removed from prod runtime, token audience/issuer/expiry/email verification enforced, diagnostic cleaned, 63 files synchronized to Apps Script |
+| Last state update | Frontend Google Identity Services integration complete (GoogleSignInButton.tsx, index.html); Vercel proxy feasibility evaluated |
 
 ## 5. Phase Register
 
@@ -105,7 +105,7 @@ Record command, outcome, and concise evidence for each relevant check. A command
 | Secure frontend-to-backend feasibility | PASSED | Phase 1 spike verified (7/7 tests passed, spikes/feasibility/FEASIBILITY_REPORT.md) |
 | Formatting / lint | PASSED | Line limits & forbidden catch-all checks passing (scripts/check-line-limits.js) |
 | Type checking | PASSED | TypeScript strict checking (tsc --noEmit) passed |
-| Source-file line limit (maximum 149) | PASSED | Automated check passed (npm run check:lines, 111 files verified <= 149 lines) |
+| Source-file line limit (maximum 149) | PASSED | Automated check passed (npm run check:lines, 112 files verified <= 149 lines) |
 | Unit tests | PASSED | Vitest runner passed (49/49 tests passed across 14 test files) |
 | Integration tests | PASSED | End-to-end lifecycle and domain service tests passed (14 test files, 100% pass) |
 | End-to-end / acceptance tests | PASSED | Full synthetic lifecycle test (tests/integration/endToEndLifecycle.test.ts) passed |
@@ -139,4 +139,4 @@ Never infer that work was completed merely because the previous agent said it wa
 
 ## 11. Next Action
 
-Script Properties verified (`SPREADSHEET_ID` exact match, `ADMIN_EMAILS` exact match). Diagnostic function removed from `ApiEntry.gs`. Backend authentication hardened: mock tokens strictly rejected in production runtime (`typeof UrlFetchApp !== 'undefined'`), audience/issuer/expiry/email verification enforced. All 63 files pushed to Apps Script. Next action is creating the versioned Web App deployment in Apps Script editor and configuring `VITE_APPS_SCRIPT_URL` in local `.env.local`.
+Backend hardened and synchronized (mock bypass removed from prod runtime). Frontend Google Identity Services integration verified (official button rendering and GIS client included). Next action: Owner creates a Google OAuth 2.0 Web Client ID in Google Cloud Console, configures `GOOGLE_CLIENT_ID` in Apps Script Script Properties, creates the Apps Script Web App deployment, and sets `.env.local` to connect frontend and backend.

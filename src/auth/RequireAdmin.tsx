@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from './AuthProvider';
 import { getRuntimeConfig } from '../config/runtimeConfig';
+import { GoogleSignInButton } from './GoogleSignInButton';
 
 export const RequireAdmin: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { status, user, signInWithToken } = useAuth();
@@ -47,8 +48,12 @@ export const RequireAdmin: React.FC<{ children: React.ReactNode }> = ({ children
             Sign in with an authorized Google account to access administrator controls.
           </p>
 
-          <div id="google-signin-target" style={{ minHeight: '44px', display: 'flex', justifyContent: 'center' }}>
-            {config.enableMockAuth && (
+          <div style={{ minHeight: '44px', display: 'flex', justifyContent: 'center', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            {config.googleClientId && (
+              <GoogleSignInButton clientId={config.googleClientId} onSuccess={signInWithToken} />
+            )}
+
+            {config.enableMockAuth && !config.googleClientId && (
               <button
                 type="button"
                 onClick={handleDevLogin}
