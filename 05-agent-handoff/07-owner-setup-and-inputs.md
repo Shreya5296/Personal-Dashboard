@@ -237,10 +237,10 @@ Maintain this compact register outside any secret store. Use references or maske
 | OAuth project/client ownership | PENDING | | Authentication integration proof |
 | GitHub repository and permissions | PENDING | | Remote collaboration and backup |
 | Vercel project/domain | PENDING | | Frontend deployment |
-| Development Apps Script deployment | PENDING | | Backend integration |
+| Development Apps Script deployment | UPLOADED | Target Project ID: 1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL (63 files uploaded) | Backend integration |
 | Production Apps Script deployment | PENDING | | Production release |
-| Development spreadsheet | PENDING | | Integration tests |
-| Production master spreadsheet | PROVIDED | Private Class Dashboard (ID: 1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8) | Production release and migration |
+| Development spreadsheet | NOT_REQUIRED | Using isolated mock sheets for synthetic tests | Integration tests |
+| Production master spreadsheet | INITIALIZED | Private Class Dashboard (ID: 1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8, 12 tabs initialized) | Production release and migration |
 | Source spreadsheet inventory | PENDING | | Migration planning |
 | Business-policy confirmations | PENDING | | Dependent business workflows |
 | Backup location and recovery operator | PENDING | | Migration and production release |

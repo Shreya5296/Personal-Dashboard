@@ -46,7 +46,7 @@ Update every field below as work proceeds.
 | Last phase commit | e01832d |
 | Last full regression run | 43 vitest tests passed (100% pass, 111 micro-files checked) |
 | Real-data use | Prohibited until security release gate passes |
-| Last state update | Post-release: fixed misleading Production-ready environment badge in TopBar |
+| Last state update | Backend uploaded; spreadsheet bootstrap completed & verified (12 tabs, 167 headers) |
 
 ## 5. Phase Register
 
@@ -88,8 +88,8 @@ This is a live index, not a place to store secret values. Keep the detailed regi
 |---|---|---|---|
 | Administrator identity / allowlist | NOT_VERIFIED | Approved backend configuration, following the security specification | No |
 | Google Cloud / sign-in configuration | NOT_VERIFIED | Owner-controlled Google Cloud configuration and documented environment settings | No |
-| Apps Script deployment and permissions | CONFIGURED_LOCAL | Target Project ID: 1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL | No |
-| Private canonical spreadsheet | PROVIDED | Private Class Dashboard (ID: 1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8) | No |
+| Apps Script deployment and permissions | UPLOADED_AND_BOOTSTRAPPED | Project ID: 1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL (63 files pushed, bootstrap verified) | No |
+| Private canonical spreadsheet | INITIALIZED | Private Class Dashboard (ID: 1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8, 12 tabs initialized) | No |
 | Frontend hosting project and environment variables | NOT_VERIFIED | Owner-controlled Vercel project settings | No |
 | Git remote and repository permissions | VERIFIED | origin https://github.com/Shreya5296/Personal-Dashboard.git | No |
 
@@ -139,4 +139,4 @@ Never infer that work was completed merely because the previous agent said it wa
 
 ## 11. Next Action
 
-Backend deployment to Apps Script project 1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL completed (63 files uploaded). Awaiting owner 1-click execution of setup/RunBootstrap.gs in the Apps Script editor to grant SpreadsheetApp permission and initialize the 12 canonical tabs on spreadsheet 1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8.
+Spreadsheet bootstrap completed and verified on spreadsheet `1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8` (all 12 tabs initialized with exact canonical schemas). Next safe action is configuring Apps Script Script Properties (`SPREADSHEET_ID`, `ADMIN_EMAILS`) and deploying the Web App to enable live end-to-end communication with the local React/Vite dashboard frontend.
