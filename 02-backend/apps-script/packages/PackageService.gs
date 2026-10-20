@@ -8,9 +8,16 @@ var _pkgRepo = typeof Packages_getAll === 'function' ? { Packages_getAll: Packag
 var _pkgStuRepo = typeof Students_getById === 'function' ? { Students_getById: Students_getById } : (typeof require !== 'undefined' ? require('../students/StudentRepository.gs') : null);
 var _pkgEnrRepo = typeof Enrollments_getById === 'function' ? { Enrollments_getById: Enrollments_getById } : (typeof require !== 'undefined' ? require('../enrollments/EnrollmentRepository.gs') : null);
 var _pkgAudit = typeof recordAuditEvent === 'function' ? { recordAuditEvent: recordAuditEvent } : (typeof require !== 'undefined' ? require('../audit/AuditService.gs') : null);
-var _pkgReg = typeof SHEET_NAMES !== 'undefined' ? { SHEET_NAMES: SHEET_NAMES, getExpectedHeaders: getExpectedHeaders } : (typeof require !== 'undefined' ? require('../sheets/SheetRegistry.gs') : null);
+var _pkgReg = {
+  get SHEET_NAMES() {
+    return (typeof SHEET_NAMES !== 'undefined' && SHEET_NAMES) || (typeof require !== 'undefined' ? require('../sheets/SheetRegistry.gs').SHEET_NAMES : {});
+  },
+  getExpectedHeaders: function(name) {
+    return typeof getExpectedHeaders === 'function' ? getExpectedHeaders(name) : (typeof require !== 'undefined' ? require('../sheets/SheetRegistry.gs').getExpectedHeaders(name) : null);
+  }
+};
 var _pkgMap = typeof createHeaderMap === 'function' ? { createHeaderMap: createHeaderMap, rowToRecord: rowToRecord, recordToRow: recordToRow } : (typeof require !== 'undefined' ? require('../sheets/HeaderMapper.gs') : null);
-var _pkgRowReader = typeof readAllRecords === 'function' ? { readAllRecords: readAllRecords } : (typeof require !== 'undefined' ? require('../sheets/RowReader.gs') : null);
+var _pkgSvcRowReader = typeof readAllRecords === 'function' ? { readAllRecords: readAllRecords, findRecordById: findRecordById } : (typeof require !== 'undefined' ? require('../sheets/RowReader.gs') : null);
 
 function Packages_create(spreadsheet, data, actor) {
   var v = _pkgVal.validatePackageInput(data, false);
@@ -72,7 +79,7 @@ function Packages_create(spreadsheet, data, actor) {
 
 function Packages_enrichWithBalance(spreadsheet, pkgRecord) {
   var sessionSheet = spreadsheet.getSheetByName(_pkgReg.SHEET_NAMES.CLASS_SESSIONS);
-  var sessions = _pkgRowReader.readAllRecords(sessionSheet, _pkgMap);
+  var sessions = _pkgSvcRowReader.readAllRecords(sessionSheet, _pkgMap);
 
   var consumed = 0;
   var restored = 0;

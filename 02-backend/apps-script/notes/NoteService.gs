@@ -7,7 +7,14 @@ var _noteVal = typeof validateNoteInput === 'function' ? { validateNoteInput: va
 var _noteRepo = typeof Notes_getAll === 'function' ? { Notes_getAll: Notes_getAll, Notes_getById: Notes_getById, Notes_getByStudentId: Notes_getByStudentId, Notes_insert: Notes_insert, Notes_update: Notes_update } : (typeof require !== 'undefined' ? require('./NoteRepository.gs') : null);
 var _noteStuRepo = typeof Students_getById === 'function' ? { Students_getById: Students_getById } : (typeof require !== 'undefined' ? require('../students/StudentRepository.gs') : null);
 var _noteAudit = typeof recordAuditEvent === 'function' ? { recordAuditEvent: recordAuditEvent } : (typeof require !== 'undefined' ? require('../audit/AuditService.gs') : null);
-var _noteReg = typeof SHEET_NAMES !== 'undefined' ? { SHEET_NAMES: SHEET_NAMES, getExpectedHeaders: getExpectedHeaders } : (typeof require !== 'undefined' ? require('../sheets/SheetRegistry.gs') : null);
+var _noteReg = {
+  get SHEET_NAMES() {
+    return (typeof SHEET_NAMES !== 'undefined' && SHEET_NAMES) || (typeof require !== 'undefined' ? require('../sheets/SheetRegistry.gs').SHEET_NAMES : {});
+  },
+  getExpectedHeaders: function(name) {
+    return typeof getExpectedHeaders === 'function' ? getExpectedHeaders(name) : (typeof require !== 'undefined' ? require('../sheets/SheetRegistry.gs').getExpectedHeaders(name) : null);
+  }
+};
 var _noteMap = typeof createHeaderMap === 'function' ? { createHeaderMap: createHeaderMap, rowToRecord: rowToRecord, recordToRow: recordToRow } : (typeof require !== 'undefined' ? require('../sheets/HeaderMapper.gs') : null);
 
 function Notes_create(spreadsheet, data, actor) {

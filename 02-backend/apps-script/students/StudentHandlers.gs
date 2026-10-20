@@ -10,7 +10,8 @@ function registerStudentOperations(router) {
   if (!reg) return;
 
   reg('students.list', function(ctx) {
-    return _stuSvc.Students_list(ctx.spreadsheet, ctx.payload);
+    var fn = typeof Students_list === 'function' ? Students_list : (_stuSvc && _stuSvc.Students_list);
+    return fn(ctx.spreadsheet, ctx.payload);
   });
 
   reg('students.get', function(ctx) {
@@ -18,7 +19,8 @@ function registerStudentOperations(router) {
     if (!sid) {
       return { success: false, code: 'VALIDATION_ERROR', message: 'Missing studentId in payload' };
     }
-    var student = _stuRepoH.Students_getById(ctx.spreadsheet, sid);
+    var getFn = typeof Students_getById === 'function' ? Students_getById : (_stuRepoH && _stuRepoH.Students_getById);
+    var student = getFn(ctx.spreadsheet, sid);
     if (!student) {
       return { success: false, code: 'RECORD_NOT_FOUND', message: 'Student not found: ' + sid };
     }
@@ -27,7 +29,8 @@ function registerStudentOperations(router) {
   });
 
   reg('students.create', function(ctx) {
-    return _stuSvc.Students_create(ctx.spreadsheet, ctx.payload, {
+    var fn = typeof Students_create === 'function' ? Students_create : (_stuSvc && _stuSvc.Students_create);
+    return fn(ctx.spreadsheet, ctx.payload, {
       actorId: ctx.actorId,
       email: ctx.verifiedEmail,
       requestId: ctx.requestId
@@ -39,7 +42,8 @@ function registerStudentOperations(router) {
     if (!sid) {
       return { success: false, code: 'VALIDATION_ERROR', message: 'Missing studentId in payload' };
     }
-    return _stuSvc.Students_update(ctx.spreadsheet, sid, ctx.payload, {
+    var fn = typeof Students_update === 'function' ? Students_update : (_stuSvc && _stuSvc.Students_update);
+    return fn(ctx.spreadsheet, sid, ctx.payload, {
       actorId: ctx.actorId,
       email: ctx.verifiedEmail,
       requestId: ctx.requestId

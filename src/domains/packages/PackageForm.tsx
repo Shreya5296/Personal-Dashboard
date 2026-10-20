@@ -34,7 +34,7 @@ export const PackageForm: React.FC<PackageFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+    <form noValidate onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
       <FormField label="Package Name" required>
         <input
           type="text"

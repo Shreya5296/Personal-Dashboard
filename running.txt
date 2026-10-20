@@ -95,15 +95,25 @@ NEXT ACTION
   * Success feedback: Added prominent green success banner to FeeObligationList.tsx upon obligation creation.
   * File limit compliance: Extracted feeColumns.tsx to keep all files <= 149 lines (113 files verified).
   * Automated testing: Added tests/frontend/feeValidation.test.ts and updated tests/domains/financialLedger.test.ts. 71/71 tests passing across 16 test suites. Clean build verified.
-- Autonomous End-to-End QA & Playwright Test Harness established:
+- Autonomous End-to-End QA & Playwright Test Harness established and verified live:
   * Installed @playwright/test (v1.64.1) and Chromium headless browser.
   * Configured playwright.config.ts with deterministic test namespaces and automatic .env.test.local loading.
-  * Implemented reusable E2E suite under tests/e2e/:
-    - tests/e2e/auth.spec.ts: unauthenticated gate, live invalid key rejection, bundle security check, real session lifecycle.
-    - tests/e2e/students.spec.ts: student registration, validation, directory search, profile tab loading, and detail editing.
-    - tests/e2e/fees.spec.ts: ₹5,000 fee obligation creation, constraint checks, and ₹1,000 payment recording.
-    - tests/e2e/packages.spec.ts: package creation, class count allocation, balance tracking.
-    - tests/e2e/classes.spec.ts: class scheduling, duration tracking, attendance recording.
-    - tests/e2e/reportsAndCrossCutting.spec.ts: report metric verification, import preview, mobile/tablet responsive layouts.
-  * Live browser verification against deployed Apps Script endpoint: 3 passed, 10 skipped pending ADMIN_AUTH_KEY in .env.test.local.
-  * Full regression: 71 unit/integration tests passing (16 files), line-limits passing (113 files <= 149 lines), clean production build (940ms).
+  * Apps Script Backend Fixes Deployed to Version @16:
+    - Fixed SHEET_NAMES top-level resolution across all repositories and services using dynamic getters.
+    - Diagnosed and resolved severe global scope name collision: Students_update in StudentRepository.gs and StudentService.gs had identical global names, causing infinite recursion loop upon student edits. Renamed repository function to Students_repoUpdate. Applied identical fix to Enrollments_repoUpdate.
+    - Fixed string coercion in student search and import candidate detection to safely handle numeric phone/parent fields returned by Google Sheets.
+    - Fixed Profile edit view transition in StudentsPage.tsx when editing student from detailed profile view.
+    - Updated FeeObligation TypeScript model with optional fee_obligation_id alias.
+  * Live browser verification against deployed Apps Script endpoint: 13/13 PASSED (100% pass in 1.5m):
+    - tests/e2e/auth.spec.ts (4/4 passed): unauthenticated gate, live invalid key rejection, bundle security check, real session lifecycle.
+    - tests/e2e/students.spec.ts (2/2 passed): student registration, validation, directory search, profile tab loading, and detail editing.
+    - tests/e2e/fees.spec.ts (1/1 passed): ₹5,000 fee obligation creation, constraint checks, and ₹1,000 payment recording.
+    - tests/e2e/packages.spec.ts (1/1 passed): package creation, class count allocation, balance tracking.
+    - tests/e2e/classes.spec.ts (1/1 passed): class scheduling, duration tracking, attendance recording.
+    - tests/e2e/reportsAndCrossCutting.spec.ts (3/3 passed): report metric verification, import preview, mobile/tablet responsive layouts.
+  * Full quality gate verification:
+    - 71/71 Vitest unit/integration tests passing across 16 test suites.
+    - Line-limit check passing (113 files <= 149 lines under src/ and public/).
+    - TypeScript check (tsc --noEmit) passing with 0 errors.
+    - Production build (tsc && vite build) built in 988ms with clean assets.
+  * System ready for production operation; no GCP dependencies, no real student records modified.

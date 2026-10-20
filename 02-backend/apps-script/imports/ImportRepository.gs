@@ -2,7 +2,22 @@
  * ImportRepository: Persists import batches and row-level reconciliation records.
  */
 
-var _regImpR = typeof SHEET_NAMES !== 'undefined' ? { SHEET_NAMES: SHEET_NAMES, getExpectedHeaders: getExpectedHeaders } : (typeof require !== 'undefined' ? require('../sheets/SheetRegistry.gs') : null);
+function _resolveImpRepoSheetNames() {
+  if (typeof SHEET_NAMES !== 'undefined' && SHEET_NAMES) return SHEET_NAMES;
+  if (typeof require !== 'undefined') return require('../sheets/SheetRegistry.gs').SHEET_NAMES;
+  return {};
+}
+
+function _resolveImpRepoHeaders(sheetName) {
+  if (typeof getExpectedHeaders === 'function') return getExpectedHeaders(sheetName);
+  if (typeof require !== 'undefined') return require('../sheets/SheetRegistry.gs').getExpectedHeaders(sheetName);
+  return null;
+}
+
+var _regImpR = {
+  get SHEET_NAMES() { return _resolveImpRepoSheetNames(); },
+  getExpectedHeaders: function(name) { return _resolveImpRepoHeaders(name); }
+};
 var _mapImpR = typeof createHeaderMap === 'function' ? { createHeaderMap: createHeaderMap, rowToRecord: rowToRecord, recordToRow: recordToRow } : (typeof require !== 'undefined' ? require('../sheets/HeaderMapper.gs') : null);
 var _writerImpR = typeof appendRecord === 'function' ? { appendRecord: appendRecord, updateRecordById: updateRecordById } : (typeof require !== 'undefined' ? require('../sheets/RowWriter.gs') : null);
 

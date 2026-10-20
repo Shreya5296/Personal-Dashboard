@@ -4,10 +4,23 @@
 
 var _enrIdGen = typeof generateEnrollmentId === 'function' ? { generateEnrollmentId: generateEnrollmentId } : (typeof require !== 'undefined' ? require('../shared/IdGenerator.gs') : null);
 var _enrVal = typeof validateEnrollmentInput === 'function' ? { validateEnrollmentInput: validateEnrollmentInput } : (typeof require !== 'undefined' ? require('./EnrollmentValidation.gs') : null);
-var _enrRepo = typeof Enrollments_getAll === 'function' ? { Enrollments_getAll: Enrollments_getAll, Enrollments_getById: Enrollments_getById, Enrollments_getByStudentId: Enrollments_getByStudentId, Enrollments_insert: Enrollments_insert, Enrollments_update: Enrollments_update } : (typeof require !== 'undefined' ? require('./EnrollmentRepository.gs') : null);
+var _enrRepo = typeof Enrollments_getAll === 'function' ? {
+  Enrollments_getAll: Enrollments_getAll,
+  Enrollments_getById: Enrollments_getById,
+  Enrollments_getByStudentId: Enrollments_getByStudentId,
+  Enrollments_insert: Enrollments_insert,
+  Enrollments_update: typeof Enrollments_repoUpdate === 'function' ? Enrollments_repoUpdate : Enrollments_update
+} : (typeof require !== 'undefined' ? require('./EnrollmentRepository.gs') : null);
 var _enrStuRepo = typeof Students_getById === 'function' ? { Students_getById: Students_getById } : (typeof require !== 'undefined' ? require('../students/StudentRepository.gs') : null);
 var _enrAudit = typeof recordAuditEvent === 'function' ? { recordAuditEvent: recordAuditEvent } : (typeof require !== 'undefined' ? require('../audit/AuditService.gs') : null);
-var _enrReg = typeof SHEET_NAMES !== 'undefined' ? { SHEET_NAMES: SHEET_NAMES, getExpectedHeaders: getExpectedHeaders } : (typeof require !== 'undefined' ? require('../sheets/SheetRegistry.gs') : null);
+var _enrReg = {
+  get SHEET_NAMES() {
+    return (typeof SHEET_NAMES !== 'undefined' && SHEET_NAMES) || (typeof require !== 'undefined' ? require('../sheets/SheetRegistry.gs').SHEET_NAMES : {});
+  },
+  getExpectedHeaders: function(name) {
+    return typeof getExpectedHeaders === 'function' ? getExpectedHeaders(name) : (typeof require !== 'undefined' ? require('../sheets/SheetRegistry.gs').getExpectedHeaders(name) : null);
+  }
+};
 var _enrMap = typeof createHeaderMap === 'function' ? { createHeaderMap: createHeaderMap, rowToRecord: rowToRecord, recordToRow: recordToRow } : (typeof require !== 'undefined' ? require('../sheets/HeaderMapper.gs') : null);
 
 function Enrollments_create(spreadsheet, data, actor) {

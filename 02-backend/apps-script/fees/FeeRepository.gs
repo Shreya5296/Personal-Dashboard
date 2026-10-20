@@ -4,7 +4,22 @@
 
 var _feeRowReader = typeof readAllRecords === 'function' ? { readAllRecords: readAllRecords, findRecordById: findRecordById } : (typeof require !== 'undefined' ? require('../sheets/RowReader.gs') : null);
 var _feeRowWriter = typeof appendRecord === 'function' ? { appendRecord: appendRecord, updateRecordById: updateRecordById } : (typeof require !== 'undefined' ? require('../sheets/RowWriter.gs') : null);
-var _feeRegistry = typeof SHEET_NAMES !== 'undefined' ? { SHEET_NAMES: SHEET_NAMES, getExpectedHeaders: getExpectedHeaders } : (typeof require !== 'undefined' ? require('../sheets/SheetRegistry.gs') : null);
+function _resolveFeeRepoSheetNames() {
+  if (typeof SHEET_NAMES !== 'undefined' && SHEET_NAMES) return SHEET_NAMES;
+  if (typeof require !== 'undefined') return require('../sheets/SheetRegistry.gs').SHEET_NAMES;
+  return {};
+}
+
+function _resolveFeeRepoHeaders(sheetName) {
+  if (typeof getExpectedHeaders === 'function') return getExpectedHeaders(sheetName);
+  if (typeof require !== 'undefined') return require('../sheets/SheetRegistry.gs').getExpectedHeaders(sheetName);
+  return null;
+}
+
+var _feeRegistry = {
+  get SHEET_NAMES() { return _resolveFeeRepoSheetNames(); },
+  getExpectedHeaders: function(name) { return _resolveFeeRepoHeaders(name); }
+};
 var _feeMapper = typeof createHeaderMap === 'function' ? { createHeaderMap: createHeaderMap, rowToRecord: rowToRecord, recordToRow: recordToRow } : (typeof require !== 'undefined' ? require('../sheets/HeaderMapper.gs') : null);
 
 function FeeObligations_getAll(spreadsheet) {

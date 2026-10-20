@@ -61,7 +61,7 @@ export const ClassSessionForm: React.FC<ClassSessionFormProps> = ({
   const showStudentPicker = !initialStudentId || initialStudentId === 'stu_general';
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+    <form noValidate onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
       {showStudentPicker && (
         <FormField label="Select Student" required>
           <select

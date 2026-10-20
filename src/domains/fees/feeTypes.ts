@@ -1,5 +1,6 @@
 export interface FeeObligation {
   fee_id: string;
+  fee_obligation_id?: string;
   student_id: string;
   package_id?: string;
   description: string;

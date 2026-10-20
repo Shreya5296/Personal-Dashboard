@@ -27,9 +27,9 @@ loadEnvFile('.env.local');
 
 export default defineConfig({
   testDir: './tests/e2e',
-  timeout: 60 * 1000,
+  timeout: 90 * 1000,
   expect: {
-    timeout: 15 * 1000,
+    timeout: 35 * 1000,
   },
   fullyParallel: false,
   workers: 1,

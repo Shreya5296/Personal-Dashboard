@@ -4,7 +4,22 @@
 
 var _noteRowReader = typeof readAllRecords === 'function' ? { readAllRecords: readAllRecords, findRecordById: findRecordById } : (typeof require !== 'undefined' ? require('../sheets/RowReader.gs') : null);
 var _noteRowWriter = typeof appendRecord === 'function' ? { appendRecord: appendRecord, updateRecordById: updateRecordById } : (typeof require !== 'undefined' ? require('../sheets/RowWriter.gs') : null);
-var _noteRegistry = typeof SHEET_NAMES !== 'undefined' ? { SHEET_NAMES: SHEET_NAMES, getExpectedHeaders: getExpectedHeaders } : (typeof require !== 'undefined' ? require('../sheets/SheetRegistry.gs') : null);
+function _resolveNoteRepoSheetNames() {
+  if (typeof SHEET_NAMES !== 'undefined' && SHEET_NAMES) return SHEET_NAMES;
+  if (typeof require !== 'undefined') return require('../sheets/SheetRegistry.gs').SHEET_NAMES;
+  return {};
+}
+
+function _resolveNoteRepoHeaders(sheetName) {
+  if (typeof getExpectedHeaders === 'function') return getExpectedHeaders(sheetName);
+  if (typeof require !== 'undefined') return require('../sheets/SheetRegistry.gs').getExpectedHeaders(sheetName);
+  return null;
+}
+
+var _noteRegistry = {
+  get SHEET_NAMES() { return _resolveNoteRepoSheetNames(); },
+  getExpectedHeaders: function(name) { return _resolveNoteRepoHeaders(name); }
+};
 var _noteMapper = typeof createHeaderMap === 'function' ? { createHeaderMap: createHeaderMap, rowToRecord: rowToRecord, recordToRow: recordToRow } : (typeof require !== 'undefined' ? require('../sheets/HeaderMapper.gs') : null);
 
 function Notes_getAll(spreadsheet) {

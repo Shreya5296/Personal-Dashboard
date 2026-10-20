@@ -4,7 +4,22 @@
 
 var _mlRowReader = typeof readAllRecords === 'function' ? { readAllRecords: readAllRecords, findRecordById: findRecordById } : (typeof require !== 'undefined' ? require('../sheets/RowReader.gs') : null);
 var _mlRowWriter = typeof appendRecord === 'function' ? { appendRecord: appendRecord, updateRecordById: updateRecordById } : (typeof require !== 'undefined' ? require('../sheets/RowWriter.gs') : null);
-var _mlRegistry = typeof SHEET_NAMES !== 'undefined' ? { SHEET_NAMES: SHEET_NAMES, getExpectedHeaders: getExpectedHeaders } : (typeof require !== 'undefined' ? require('../sheets/SheetRegistry.gs') : null);
+function _resolveMlRepoSheetNames() {
+  if (typeof SHEET_NAMES !== 'undefined' && SHEET_NAMES) return SHEET_NAMES;
+  if (typeof require !== 'undefined') return require('../sheets/SheetRegistry.gs').SHEET_NAMES;
+  return {};
+}
+
+function _resolveMlRepoHeaders(sheetName) {
+  if (typeof getExpectedHeaders === 'function') return getExpectedHeaders(sheetName);
+  if (typeof require !== 'undefined') return require('../sheets/SheetRegistry.gs').getExpectedHeaders(sheetName);
+  return null;
+}
+
+var _mlRegistry = {
+  get SHEET_NAMES() { return _resolveMlRepoSheetNames(); },
+  getExpectedHeaders: function(name) { return _resolveMlRepoHeaders(name); }
+};
 var _mlMapper = typeof createHeaderMap === 'function' ? { createHeaderMap: createHeaderMap, rowToRecord: rowToRecord, recordToRow: recordToRow } : (typeof require !== 'undefined' ? require('../sheets/HeaderMapper.gs') : null);
 
 function MeetingLinks_getAll(spreadsheet) {

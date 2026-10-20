@@ -4,9 +4,25 @@
 
 var _stuIdGen = typeof generateStudentId === 'function' ? { generateStudentId: generateStudentId } : (typeof require !== 'undefined' ? require('../shared/IdGenerator.gs') : null);
 var _stuVal = typeof validateStudentInput === 'function' ? { validateStudentInput: validateStudentInput } : (typeof require !== 'undefined' ? require('./StudentValidation.gs') : null);
-var _stuRepo = typeof Students_getAll === 'function' ? { Students_getAll: Students_getAll, Students_getById: Students_getById, Students_insert: Students_insert, Students_update: Students_update } : (typeof require !== 'undefined' ? require('./StudentRepository.gs') : null);
+var _stuRepo = typeof Students_getAll === 'function' ? {
+  Students_getAll: Students_getAll,
+  Students_getById: Students_getById,
+  Students_insert: Students_insert,
+  Students_update: typeof Students_repoUpdate === 'function' ? Students_repoUpdate : Students_update
+} : (typeof require !== 'undefined' ? require('./StudentRepository.gs') : null);
 var _stuAudit = typeof recordAuditEvent === 'function' ? { recordAuditEvent: recordAuditEvent } : (typeof require !== 'undefined' ? require('../audit/AuditService.gs') : null);
-var _stuReg = typeof SHEET_NAMES !== 'undefined' ? { SHEET_NAMES: SHEET_NAMES, getExpectedHeaders: getExpectedHeaders } : (typeof require !== 'undefined' ? require('../sheets/SheetRegistry.gs') : null);
+var _stuReg = {
+  get SHEET_NAMES() {
+    if (typeof SHEET_NAMES !== 'undefined' && SHEET_NAMES) return SHEET_NAMES;
+    if (typeof require !== 'undefined') return require('../sheets/SheetRegistry.gs').SHEET_NAMES;
+    return {};
+  },
+  getExpectedHeaders: function(name) {
+    if (typeof getExpectedHeaders === 'function') return getExpectedHeaders(name);
+    if (typeof require !== 'undefined') return require('../sheets/SheetRegistry.gs').getExpectedHeaders(name);
+    return null;
+  }
+};
 var _stuMap = typeof createHeaderMap === 'function' ? { createHeaderMap: createHeaderMap, rowToRecord: rowToRecord, recordToRow: recordToRow } : (typeof require !== 'undefined' ? require('../sheets/HeaderMapper.gs') : null);
 
 function Students_enrich(s) {
@@ -211,11 +227,11 @@ function Students_list(spreadsheet, filter) {
   var filtered = records.filter(function(s) {
     if (status && status !== 'ALL' && s.student_status !== status) return false;
     if (search) {
-      var fullName = (s.full_name || (s.first_name + ' ' + (s.last_name || ''))).toLowerCase();
-      var prefName = (s.preferred_name || '').toLowerCase();
-      var phone = (s.primary_phone || s.phone || '').toLowerCase();
-      var email = (s.parent_email || s.email || '').toLowerCase();
-      var pName = (s.parent_guardian_name || s.parent_name || '').toLowerCase();
+      var fullName = String(s.full_name || (s.first_name + ' ' + (s.last_name || ''))).toLowerCase();
+      var prefName = String(s.preferred_name || '').toLowerCase();
+      var phone = String(s.primary_phone || s.phone || '').toLowerCase();
+      var email = String(s.parent_email || s.email || '').toLowerCase();
+      var pName = String(s.parent_guardian_name || s.parent_name || '').toLowerCase();
       if (fullName.indexOf(search) === -1 &&
           prefName.indexOf(search) === -1 &&
           phone.indexOf(search) === -1 &&

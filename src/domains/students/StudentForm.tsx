@@ -62,7 +62,7 @@ export const StudentForm: React.FC<StudentFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+    <form noValidate onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
       {serverError && (
         <div style={{
           padding: '0.75rem 1rem',

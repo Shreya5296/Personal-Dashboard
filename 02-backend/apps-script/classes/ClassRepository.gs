@@ -4,7 +4,22 @@
 
 var _clsRowReader = typeof readAllRecords === 'function' ? { readAllRecords: readAllRecords, findRecordById: findRecordById } : (typeof require !== 'undefined' ? require('../sheets/RowReader.gs') : null);
 var _clsRowWriter = typeof appendRecord === 'function' ? { appendRecord: appendRecord, updateRecordById: updateRecordById } : (typeof require !== 'undefined' ? require('../sheets/RowWriter.gs') : null);
-var _clsRegistry = typeof SHEET_NAMES !== 'undefined' ? { SHEET_NAMES: SHEET_NAMES, getExpectedHeaders: getExpectedHeaders } : (typeof require !== 'undefined' ? require('../sheets/SheetRegistry.gs') : null);
+function _resolveClsRepoSheetNames() {
+  if (typeof SHEET_NAMES !== 'undefined' && SHEET_NAMES) return SHEET_NAMES;
+  if (typeof require !== 'undefined') return require('../sheets/SheetRegistry.gs').SHEET_NAMES;
+  return {};
+}
+
+function _resolveClsRepoHeaders(sheetName) {
+  if (typeof getExpectedHeaders === 'function') return getExpectedHeaders(sheetName);
+  if (typeof require !== 'undefined') return require('../sheets/SheetRegistry.gs').getExpectedHeaders(sheetName);
+  return null;
+}
+
+var _clsRegistry = {
+  get SHEET_NAMES() { return _resolveClsRepoSheetNames(); },
+  getExpectedHeaders: function(name) { return _resolveClsRepoHeaders(name); }
+};
 var _clsMapper = typeof createHeaderMap === 'function' ? { createHeaderMap: createHeaderMap, rowToRecord: rowToRecord, recordToRow: recordToRow } : (typeof require !== 'undefined' ? require('../sheets/HeaderMapper.gs') : null);
 
 function Classes_getAll(spreadsheet) {

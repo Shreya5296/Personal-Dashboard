@@ -46,6 +46,13 @@ test.describe('E2E — Authentication and Security Gateway', () => {
   });
 
   test('full real admin login, dashboard access, and sign-out (when ADMIN_AUTH_KEY configured)', async ({ page }) => {
+    page.on('console', (msg) => console.log('BROWSER LOG:', msg.type(), msg.text()));
+    page.on('pageerror', (err) => console.log('PAGE ERROR:', err.message));
+    page.on('requestfailed', (req) => console.log('REQ FAILED:', req.url(), req.failure()?.errorText));
+    page.on('response', (resp) => {
+      if (!resp.ok()) console.log('RESPONSE STATUS:', resp.status(), resp.url());
+    });
+
     const adminKey = process.env.ADMIN_AUTH_KEY;
     if (!adminKey) {
       test.skip(true, 'ADMIN_AUTH_KEY not provided in environment; skipping live sign-in test');
@@ -59,7 +66,7 @@ test.describe('E2E — Authentication and Security Gateway', () => {
     await page.locator('button[type="submit"]').click();
 
     // Wait for Dashboard to appear
-    await expect(page.locator('text=Overview')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('button:has-text("Sign Out")')).toBeVisible({ timeout: 30000 });
 
     // Verify token was stored in sessionStorage only
     const storedToken = await page.evaluate(() => sessionStorage.getItem('smd_auth_token'));
@@ -70,12 +77,10 @@ test.describe('E2E — Authentication and Security Gateway', () => {
     expect(localToken).toBeNull();
 
     // Sign out
-    const signOutBtn = page.locator('button:has-text("Sign Out"), button:has-text("Logout")');
-    if (await signOutBtn.isVisible()) {
-      await signOutBtn.click();
-      await expect(page.locator('input[type="password"]')).toBeVisible({ timeout: 5000 });
-      const clearedToken = await page.evaluate(() => sessionStorage.getItem('smd_auth_token'));
-      expect(clearedToken).toBeNull();
-    }
+    const signOutBtn = page.locator('button:has-text("Sign Out")');
+    await signOutBtn.click();
+    await expect(page.locator('input[type="password"]')).toBeVisible({ timeout: 10000 });
+    const clearedToken = await page.evaluate(() => sessionStorage.getItem('smd_auth_token'));
+    expect(clearedToken).toBeNull();
   });
 });

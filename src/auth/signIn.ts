@@ -3,7 +3,8 @@ import { storeToken } from './identityToken';
 
 export function parseJwtPayload(token: string): Record<string, unknown> | null {
   try {
-    const base64Url = token.split('.')[1];
+    const parts = token.split('.');
+    const base64Url = parts.length === 2 ? parts[0] : (parts.length === 3 ? parts[1] : null);
     if (!base64Url) return null;
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
     const jsonPayload = decodeURIComponent(

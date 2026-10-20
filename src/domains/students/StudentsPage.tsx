@@ -50,7 +50,10 @@ export const StudentsPage: React.FC = () => {
     setFormLoading(true);
     try {
       if (editingStudent) {
-        await updateStudent(editingStudent.student_id, input, token);
+        const updated = await updateStudent(editingStudent.student_id, input, token);
+        if (selectedStudent) {
+          setSelectedStudent(updated);
+        }
       } else {
         await createStudent(input, token);
       }
@@ -62,7 +65,7 @@ export const StudentsPage: React.FC = () => {
     }
   };
 
-  if (selectedStudent) {
+  if (selectedStudent && !editingStudent) {
     return (
       <StudentProfilePage
         student={selectedStudent}

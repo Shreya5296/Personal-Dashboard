@@ -20,6 +20,7 @@ export const FeeObligationList: React.FC<{ studentId?: string }> = ({ studentId 
   const [payingFee, setPayingFee] = useState<FeeObligation | null>(null);
   const [formLoading, setFormLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -51,11 +52,14 @@ export const FeeObligationList: React.FC<{ studentId?: string }> = ({ studentId 
   const handleRecordPayment = async (input: PaymentInput) => {
     setFormLoading(true);
     setSuccessMessage(null);
+    setPaymentError(null);
     try {
       await recordPayment(input, token);
       setPayingFee(null);
       setSuccessMessage(`Payment of ₹${input.amount.toLocaleString('en-IN')} recorded successfully.`);
       await loadData();
+    } catch (err: unknown) {
+      setPaymentError((err as Error).message || 'Failed to record payment');
     } finally {
       setFormLoading(false);
     }
@@ -114,12 +118,17 @@ export const FeeObligationList: React.FC<{ studentId?: string }> = ({ studentId 
       {payingFee && (
         <div style={{ padding: 'var(--space-4)', backgroundColor: 'var(--color-bg-subtle)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)' }}>
           <h4 style={{ margin: '0 0 var(--space-3)' }}>Record Payment for {payingFee.description}</h4>
+          {paymentError && (
+            <div style={{ color: 'var(--color-danger-text)', padding: 'var(--space-2) var(--space-3)', backgroundColor: 'var(--color-danger-bg)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-3)' }}>
+              ⚠️ {paymentError}
+            </div>
+          )}
           <PaymentForm
             studentId={payingFee.student_id}
-            feeId={payingFee.fee_id}
+            feeId={payingFee.fee_id || payingFee.fee_obligation_id}
             defaultAmount={payingFee.outstanding_balance}
             onSubmit={handleRecordPayment}
-            onCancel={() => setPayingFee(null)}
+            onCancel={() => { setPayingFee(null); setPaymentError(null); }}
             isLoading={formLoading}
           />
         </div>

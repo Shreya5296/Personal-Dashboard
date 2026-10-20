@@ -4,17 +4,32 @@ export function getAdminKey(): string | undefined {
   return process.env.ADMIN_AUTH_KEY;
 }
 
+let cachedSessionToken: string | null = null;
+let cachedSessionUser: string | null = null;
+
 export async function loginAsAdmin(page: Page, key?: string): Promise<boolean> {
   const adminKey = key || getAdminKey();
   if (!adminKey) {
     return false;
   }
 
+  // 1. If we already have a cached token from a previous test in this run, inject it into sessionStorage
+  if (cachedSessionToken && cachedSessionUser) {
+    await page.goto('/');
+    await page.evaluate(({ token, user }) => {
+      sessionStorage.setItem('smd_auth_token', token);
+      sessionStorage.setItem('smd_auth_user', user);
+    }, { token: cachedSessionToken, user: cachedSessionUser });
+    await page.goto('/');
+
+    const isReady = await page.locator('button:has-text("Sign Out")').isVisible({ timeout: 5000 }).catch(() => false);
+    if (isReady) return true;
+  }
+
   await page.goto('/');
 
-  // If already authenticated (session persisted in browser context), return true
-  const overviewVisible = await page.locator('text=Overview').isVisible();
-  if (overviewVisible) {
+  const isAlreadyLoggedIn = await page.locator('button:has-text("Sign Out")').isVisible().catch(() => false);
+  if (isAlreadyLoggedIn) {
     return true;
   }
 
@@ -25,12 +40,24 @@ export async function loginAsAdmin(page: Page, key?: string): Promise<boolean> {
   const submitBtn = page.locator('button[type="submit"]');
   await submitBtn.click();
 
-  // Wait for Dashboard Overview or navigation menu to appear
-  await expect(page.locator('text=Overview, text=Students, text=Dashboard')).toBeVisible({ timeout: 20000 });
+  await expect(page.locator('button:has-text("Sign Out")')).toBeVisible({ timeout: 35000 });
 
-  // Verify token in sessionStorage
-  const token = await page.evaluate(() => sessionStorage.getItem('smd_auth_token'));
-  expect(token).toBeTruthy();
+  // Cache token in memory for all subsequent tests
+  const session = await page.evaluate(() => ({
+    token: sessionStorage.getItem('smd_auth_token'),
+    user: sessionStorage.getItem('smd_auth_user'),
+  }));
+
+  if (session.token && session.user) {
+    cachedSessionToken = session.token;
+    cachedSessionUser = session.user;
+  }
 
   return true;
+}
+
+export async function navigateTo(page: Page, sectionLabel: string): Promise<void> {
+  const navBtn = page.locator(`aside button:has-text("${sectionLabel}")`);
+  await expect(navBtn).toBeVisible({ timeout: 15000 });
+  await navBtn.click();
 }

@@ -53,7 +53,7 @@ function updateRecordById(sheet, headerMapper, headerList, idField, idValue, upd
   }
 
   for (var i = 1; i < rawData.length; i++) {
-    if (rawData[i][idColIdx] === idValue) {
+    if (String(rawData[i][idColIdx] || '').trim() === String(idValue || '').trim()) {
       var currentRecord = headerMapper.rowToRecord(map, rawData[i]);
       for (var key in updates) {
         if (updates.hasOwnProperty(key)) {

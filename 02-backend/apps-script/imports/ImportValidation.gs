@@ -22,9 +22,9 @@ function validateImportRow(row, existingStudents) {
   if (existingStudents && existingStudents.length > 0) {
     for (var i = 0; i < existingStudents.length; i++) {
       var s = existingStudents[i];
-      var sName = ((s.first_name || '') + ' ' + (s.last_name || '')).trim().toLowerCase();
-      var sEmail = (s.parent_email || '').toLowerCase();
-      var sPhone = (s.primary_phone || '').trim();
+      var sName = String((s.first_name || '') + ' ' + (s.last_name || '')).trim().toLowerCase();
+      var sEmail = String(s.parent_email || '').toLowerCase();
+      var sPhone = String(s.primary_phone || '').trim();
 
       if (sName && sName === fullName.trim().toLowerCase()) {
         isDup = true;

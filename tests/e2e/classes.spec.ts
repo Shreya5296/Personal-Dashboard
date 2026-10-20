@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { loginAsAdmin } from './helpers/authHelper';
+import { loginAsAdmin, navigateTo } from './helpers/authHelper';
 import { generateSyntheticTestId } from './helpers/testNamespace';
 
 test.describe('E2E — Classes and Attendance Workflow', () => {
@@ -14,28 +14,32 @@ test.describe('E2E — Classes and Attendance Workflow', () => {
     const testId = generateSyntheticTestId('CLS');
     const topic = `Mathematics Tutorial ${testId}`;
 
-    await page.goto('/classes');
-    await expect(page.locator('button:has-text("+ Schedule Class")')).toBeVisible({ timeout: 10000 });
+    await navigateTo(page, 'Classes');
+    await expect(page.locator('button:has-text("+ Schedule Class")')).toBeVisible({ timeout: 15000 });
 
     // Open schedule form
     await page.locator('button:has-text("+ Schedule Class")').click();
-    await page.getByLabel('Class Topic / Title').fill(topic);
+    await page.waitForFunction(() => {
+      const select = document.querySelector('select');
+      return select && select.options.length > 0 && select.value !== '';
+    }, { timeout: 25000 });
+    await page.getByLabel('Topic / Session Name').fill(topic);
     await page.getByLabel('Duration (Minutes)').fill('45');
 
     // Submit form
-    await page.locator('button:has-text("Confirm Schedule")').click();
+    await page.locator('button:has-text("Schedule Class")').click();
 
     // Verify session row appears in schedule table
     const classRow = page.locator(`tr:has-text("${topic}")`);
-    await expect(classRow).toBeVisible({ timeout: 20000 });
+    await expect(classRow).toBeVisible({ timeout: 25000 });
     await expect(classRow.locator('text=45 min')).toBeVisible();
 
-    // Mark attendance as ATTENDED
-    const attendSelect = classRow.locator('select');
-    if (await attendSelect.isVisible()) {
-      await attendSelect.selectOption('ATTENDED');
+    // Mark attendance as ATTENDED if available
+    const attendedBtn = classRow.locator('button:has-text("Attended")');
+    if (await attendedBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await attendedBtn.click();
       // Verify attendance tone / status
-      await expect(classRow.locator('text=ATTENDED')).toBeVisible({ timeout: 15000 });
+      await expect(classRow.locator('text=ATTENDED')).toBeVisible({ timeout: 25000 });
     }
   });
 });
