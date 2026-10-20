@@ -75,6 +75,11 @@ NEXT ACTION
   * Classes & Attendance: classes.schedule and classes.recordAttendance registered, start_time/duration mapped, student picker added to scheduling.
   * Reports & Dashboard: camelCase and snake_case metrics aligned across Overview and Financial Summary.
   * Student Profile: integrated Classes & Attendance and Meeting Links tabs.
-- Full regression suite passing: 58/58 tests across 15 test suites. Clean build in 2.12s. All 111 files <= 149 lines.
-- All 64 backend files synchronized to Apps Script via clasp.
-- Next action: Owner interactive testing of dashboard screens on http://localhost:5173/ with synthetic data.
+- Full regression suite passing: 60/60 tests across 15 test suites. Clean build in 718ms. All 111 files <= 149 lines.
+- All 64 backend files synchronized to Apps Script via clasp; deployment AKfycbx4d_VG4CsZIEAomX_OjNMuej06ktTYmKLME5ennLsI7mx3Fn5b-YBu9CRqe7NwrUVH3w redeployed to version 2 in-place.
+- Student creation debugged and resolved:
+  * Traced exact payload from StudentForm -> studentApi -> apiClient -> RequestParser -> StudentHandlers -> StudentService -> StudentValidation.
+  * Resolved field mismatch by adding frontend adaptStudentInput (first_name, last_name, parent_guardian_name, primary_phone, parent_email) and backend fallback normalization.
+  * Replaced blocking browser alert() with inline error banner and field-level error mapping to prevent stuck "Processing" state.
+  * Automated tests added covering the exact user input payload and error mapping.
+- Next action: Owner interactive verification of student creation in local dashboard at http://localhost:5173/.

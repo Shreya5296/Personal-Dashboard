@@ -33,3 +33,22 @@ export function validateStudentInput(input: Partial<StudentInput>): ValidationRe
     errors,
   };
 }
+
+export function mapApiErrorsToFields(details: Record<string, unknown>): Record<string, string> {
+  const fieldErrors: Record<string, string> = {};
+  for (const [key, val] of Object.entries(details)) {
+    const msg = String(val);
+    if (key === 'first_name' || key === 'last_name') fieldErrors.full_name = msg;
+    else if (key === 'parent_guardian_name') fieldErrors.parent_name = msg;
+    else if (key === 'primary_phone') {
+      fieldErrors.parent_phone = msg;
+      fieldErrors.phone = msg;
+    } else if (key === 'parent_email') {
+      fieldErrors.email = msg;
+      fieldErrors.parent_email = msg;
+    } else {
+      fieldErrors[key] = msg;
+    }
+  }
+  return fieldErrors;
+}

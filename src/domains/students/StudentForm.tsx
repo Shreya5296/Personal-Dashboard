@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Student, StudentInput } from './studentTypes';
-import { validateStudentInput } from './studentValidation';
+import { validateStudentInput, mapApiErrorsToFields } from './studentValidation';
 import { FormField } from '../../components/forms/FormField';
 import { Button } from '../../components/buttons/Button';
+import { ApiClientError } from '../../api/apiErrors';
 
 export interface StudentFormProps {
   initialStudent?: Student | null;
@@ -28,6 +29,7 @@ export const StudentForm: React.FC<StudentFormProps> = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const handleChange = (field: keyof StudentInput, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -38,20 +40,42 @@ export const StudentForm: React.FC<StudentFormProps> = ({
         return next;
       });
     }
+    if (serverError) setServerError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setServerError(null);
     const validation = validateStudentInput(formData);
     if (!validation.isValid) {
       setErrors(validation.errors);
       return;
     }
-    await onSubmit(formData);
+    try {
+      await onSubmit(formData);
+    } catch (err: unknown) {
+      if (err instanceof ApiClientError && err.details) {
+        setErrors(mapApiErrorsToFields(err.details));
+      }
+      setServerError((err as Error).message || 'Failed to save student');
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+      {serverError && (
+        <div style={{
+          padding: '0.75rem 1rem',
+          backgroundColor: '#fee2e2',
+          border: '1px solid #ef4444',
+          borderRadius: 'var(--radius-md)',
+          color: '#b91c1c',
+          fontSize: '0.875rem'
+        }}>
+          {serverError}
+        </div>
+      )}
+
       <FormField label="Full Name" required error={errors.full_name}>
         <input
           type="text"

@@ -10,9 +10,14 @@ import StudentService from '../../02-backend/apps-script/students/StudentService
 // @ts-ignore
 import StudentRepository from '../../02-backend/apps-script/students/StudentRepository.gs';
 // @ts-ignore
+import StudentValidation from '../../02-backend/apps-script/students/StudentValidation.gs';
+// @ts-ignore
 import EnrollmentService from '../../02-backend/apps-script/enrollments/EnrollmentService.gs';
 // @ts-ignore
 import EnrollmentRepository from '../../02-backend/apps-script/enrollments/EnrollmentRepository.gs';
+
+import { adaptStudentInput } from '../../src/domains/students/studentApi';
+import { mapApiErrorsToFields } from '../../src/domains/students/studentValidation';
 
 describe('Phase 5 — Students and Enrollments Domain Services', () => {
   let spreadsheet: MockSpreadsheet;
@@ -64,6 +69,65 @@ describe('Phase 5 — Students and Enrollments Domain Services', () => {
     const reactivateRes = StudentService.Students_reactivate(spreadsheet, stuId, actor);
     expect(reactivateRes.success).toBe(true);
     expect(reactivateRes.data.student_status).toBe('ACTIVE');
+  });
+
+  it('handles the exact user form submission payload safely', () => {
+    const rawUserInput = {
+      full_name: 'test Student',
+      email: 'student@example.com',
+      phone: '9876543210',
+      parent_name: 'test parent',
+      parent_phone: '9876543210',
+      parent_email: '',
+      notes: ''
+    };
+
+    // 1. Frontend adapter maps to canonical backend columns
+    const adapted = adaptStudentInput(rawUserInput);
+    expect(adapted.first_name).toBe('test');
+    expect(adapted.last_name).toBe('Student');
+    expect(adapted.parent_guardian_name).toBe('test parent');
+    expect(adapted.primary_phone).toBe('9876543210');
+    expect(adapted.parent_email).toBe('student@example.com');
+
+    // 2. Backend validation validates both raw and adapted inputs
+    const rawVal = StudentValidation.validateStudentInput(rawUserInput, false);
+    expect(rawVal.valid).toBe(true);
+
+    const adaptedVal = StudentValidation.validateStudentInput(adapted, false);
+    expect(adaptedVal.valid).toBe(true);
+
+    // 3. Backend service successfully creates student from either format
+    const createRes = StudentService.Students_create(spreadsheet, adapted, actor);
+    expect(createRes.success).toBe(true);
+    expect(createRes.data.student_id.startsWith('stu_')).toBe(true);
+    expect(createRes.data.first_name).toBe('test');
+    expect(createRes.data.last_name).toBe('Student');
+    expect(createRes.data.full_name).toBe('test Student');
+    expect(createRes.data.parent_name).toBe('test parent');
+    expect(createRes.data.email).toBe('student@example.com');
+  });
+
+  it('safely validates inputs and maps server error details back to UI form fields', () => {
+    // Missing required fields
+    const invalidInput = {
+      full_name: '',
+      email: 'not-an-email',
+      parent_email: 'bad-email'
+    };
+
+    const val = StudentValidation.validateStudentInput(invalidInput, false);
+    expect(val.valid).toBe(false);
+    expect(val.errors.first_name).toBeDefined();
+    expect(val.errors.parent_guardian_name).toBeDefined();
+    expect(val.errors.primary_phone).toBeDefined();
+
+    // Mapping to frontend field errors
+    const uiErrors = mapApiErrorsToFields(val.errors);
+    expect(uiErrors.full_name).toBe('First name is required');
+    expect(uiErrors.parent_name).toBe('Parent or guardian name is required');
+    expect(uiErrors.parent_phone).toBe('Primary phone is required');
+    expect(uiErrors.phone).toBe('Primary phone is required');
   });
 
   it('creates and manages enrollments linked to a student', () => {

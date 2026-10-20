@@ -31,18 +31,23 @@ function Students_create(spreadsheet, data, actor) {
     rawLast = parts.slice(1).join(' ');
   }
   var rawParent = data.parent_guardian_name || data.parent_name || '';
-  var rawPhone = data.primary_phone || data.phone || data.parent_phone || '';
+  var rawPhone = data.primary_phone || data.parent_phone || data.phone || '';
+  var rawEmail = data.parent_email || data.email || '';
+  var rawSecondaryPhone = data.secondary_phone || (data.parent_phone && data.parent_phone !== rawPhone ? data.parent_phone : (data.phone && data.phone !== rawPhone ? data.phone : ''));
 
   var normalized = Object.assign({}, data, {
     first_name: rawFirst,
     last_name: rawLast,
     parent_guardian_name: rawParent,
-    primary_phone: rawPhone
+    primary_phone: rawPhone,
+    parent_email: rawEmail,
+    secondary_phone: rawSecondaryPhone
   });
 
   var v = _stuVal.validateStudentInput(normalized, false);
   if (!v.valid) {
-    return { success: false, code: 'VALIDATION_ERROR', message: 'Student validation failed', details: v.errors };
+    var errMsgs = Object.keys(v.errors).map(function(k) { return v.errors[k]; }).join(', ');
+    return { success: false, code: 'VALIDATION_ERROR', message: 'Student validation failed: ' + errMsgs, details: v.errors };
   }
 
   var now = new Date().toISOString();
@@ -90,9 +95,28 @@ function Students_update(spreadsheet, studentId, updates, actor) {
     return { success: false, code: 'RECORD_NOT_FOUND', message: 'Student not found: ' + studentId };
   }
 
-  var v = _stuVal.validateStudentInput(updates, true);
+  var rawFirst = updates.first_name;
+  var rawLast = updates.last_name;
+  if (!rawFirst && updates.full_name) {
+    var parts = String(updates.full_name).trim().split(/\s+/);
+    rawFirst = parts[0];
+    rawLast = parts.slice(1).join(' ');
+  }
+  var rawParent = updates.parent_guardian_name || updates.parent_name;
+  var rawPhone = updates.primary_phone || updates.parent_phone || updates.phone;
+  var rawEmail = updates.parent_email || updates.email;
+
+  var normalized = Object.assign({}, updates);
+  if (rawFirst !== undefined) normalized.first_name = rawFirst;
+  if (rawLast !== undefined) normalized.last_name = rawLast;
+  if (rawParent !== undefined) normalized.parent_guardian_name = rawParent;
+  if (rawPhone !== undefined) normalized.primary_phone = rawPhone;
+  if (rawEmail !== undefined) normalized.parent_email = rawEmail;
+
+  var v = _stuVal.validateStudentInput(normalized, true);
   if (!v.valid) {
-    return { success: false, code: 'VALIDATION_ERROR', message: 'Validation failed', details: v.errors };
+    var errMsgs = Object.keys(v.errors).map(function(k) { return v.errors[k]; }).join(', ');
+    return { success: false, code: 'VALIDATION_ERROR', message: 'Validation failed: ' + errMsgs, details: v.errors };
   }
 
   var safeUpdates = {};
@@ -103,9 +127,12 @@ function Students_update(spreadsheet, studentId, updates, actor) {
 
   for (var i = 0; i < fields.length; i++) {
     var f = fields[i];
-    if (updates[f] !== undefined) {
-      safeUpdates[f] = updates[f] !== null ? String(updates[f]).trim() : '';
+    if (normalized[f] !== undefined) {
+      safeUpdates[f] = normalized[f] !== null ? String(normalized[f]).trim() : '';
     }
+  }
+  if (normalized.notes !== undefined && safeUpdates.internal_summary === undefined) {
+    safeUpdates.internal_summary = String(normalized.notes).trim();
   }
   safeUpdates.updated_at = new Date().toISOString();
 
@@ -122,7 +149,7 @@ function Students_update(spreadsheet, studentId, updates, actor) {
     request_id: actor.requestId
   });
 
-  return { success: true, data: updated };
+  return { success: true, data: Students_enrich(updated) };
 }
 
 function Students_archive(spreadsheet, studentId, actor) {

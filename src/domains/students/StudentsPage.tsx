@@ -57,8 +57,6 @@ export const StudentsPage: React.FC = () => {
       setIsCreating(false);
       setEditingStudent(null);
       await loadStudents();
-    } catch (err: unknown) {
-      alert((err as Error).message || 'Failed to save student');
     } finally {
       setFormLoading(false);
     }

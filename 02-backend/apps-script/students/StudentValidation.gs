@@ -15,14 +15,15 @@ function validateStudentInput(data, isUpdate) {
     if (!pgn) errors.parent_guardian_name = 'Parent or guardian name is required';
   }
 
-  if (!isUpdate || data.primary_phone !== undefined || data.phone !== undefined) {
-    var phone = data.primary_phone ? String(data.primary_phone).trim() : (data.phone ? String(data.phone).trim() : '');
+  if (!isUpdate || data.primary_phone !== undefined || data.phone !== undefined || data.parent_phone !== undefined) {
+    var phone = data.primary_phone ? String(data.primary_phone).trim() : (data.parent_phone ? String(data.parent_phone).trim() : (data.phone ? String(data.phone).trim() : ''));
     if (!phone) errors.primary_phone = 'Primary phone is required';
   }
 
-  if (data.parent_email) {
-    var email = String(data.parent_email).trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  var rawEmail = data.parent_email || data.email;
+  if (rawEmail) {
+    var email = String(rawEmail).trim();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       errors.parent_email = 'Invalid email address format';
     }
   }
