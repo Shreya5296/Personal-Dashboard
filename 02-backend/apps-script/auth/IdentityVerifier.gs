@@ -1,10 +1,11 @@
 /**
- * IdentityVerifier: Verifies identity tokens.
- * In Apps Script production runtime, calls Google OAuth2 tokeninfo and enforces cryptographic validation.
- * Synthetic mock tokens are rejected in production runtime.
+ * IdentityVerifier: Cryptographic token verification service.
+ * Verifies server-issued HMAC-SHA256 session tokens against the secret key and admin allowlist.
+ * Zero GCP dependency: Does not require Google Cloud Console or external OAuth endpoints.
  */
 
-var _validateClaims = typeof validateTokenClaims === 'function' ? validateTokenClaims : (typeof require !== 'undefined' ? require('./TokenValidation.gs').validateTokenClaims : null);
+var _validateHmac = typeof validateHmacSessionToken === 'function' ? validateHmacSessionToken : (typeof require !== 'undefined' ? require('./TokenValidation.gs').validateHmacSessionToken : null);
+var _getAllowlist = typeof getAdminAllowlist === 'function' ? getAdminAllowlist : (typeof require !== 'undefined' ? require('./AdminAuthorization.gs').getAdminAllowlist : null);
 
 var _testMockAuthEnabled = false;
 
@@ -12,49 +13,46 @@ function setTestMockAuthEnabled(enabled) {
   _testMockAuthEnabled = !!enabled;
 }
 
-function verifyIdentityToken(token, expectedAudience) {
+function verifyIdentityToken(token) {
   if (!token || typeof token !== 'string') {
     return { valid: false, code: 'UNAUTHORIZED', message: 'Missing identity token' };
   }
 
-  // Strictly reject synthetic mock tokens in live Google Apps Script runtime
+  // Reject mock tokens in production runtime unconditionally
   if (token.indexOf('mock_token_for_') === 0 || token === 'mock_admin_token') {
     if (typeof UrlFetchApp !== 'undefined') {
       return { valid: false, code: 'UNAUTHORIZED', message: 'Synthetic mock tokens are rejected in production runtime' };
     }
-    // Safe test-only runner in Node.js
     if (_testMockAuthEnabled || (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'test')) {
-      var email = token.replace('mock_token_for_', '').replace('mock_admin_token', 'admin@example.com').toLowerCase().trim();
+      var email = token.replace('mock_token_for_', '').replace('mock_admin_token', 'ashreya0502@gmail.com').toLowerCase().trim();
       return { valid: true, email: email, actorId: 'usr_' + email };
     }
     return { valid: false, code: 'UNAUTHORIZED', message: 'Mock authentication is disabled' };
   }
 
-  if (token === 'expired_token') {
-    return { valid: false, code: 'UNAUTHORIZED', message: 'Token has expired' };
-  }
-
-  // Live Google Apps Script UrlFetchApp verification
-  if (typeof UrlFetchApp !== 'undefined') {
-    try {
-      var url = 'https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(token);
-      var response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
-      if (response.getResponseCode() !== 200) {
-        return { valid: false, code: 'UNAUTHORIZED', message: 'Google identity verification failed' };
-      }
-      var claims = JSON.parse(response.getContentText());
-      if (_validateClaims) {
-        var result = _validateClaims(claims, expectedAudience);
-        if (!result.valid) return result;
-        return { valid: true, email: result.email, actorId: 'usr_' + result.email };
-      }
-      return { valid: true, email: claims.email.toLowerCase().trim(), actorId: 'usr_' + claims.email.toLowerCase().trim() };
-    } catch (e) {
-      return { valid: false, code: 'DEPENDENCY_UNAVAILABLE', message: 'Identity verification service unavailable' };
+  var secretKey = null;
+  if (typeof PropertiesService !== 'undefined') {
+    var props = PropertiesService.getScriptProperties();
+    if (props) {
+      secretKey = props.getProperty('ADMIN_AUTH_KEY') || props.getProperty('ADMIN_SECRET_KEY');
     }
   }
 
-  return { valid: false, code: 'UNAUTHORIZED', message: 'Invalid identity credential' };
+  // Fallback for test runner in Node.js
+  if (!secretKey && typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'test') {
+    secretKey = 'test_admin_secret_key_123';
+  }
+
+  if (!secretKey) {
+    return { valid: false, code: 'CONFIGURATION_ERROR', message: 'ADMIN_AUTH_KEY is not configured in Script Properties' };
+  }
+
+  var allowlist = _getAllowlist ? _getAllowlist() : ['ashreya0502@gmail.com'];
+  if (_validateHmac) {
+    return _validateHmac(token, secretKey, allowlist);
+  }
+
+  return { valid: false, code: 'UNAUTHORIZED', message: 'Token validator unavailable' };
 }
 
 if (typeof module !== 'undefined' && module.exports) {

@@ -12,7 +12,7 @@ function getAdminAllowlist() {
     }
   }
   // Default development/test fallback
-  return ['admin@example.com', 'admin@synthetic-test.local'];
+  return ['ashreya0502@gmail.com', 'admin@example.com', 'admin@synthetic-test.local'];
 }
 
 function isAuthorizedAdmin(verifiedEmail) {

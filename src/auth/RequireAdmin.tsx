@@ -1,11 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from './AuthProvider';
 import { getRuntimeConfig } from '../config/runtimeConfig';
-import { GoogleSignInButton } from './GoogleSignInButton';
+import { sendApiRequest } from '../api/apiClient';
+import { AuthUser } from './authState';
 
 export const RequireAdmin: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { status, user, signInWithToken } = useAuth();
   const config = getRuntimeConfig();
+  const [accessKey, setAccessKey] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   if (status === 'loading') {
     return (
@@ -16,12 +20,37 @@ export const RequireAdmin: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   if (status === 'unauthenticated' || !user) {
-    const handleDevLogin = () => {
-      signInWithToken('mock_admin_token', {
-        email: 'admin@example.com',
-        name: 'Authorized Administrator',
-        isAdmin: true,
-      });
+    const handleLogin = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!accessKey.trim()) return;
+
+      setIsSubmitting(true);
+      setLoginError(null);
+
+      try {
+        if (!config.appsScriptUrl && config.enableMockAuth) {
+          signInWithToken('mock_admin_token', {
+            email: 'ashreya0502@gmail.com',
+            name: 'Authorized Administrator',
+            isAdmin: true,
+          });
+          return;
+        }
+
+        const res = await sendApiRequest<{ token: string; user: AuthUser }>('auth.login', {
+          key: accessKey.trim(),
+        });
+
+        if (res.ok && res.data) {
+          signInWithToken(res.data.token, res.data.user);
+        } else {
+          setLoginError(res.error?.message || 'Invalid administrator access key');
+        }
+      } catch (err: unknown) {
+        setLoginError((err as Error)?.message || 'Authentication request failed');
+      } finally {
+        setIsSubmitting(false);
+      }
     };
 
     return (
@@ -43,36 +72,54 @@ export const RequireAdmin: React.FC<{ children: React.ReactNode }> = ({ children
           boxShadow: 'var(--shadow-md)',
           textAlign: 'center',
         }}>
-          <h1 style={{ fontSize: 'var(--font-size-2xl)', marginBottom: 'var(--space-2)' }}>Student Management</h1>
-          <p style={{ color: 'var(--color-text-muted)', marginBottom: 'var(--space-6)' }}>
-            Sign in with an authorized Google account to access administrator controls.
+          <h1 style={{ fontSize: 'var(--font-size-2xl)', marginBottom: 'var(--space-2)' }}>Personal Dashboard</h1>
+          <p style={{ color: 'var(--color-text-muted)', marginBottom: 'var(--space-6)', fontSize: 'var(--font-size-sm)' }}>
+            Enter your administrator access key to authenticate.
           </p>
 
-          <div style={{ minHeight: '44px', display: 'flex', justifyContent: 'center', flexDirection: 'column', gap: 'var(--space-3)' }}>
-            {config.googleClientId && (
-              <GoogleSignInButton clientId={config.googleClientId} onSuccess={signInWithToken} />
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+            <input
+              type="password"
+              placeholder="Administrator Access Key"
+              value={accessKey}
+              onChange={(e) => setAccessKey(e.target.value)}
+              disabled={isSubmitting}
+              autoFocus
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-md)',
+                fontSize: 'var(--font-size-sm)',
+                boxSizing: 'border-box',
+              }}
+            />
+
+            {loginError && (
+              <div style={{ color: 'var(--color-danger)', fontSize: 'var(--font-size-xs)', textAlign: 'left' }}>
+                ⚠️ {loginError}
+              </div>
             )}
 
-            {config.enableMockAuth && !config.googleClientId && (
-              <button
-                type="button"
-                onClick={handleDevLogin}
-                style={{
-                  width: '100%',
-                  padding: '10px 16px',
-                  backgroundColor: 'var(--color-primary)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: 'var(--radius-md)',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  fontSize: 'var(--font-size-sm)',
-                }}
-              >
-                Sign In as Administrator (Demo / Dev)
-              </button>
-            )}
-          </div>
+            <button
+              type="submit"
+              disabled={isSubmitting || !accessKey.trim()}
+              style={{
+                width: '100%',
+                padding: '10px 16px',
+                backgroundColor: 'var(--color-primary)',
+                color: 'white',
+                border: 'none',
+                borderRadius: 'var(--radius-md)',
+                cursor: isSubmitting || !accessKey.trim() ? 'not-allowed' : 'pointer',
+                fontWeight: 600,
+                fontSize: 'var(--font-size-sm)',
+                opacity: isSubmitting || !accessKey.trim() ? 0.7 : 1,
+              }}
+            >
+              {isSubmitting ? 'Authenticating...' : 'Sign In as Administrator'}
+            </button>
+          </form>
         </div>
       </div>
     );
@@ -82,7 +129,7 @@ export const RequireAdmin: React.FC<{ children: React.ReactNode }> = ({ children
     return (
       <div style={{ padding: 'var(--space-8)', textAlign: 'center' }}>
         <h2>Access Denied</h2>
-        <p>Your Google account ({user.email}) is not on the administrator allowlist.</p>
+        <p>Your identity ({user.email}) is not on the administrator allowlist.</p>
       </div>
     );
   }

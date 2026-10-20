@@ -1,6 +1,7 @@
 /**
  * ApiEntry: Web App entry points for Google Apps Script.
  * Dispatches doPost and doGet to authentication, authorization, and routing.
+ * Zero GCP dependency: Uses server-side HMAC-SHA256 authentication.
  */
 
 var _parseReq = typeof parseApiRequest === 'function' ? parseApiRequest : (typeof require !== 'undefined' ? require('./RequestParser.gs').parseApiRequest : null);
@@ -11,6 +12,7 @@ var _routeOp = typeof routeOperation === 'function' ? routeOperation : (typeof r
 var _errRes = typeof createErrorResponse === 'function' ? createErrorResponse : (typeof require !== 'undefined' ? require('./ResponseFactory.gs').createErrorResponse : null);
 var _succRes = typeof createSuccessResponse === 'function' ? createSuccessResponse : (typeof require !== 'undefined' ? require('./ResponseFactory.gs').createSuccessResponse : null);
 var _jsonRes = typeof createJsonResponse === 'function' ? createJsonResponse : (typeof require !== 'undefined' ? require('./ResponseFactory.gs').createJsonResponse : null);
+var _handleLogin = typeof handleAuthLogin === 'function' ? handleAuthLogin : (typeof require !== 'undefined' ? require('../auth/AuthService.gs').handleAuthLogin : null);
 
 function doPost(e) {
   var requestId = 'req_init';
@@ -22,30 +24,27 @@ function doPost(e) {
     }
     requestId = req.requestId;
 
-    // 2. Authenticate caller (validates Google ID token and optional configured client ID audience)
-    var expectedAudience = null;
-    if (typeof PropertiesService !== 'undefined') {
-      try {
-        var props = PropertiesService.getScriptProperties();
-        if (props) {
-          expectedAudience = props.getProperty('GOOGLE_CLIENT_ID');
-        }
-      } catch (propErr) {
-        // PropertiesService fallback
+    // 2. Unauthenticated auth endpoint: Administrator login
+    if (req.operation === 'auth.login') {
+      var loginRes = _handleLogin ? _handleLogin(req.payload) : { success: false, code: 'UNAVAILABLE', message: 'Auth service unavailable' };
+      if (!loginRes.success) {
+        return _errRes(requestId, loginRes.code, loginRes.message, null, false);
       }
+      return _succRes(requestId, loginRes.data, null);
     }
 
-    var auth = _verifyToken(req.identityToken, expectedAudience);
+    // 3. Authenticate caller (validates HMAC-SHA256 session token)
+    var auth = _verifyToken(req.identityToken);
     if (!auth.valid) {
       return _errRes(requestId, auth.code || 'UNAUTHORIZED', auth.message, null, true);
     }
 
-    // 3. Authorize caller against administrator allowlist
+    // 4. Authorize caller against administrator allowlist
     if (!_isAdmin(auth.email)) {
       return _errRes(requestId, 'FORBIDDEN', 'Identity is not authorized to access this dashboard', null, false);
     }
 
-    // 4. Resolve spreadsheet
+    // 5. Resolve spreadsheet
     var spreadsheet = null;
     try {
       if (_getSpreadsheet) spreadsheet = _getSpreadsheet();
@@ -53,7 +52,7 @@ function doPost(e) {
       // Non-persistence operations can proceed without spreadsheet
     }
 
-    // 5. Build context and route operation
+    // 6. Build context and route operation
     var context = {
       operation: req.operation,
       payload: req.payload,

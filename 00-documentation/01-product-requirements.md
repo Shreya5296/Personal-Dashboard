@@ -28,6 +28,7 @@ The product is a private, admin-only web application.
 - **Frontend hosting:** Vercel, subject to current plan terms and eligibility.
 - **Source control:** GitHub.
 - **Initial user model:** One authorized administrator.
+- **Authentication:** Server-side HMAC-SHA256 signed session tokens via Apps Script Script Properties (Zero GCP / Google Cloud Console setup required).
 - **Initial deployment model:** One production instance for the administrator's student-management operation.
 
 The frontend must not read or write the master spreadsheet directly. All application data operations must pass through the backend.

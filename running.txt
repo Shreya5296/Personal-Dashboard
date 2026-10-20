@@ -63,11 +63,12 @@ CURRENT EXECUTION STATUS
 - Phase 11 (Controlled Data Migration) marked BLOCKED_ON_OWNER (synthetic import pipeline verified; live production data migration requires owner Google account, master spreadsheet, and authorization gate).
 - Phase 12 (Release and Handover) completed and verified (release audit complete, 43/43 tests passing, 0 line limit violations across 111 micro-files, clean production build, complete owner setup & operational runbooks).
 - Git branch: main. Git remote origin confirmed configured.
-- Line limit rule (<= 149 lines in src/ and public/) and architecture constraints confirmed (112 files verified).
+- Line limit rule (<= 149 lines in src/ and public/) and architecture constraints confirmed (111 files verified).
 - Implementation mode authorized using synthetic data and isolated local/test environments.
+- Decision: Zero Google Cloud Console / Zero GCP dependency architecture confirmed and implemented.
 
 NEXT ACTION
-- Script Properties verified: SPREADSHEET_ID exact match, ADMIN_EMAILS exact match, 12 tabs initialized.
-- Backend security hardening complete: diagnostic removed, mock token bypass blocked in production runtime, audience/issuer/expiry/email verification enforced, 63 files synchronized to Apps Script.
-- Frontend Google Identity Services integration complete (GoogleSignInButton.tsx, index.html).
-- Next step: Owner creates Google OAuth 2.0 Web Client ID in Google Cloud Console, adds GOOGLE_CLIENT_ID to Apps Script Script Properties, creates Web App deployment, and configures local .env.local.
+- Zero-GCP authentication deployed: Server-side HMAC-SHA256 session token authentication via Script Properties (AuthService.gs, TokenValidation.gs, IdentityVerifier.gs, ApiEntry.gs).
+- All 64 backend files synchronized to Apps Script. 50/50 tests passing.
+- Frontend Admin Access Key login implemented (RequireAdmin.tsx). Google Cloud Console, GIS, and Client ID dependencies completely removed.
+- Next step: Owner configures ADMIN_AUTH_KEY in Apps Script Script Properties, creates Web App deployment (Execute as: Me, Access: Anyone), and copies /exec URL into local .env.local.

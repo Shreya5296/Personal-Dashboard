@@ -14,11 +14,15 @@ import IdentityVerifier from '../../02-backend/apps-script/auth/IdentityVerifier
 // @ts-ignore
 import TokenValidation from '../../02-backend/apps-script/auth/TokenValidation.gs';
 // @ts-ignore
+import AuthService from '../../02-backend/apps-script/auth/AuthService.gs';
+// @ts-ignore
 import AdminAuthorization from '../../02-backend/apps-script/auth/AdminAuthorization.gs';
 
-describe('Backend Security Hardening & Token Verification', () => {
+describe('Zero-GCP Backend Security Hardening & Session Authentication', () => {
   let spreadsheet: MockSpreadsheet;
   const originalUrlFetchApp = (globalThis as unknown as { UrlFetchApp?: unknown }).UrlFetchApp;
+  const testSecretKey = 'test_admin_secret_key_123';
+  const adminEmail = 'ashreya0502@gmail.com';
 
   beforeEach(() => {
     spreadsheet = new MockSpreadsheet();
@@ -34,73 +38,67 @@ describe('Backend Security Hardening & Token Verification', () => {
     }
   });
 
-  it('rejects claims with expired timestamp', () => {
-    const expiredClaims = {
-      iss: 'accounts.google.com',
-      email: 'admin@example.com',
-      email_verified: true,
-      exp: Math.floor(Date.now() / 1000) - 300,
-    };
-    const res = TokenValidation.validateTokenClaims(expiredClaims, null);
+  it('authenticates admin with valid key and issues cryptographically signed HMAC token', () => {
+    const loginRes = AuthService.handleAuthLogin({ key: testSecretKey });
+    expect(loginRes.success).toBe(true);
+    expect(loginRes.data.user.email).toBe(adminEmail);
+    expect(loginRes.data.user.isAdmin).toBe(true);
+    expect(loginRes.data.token).toContain('.');
+
+    // Token must validate correctly
+    const validation = TokenValidation.validateHmacSessionToken(loginRes.data.token, testSecretKey, [adminEmail]);
+    expect(validation.valid).toBe(true);
+    expect(validation.email).toBe(adminEmail);
+  });
+
+  it('rejects login attempts with invalid administrator access key', () => {
+    const loginRes = AuthService.handleAuthLogin({ key: 'wrong_password_attempt' });
+    expect(loginRes.success).toBe(false);
+    expect(loginRes.code).toBe('UNAUTHORIZED');
+  });
+
+  it('rejects tampered token payloads and signatures', () => {
+    const validToken = TokenValidation.createHmacSessionToken(adminEmail, testSecretKey);
+    const [payloadBase64, sig] = validToken.split('.');
+
+    // Tamper with signature
+    const badSigToken = `${payloadBase64}.${sig.substring(0, sig.length - 2)}00`;
+    const res1 = TokenValidation.validateHmacSessionToken(badSigToken, testSecretKey, [adminEmail]);
+    expect(res1.valid).toBe(false);
+    expect(res1.code).toBe('UNAUTHORIZED');
+    expect(res1.message).toContain('Invalid token signature');
+
+    // Tamper with payload (elevate privileges or change email)
+    const forgedPayload = Buffer.from(JSON.stringify({
+      email: 'attacker@evil.com',
+      iss: 'personal-dashboard-backend',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    })).toString('base64');
+    const forgedToken = `${forgedPayload}.${sig}`;
+    const res2 = TokenValidation.validateHmacSessionToken(forgedToken, testSecretKey, [adminEmail]);
+    expect(res2.valid).toBe(false);
+    expect(res2.code).toBe('UNAUTHORIZED');
+  });
+
+  it('rejects expired session tokens', () => {
+    // Issue token with -10 second TTL
+    const expiredToken = TokenValidation.createHmacSessionToken(adminEmail, testSecretKey, -10);
+    const res = TokenValidation.validateHmacSessionToken(expiredToken, testSecretKey, [adminEmail]);
     expect(res.valid).toBe(false);
     expect(res.code).toBe('UNAUTHORIZED');
-    expect(res.message).toBe('Token has expired');
+    expect(res.message).toContain('expired');
   });
 
-  it('rejects claims with invalid issuer', () => {
-    const invalidIssuer = {
-      iss: 'https://malicious-issuer.com',
-      email: 'admin@example.com',
-      email_verified: true,
-      exp: Math.floor(Date.now() / 1000) + 3600,
-    };
-    const res = TokenValidation.validateTokenClaims(invalidIssuer, null);
+  it('rejects non-allowlisted email addresses even if signature is valid', () => {
+    const strangerToken = TokenValidation.createHmacSessionToken('stranger@example.com', testSecretKey);
+    const res = TokenValidation.validateHmacSessionToken(strangerToken, testSecretKey, [adminEmail]);
     expect(res.valid).toBe(false);
-    expect(res.code).toBe('UNAUTHORIZED');
-    expect(res.message).toBe('Invalid token issuer');
+    expect(res.code).toBe('FORBIDDEN');
   });
 
-  it('rejects unverified Google emails', () => {
-    const unverifiedClaims = {
-      iss: 'https://accounts.google.com',
-      email: 'admin@example.com',
-      email_verified: false,
-      exp: Math.floor(Date.now() / 1000) + 3600,
-    };
-    const res = TokenValidation.validateTokenClaims(unverifiedClaims, null);
-    expect(res.valid).toBe(false);
-    expect(res.code).toBe('UNAUTHORIZED');
-    expect(res.message).toBe('Google account email is not verified');
-  });
-
-  it('enforces audience matching when Google Client ID is configured', () => {
-    const validClaims = {
-      iss: 'accounts.google.com',
-      email: 'admin@example.com',
-      email_verified: true,
-      aud: '123456789-target.apps.googleusercontent.com',
-      exp: Math.floor(Date.now() / 1000) + 3600,
-    };
-
-    // Mismatched audience
-    const mismatch = TokenValidation.validateTokenClaims(validClaims, 'different-client-id.apps.googleusercontent.com');
-    expect(mismatch.valid).toBe(false);
-    expect(mismatch.code).toBe('UNAUTHORIZED');
-    expect(mismatch.message).toContain('audience does not match');
-
-    // Matching audience
-    const match = TokenValidation.validateTokenClaims(validClaims, '123456789-target.apps.googleusercontent.com');
-    expect(match.valid).toBe(true);
-    expect(match.email).toBe('admin@example.com');
-  });
-
-  it('strictly rejects synthetic mock tokens when running in production Apps Script runtime', () => {
-    // Simulate Apps Script runtime where UrlFetchApp exists
+  it('strictly rejects synthetic mock tokens in live Google Apps Script runtime', () => {
     (globalThis as unknown as { UrlFetchApp: unknown }).UrlFetchApp = {
-      fetch: () => ({
-        getResponseCode: () => 200,
-        getContentText: () => JSON.stringify({}),
-      }),
+      fetch: () => ({ getResponseCode: () => 200, getContentText: () => '{}' }),
     };
 
     const res = IdentityVerifier.verifyIdentityToken('mock_token_for_admin@example.com');
@@ -109,9 +107,52 @@ describe('Backend Security Hardening & Token Verification', () => {
     expect(res.message).toContain('Synthetic mock tokens are rejected in production runtime');
   });
 
-  it('rejects unauthorized Google accounts even if identity token is valid', () => {
-    expect(AdminAuthorization.isAuthorizedAdmin('stranger@example.com')).toBe(false);
-    expect(AdminAuthorization.isAuthorizedAdmin('')).toBe(false);
-    expect(AdminAuthorization.isAuthorizedAdmin(null)).toBe(false);
+  it('executes end-to-end doPost authentication and operation protection', () => {
+    // 1. auth.login through doPost
+    const loginPost = {
+      postData: {
+        contents: JSON.stringify({
+          apiVersion: '1',
+          operation: 'auth.login',
+          requestId: 'req_login_test',
+          payload: { key: testSecretKey },
+        }),
+      },
+    };
+    const loginRes = ApiEntry.doPost(loginPost);
+    expect(loginRes.payload.success).toBe(true);
+    const token = loginRes.payload.data.token;
+    expect(token).toBeTruthy();
+
+    // 2. Protected health operation with valid token
+    const healthPost = {
+      postData: {
+        contents: JSON.stringify({
+          apiVersion: '1',
+          operation: 'system.health',
+          requestId: 'req_health_test',
+          identityToken: token,
+          payload: {},
+        }),
+      },
+    };
+    const healthRes = ApiEntry.doPost(healthPost);
+    expect(healthRes.payload.success).toBe(true);
+    expect(healthRes.payload.data.status).toBe('ok');
+
+    // 3. Protected operation without token
+    const unauthPost = {
+      postData: {
+        contents: JSON.stringify({
+          apiVersion: '1',
+          operation: 'system.health',
+          requestId: 'req_unauth_test',
+          payload: {},
+        }),
+      },
+    };
+    const unauthRes = ApiEntry.doPost(unauthPost);
+    expect(unauthRes.payload.success).toBe(false);
+    expect(unauthRes.payload.error.code).toBe('UNAUTHORIZED');
   });
 });

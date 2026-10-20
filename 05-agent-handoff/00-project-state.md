@@ -44,9 +44,9 @@ Update every field below as work proceeds.
 | Last completed phase | Phase 12 — Release and Handover |
 | Current Git branch | main |
 | Last phase commit | e01832d |
-| Last full regression run | 49 vitest tests passed (100% pass, 112 micro-files checked) |
+| Last full regression run | 50 vitest tests passed (100% pass, 111 micro-files checked) |
 | Real-data use | Prohibited until security release gate passes |
-| Last state update | Frontend Google Identity Services integration complete (GoogleSignInButton.tsx, index.html); Vercel proxy feasibility evaluated |
+| Last state update | Zero-GCP architecture implemented: Google Cloud Console/OAuth dependency removed; native HMAC-SHA256 session token authentication deployed |
 
 ## 5. Phase Register
 
@@ -75,7 +75,7 @@ Keep one entry per unresolved blocker. Remove or close an entry only after verif
 | ID | Blocker / dependency | Impact | Owner / action required | Status | Evidence |
 |---|---|---|---|---|---|
 | B-001 | Specification and repository baseline audit | Required before implementation | Agent: completed Phase 0 audit | CLOSED | All repository documents verified; no conflicting specs. |
-| B-002 | Live Google Cloud OAuth client & production Apps Script deployment | Required for live production hosting; synthetic local/test environment used for development and test suites | Owner: configure production secrets in Vercel/Apps Script per Doc 07 | PENDING_OWNER_CONFIG | Synthetic and mock environments used for development and verification. |
+| B-002 | Production Apps Script Web App deployment & ADMIN_AUTH_KEY | Required for live frontend connection; synthetic local/test environment verified | Owner: configure ADMIN_AUTH_KEY in Apps Script Script Properties & create Web App deployment | PENDING_OWNER_CONFIG | Zero-GCP architecture verified (50/50 tests passing). |
 | B-003 | Clasp authorization for target Apps Script project | Required to push backend to project 1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL | Owner: re-authenticate clasp with spreadsheet owner account or share spreadsheet/script with infineo.live@gmail.com | CLOSED | Authenticated as ashreya0502@gmail.com; 63 backend files pushed successfully. |
 
 Do not let an unavailable credential, external account, deployment permission, or human-only action silently count as complete. Continue independent work that is safe, and mark dependent gates `BLOCKED` until the dependency is resolved.
@@ -87,8 +87,9 @@ This is a live index, not a place to store secret values. Keep the detailed regi
 | Input / setup item | Status | Where it must be configured | Secret value stored here? |
 |---|---|---|---|
 | Administrator identity / allowlist | VERIFIED | SPREADSHEET_ID and ADMIN_EMAILS (ashreya0502@gmail.com) verified via safe diagnostic | No |
-| Google Cloud / sign-in configuration | PENDING_CONFIG | SPREADSHEET_ID and ADMIN_EMAILS verified; GOOGLE_CLIENT_ID pending owner setup | No |
-| Apps Script deployment and permissions | HARDENED_READY_FOR_DEPLOY | Project ID: 1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL (63 files pushed, auth hardened) | No |
+| Google Cloud / OAuth configuration | NOT_REQUIRED | Excluded by project decision (Zero-GCP architecture) | No |
+| Administrator Access Key (`ADMIN_AUTH_KEY`) | PENDING_CONFIG | Secret key for server-side HMAC-SHA256 session tokens to be set in Script Properties | No |
+| Apps Script deployment and permissions | HARDENED_READY_FOR_DEPLOY | Project ID: 1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL (64 files pushed, HMAC auth deployed) | No |
 | Private canonical spreadsheet | INITIALIZED | Private Class Dashboard (ID: 1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8, 12 tabs initialized) | No |
 | Frontend hosting project and environment variables | NOT_VERIFIED | Owner-controlled Vercel project settings | No |
 | Git remote and repository permissions | VERIFIED | origin https://github.com/Shreya5296/Personal-Dashboard.git | No |
@@ -105,12 +106,12 @@ Record command, outcome, and concise evidence for each relevant check. A command
 | Secure frontend-to-backend feasibility | PASSED | Phase 1 spike verified (7/7 tests passed, spikes/feasibility/FEASIBILITY_REPORT.md) |
 | Formatting / lint | PASSED | Line limits & forbidden catch-all checks passing (scripts/check-line-limits.js) |
 | Type checking | PASSED | TypeScript strict checking (tsc --noEmit) passed |
-| Source-file line limit (maximum 149) | PASSED | Automated check passed (npm run check:lines, 112 files verified <= 149 lines) |
-| Unit tests | PASSED | Vitest runner passed (49/49 tests passed across 14 test files) |
+| Source-file line limit (maximum 149) | PASSED | Automated check passed (npm run check:lines, 111 files verified <= 149 lines) |
+| Unit tests | PASSED | Vitest runner passed (50/50 tests passed across 14 test files) |
 | Integration tests | PASSED | End-to-end lifecycle and domain service tests passed (14 test files, 100% pass) |
 | End-to-end / acceptance tests | PASSED | Full synthetic lifecycle test (tests/integration/endToEndLifecycle.test.ts) passed |
-| Security release gate | PASSED_LOCAL | Server-side token validation, admin allowlist, audience/issuer/expiry check, mock token rejection in prod runtime verified |
-| Full regression suite | PASSED | npm run check (111 files, 0 errors, 49 passed tests) and npm run build passed |
+| Security release gate | PASSED_LOCAL | Server-side HMAC token validation, admin allowlist, timing attack mitigation, mock token rejection in prod runtime verified |
+| Full regression suite | PASSED | npm run check (111 files, 0 errors, 50 passed tests) and npm run build passed |
 
 ## 9. Decisions and Specification Issues
 
@@ -139,4 +140,4 @@ Never infer that work was completed merely because the previous agent said it wa
 
 ## 11. Next Action
 
-Backend hardened and synchronized (mock bypass removed from prod runtime). Frontend Google Identity Services integration verified (official button rendering and GIS client included). Next action: Owner creates a Google OAuth 2.0 Web Client ID in Google Cloud Console, configures `GOOGLE_CLIENT_ID` in Apps Script Script Properties, creates the Apps Script Web App deployment, and sets `.env.local` to connect frontend and backend.
+Zero-GCP architecture verified and synchronized (all 64 backend files pushed to Apps Script; 50/50 tests passing; build clean). Next action: Owner adds `ADMIN_AUTH_KEY` to Apps Script Script Properties, creates the Web App deployment (Execute as: Me, Access: Anyone), and configures `VITE_APPS_SCRIPT_URL` in local `.env.local` to connect frontend and backend.

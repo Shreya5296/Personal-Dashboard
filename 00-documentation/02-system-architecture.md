@@ -35,10 +35,11 @@ The architecture must:
 - Frontend hosting: Vercel, subject to current plan terms and project eligibility
 - Backend: Google Apps Script Web App
 - Canonical datastore: One private Google Spreadsheet with defined tabs
+- Authentication: Server-side HMAC-SHA256 session token authentication via Script Properties (Zero GCP / Zero Google Cloud Console dependency)
 - Version control: GitHub
 - Local development: Node.js and npm
 
-No Supabase, separate SQL database, dedicated application server, or microservice infrastructure is required for the initial release.
+No Google Cloud Platform (GCP) project, OAuth consent screen, Supabase, separate SQL database, dedicated application server, or microservice infrastructure is required.
 
 ### 3.2 Logical component diagram
 

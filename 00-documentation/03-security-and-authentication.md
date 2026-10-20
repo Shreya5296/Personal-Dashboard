@@ -62,41 +62,51 @@ The administrator identity must be configured in protected backend configuration
 
 No student, parent, or staff accounts are included in Version 1.
 
-## 5. Authentication Flow
+## 5. Zero-GCP Authentication Architecture & Evaluation
 
-The selected Google identity flow must support the separate Vercel-hosted frontend and the Apps Script backend. The implementation must prove this flow in a small integration test before importing real student data.
+By firm project decision, Google Cloud Platform (GCP) and Google Cloud Console setup are explicitly excluded from this project. The project does NOT require a Google Cloud project, OAuth consent screen, or Google OAuth Client ID.
 
-Required logical flow:
+### 5.1 Platform Evaluation: Native Apps Script vs. Cross-Origin SPA
 
-1. The administrator opens the HTTPS frontend.
-2. The frontend starts the approved Google sign-in flow using the configured OAuth client.
-3. The identity provider returns an identity credential.
-4. The frontend sends the credential to the backend using the documented API transport.
-5. The backend verifies the credential using a trusted Google verification mechanism.
-6. The backend validates the token's signature or trusted verification result, issuer, audience, expiry, and verified identity as applicable to the chosen flow.
-7. The backend checks the verified identity against the administrator allowlist.
-8. Only after successful verification and authorization may the backend return protected data or perform a mutation.
-9. The frontend renders authenticated pages only after receiving a valid backend result.
-10. On sign-out or session expiry, the frontend clears protected application state and requires authentication again.
+1. **`Session.getActiveUser().getEmail()` Evaluation**:
+   - In Google Apps Script, when a Web App is deployed as *Execute as: Me* + *Who has access: Anyone*, Google intentionally does not pass incoming browser Google session cookies to the execution context. In this configuration, `Session.getActiveUser().getEmail()` returns an empty string `""` for cross-origin AJAX requests.
+   - When a Web App is deployed as *Execute as: User accessing the web app*, or *Who has access: Only myself*, direct browser navigation requires a Google login prompt. However, cross-origin AJAX `fetch()` from an external Single Page Application (hosted on Vercel or `localhost`) fails with CORS errors or 302 redirects to `accounts.google.com/ServiceLogin` because cross-origin JavaScript cannot complete Google's cookie-based authentication handshake.
+   - Conclusion: Native Google session cookies cannot authenticate cross-origin browser API requests without an external Google Cloud Console OAuth 2.0 Web Client ID.
 
-The exact token transport and browser integration must be specified in the implementation and tested in supported browsers. It must not be guessed from a successful local development request.
+2. **Selected Cryptographic Solution: Server-Side HMAC-SHA256 Session Tokens**:
+   - **Administrator Key Configuration**: The owner configures a private, high-entropy `ADMIN_AUTH_KEY` in Apps Script **Script Properties** (`PropertiesService.getScriptProperties().getProperty('ADMIN_AUTH_KEY')`). This key lives solely within Google's protected backend runtime and is never exposed in client code or source control.
+   - **Authentication Handshake (`auth.login`)**:
+     1. The administrator enters their Admin Access Key into the dashboard login screen.
+     2. The frontend sends `auth.login` with the key via `POST` to the Apps Script endpoint.
+     3. The backend executes a constant-time comparison against `ADMIN_AUTH_KEY` to prevent timing side-channel attacks.
+     4. On successful verification, the backend generates an HMAC-SHA256 signed session token using Google Apps Script's native `Utilities.computeHmacSha256Signature()`.
+     5. The token embeds the caller identity (`ashreya0502@gmail.com`), issuer (`personal-dashboard-backend`), issue timestamp, expiration (default 8 hours), and a cryptographic nonce.
+     6. Format: `payloadBase64.hmacSha256SignatureHex`.
+   - **Operation Authorization**:
+     1. Every subsequent request transmits the signed session token.
+     2. The backend recomputes the HMAC-SHA256 signature using the server's private `ADMIN_AUTH_KEY` and compares in constant time.
+     3. The backend verifies that the token is unexpired and that the verified email matches `ADMIN_EMAILS`.
+     4. Only requests with a cryptographically valid, unexpired token matching the administrator allowlist are permitted to proceed.
 
 ## 6. Token Verification Requirements
 
 The backend must never trust an identity claim supplied as ordinary request data.
 
 It must not authorize a request based only on:
-
-- A request field such as `email` or `userEmail`.
+- An unverified request field such as `email` or `userEmail`.
 - A client-controlled value such as `isAdmin: true`.
 - A user ID stored in browser storage.
-- A decoded token payload whose signature and claims were not verified.
-- A token issued for a different OAuth client or audience.
+- A decoded token payload whose cryptographic signature was not verified on the server.
+- An unsigned token, hardcoded shared secret in client code, or mock bypass.
 - A frontend route guard or hidden navigation item.
 
-The backend must verify tokens using a documented, supported Google identity verification method. Verification must include the expected audience/client ID, valid issuer, expiration, and verified identity claims required by the selected flow.
+The backend validates tokens using native HMAC-SHA256 cryptographic verification. Verification includes:
+- Cryptographic signature check against the server-held `ADMIN_AUTH_KEY`.
+- Valid issuer (`personal-dashboard-backend`).
+- Expiration timestamp check (`exp > nowSec`).
+- Verified identity comparison against the server-configured `ADMIN_EMAILS` allowlist.
 
-If verification requires a remote endpoint, the backend must validate the trusted endpoint response and fail closed when the endpoint is unavailable, malformed, or reports an invalid token.
+If token verification fails or the signature is invalid, the backend fails closed and returns `401 UNAUTHORIZED`. If the identity does not match the allowlist, it returns `403 FORBIDDEN`.
 
 The implementation must not invent its own cryptographic token verification.
 

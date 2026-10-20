@@ -6,6 +6,7 @@
 - **Document set version:** 1.0.0
 - **Status:** Architecture documentation
 - **Primary user:** One authorized administrator
+- **Authentication:** Server-side HMAC-SHA256 signed session tokens via Apps Script Script Properties (Zero GCP / Google Cloud Console dependency)
 - **Frontend:** React, TypeScript, Vite
 - **Backend:** Google Apps Script Web App
 - **Datastore:** Google Sheets

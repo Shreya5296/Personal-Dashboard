@@ -49,9 +49,9 @@ function parseApiRequest(e) {
     valid: true,
     requestId: requestId,
     operation: envelope.operation.trim(),
-    identityToken: envelope.identityToken || null,
+    identityToken: envelope.identityToken || envelope.token || null,
     idempotencyKey: envelope.idempotencyKey || null,
-    payload: (envelope.payload && typeof envelope.payload === 'object') ? envelope.payload : {}
+    payload: (envelope.payload && typeof envelope.payload === 'object') ? envelope.payload : ((envelope.data && typeof envelope.data === 'object') ? envelope.data : {})
   };
 }
 

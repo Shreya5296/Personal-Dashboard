@@ -32,9 +32,9 @@ The owner should supply or explicitly confirm the following. Use the status valu
 
 ### 3.1 Identity and access
 
-- [ ] **Administrator Google account:** the exact Google account that is permitted to use the production dashboard.
-- [ ] **Development/test identity:** a test identity for validating the sign-in and authorization flow without exposing production data, if the chosen integration requires one.
-- [ ] **OAuth ownership:** which Google Cloud project and OAuth client will be used, and who can administer it.
+- [ ] **Administrator identity:** the exact Google account that is permitted to use the production dashboard (`ashreya0502@gmail.com`).
+- [ ] **Administrator Access Key (`ADMIN_AUTH_KEY`):** a high-entropy secret key configured in Apps Script Script Properties for signing HMAC-SHA256 session tokens.
+- [ ] **OAuth / GCP Status:** NOT_REQUIRED. Firm project decision: Google Cloud Console, GCP projects, OAuth consent screens, and OAuth clients are explicitly excluded from this project.
 - [ ] **Authorized operator:** who is allowed to manage the Apps Script project, master spreadsheet, Vercel project, and Git repository.
 - [ ] **Recovery access:** a secure recovery path for the Google account and project assets.
 
@@ -232,9 +232,9 @@ Maintain this compact register outside any secret store. Use references or maske
 
 | Input | Status | Safe reference / notes | Blocks |
 |---|---|---|---|
-| Administrator identity | PENDING | | Protected production access |
-| Development/test identity | PENDING | | Authentication integration proof |
-| OAuth project/client ownership | PENDING | | Authentication integration proof |
+| Administrator identity | CONFIRMED | ashreya0502@gmail.com (verified in Script Properties) | Protected production access |
+| Administrator Access Key (`ADMIN_AUTH_KEY`) | PENDING_CONFIG | To be configured in Apps Script Script Properties | Protected API session authentication |
+| OAuth project/client ownership | NOT_REQUIRED | Excluded by project decision (Zero-GCP architecture) | None |
 | GitHub repository and permissions | PENDING | | Remote collaboration and backup |
 | Vercel project/domain | PENDING | | Frontend deployment |
 | Development Apps Script deployment | UPLOADED | Target Project ID: 1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL (63 files uploaded) | Backend integration |

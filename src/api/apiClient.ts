@@ -19,10 +19,13 @@ export async function sendApiRequest<T = unknown>(
   const requestId = options.requestId || generateRequestId();
 
   const bodyData = {
+    apiVersion: '1',
     operation,
     token: options.token || undefined,
+    identityToken: options.token || undefined,
     requestId,
     data: payload,
+    payload: payload,
   };
 
   if (!url) {
