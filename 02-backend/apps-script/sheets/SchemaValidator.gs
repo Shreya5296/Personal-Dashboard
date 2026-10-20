@@ -17,7 +17,22 @@ function validateSpreadsheetSchema(spreadsheet, registry) {
     var expectedHeaders = registry.getExpectedHeaders(name);
     if (!expectedHeaders) continue;
 
-    var actualHeaders = sheet.getHeaders ? sheet.getHeaders() : [];
+    var actualHeaders = [];
+    if (typeof sheet.getHeaders === 'function') {
+      actualHeaders = sheet.getHeaders();
+    } else if (typeof sheet.getDataRange === 'function') {
+      try {
+        var r = sheet.getDataRange();
+        var vals = r ? r.getValues() : [];
+        actualHeaders = (vals && vals.length > 0) ? vals[0] : [];
+      } catch (e) {
+        actualHeaders = [];
+      }
+    } else if (typeof sheet.getData === 'function') {
+      var d = sheet.getData();
+      actualHeaders = (d && d.length > 0) ? d[0] : [];
+    }
+
     if (!actualHeaders || actualHeaders.length === 0) {
       errors.push('Sheet ' + name + ' has no header row or is empty');
       continue;

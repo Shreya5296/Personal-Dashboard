@@ -12,11 +12,15 @@ import StudentRepository from '../../02-backend/apps-script/students/StudentRepo
 // @ts-ignore
 import StudentValidation from '../../02-backend/apps-script/students/StudentValidation.gs';
 // @ts-ignore
+import RowReader from '../../02-backend/apps-script/sheets/RowReader.gs';
+// @ts-ignore
+import HeaderMapper from '../../02-backend/apps-script/sheets/HeaderMapper.gs';
+// @ts-ignore
 import EnrollmentService from '../../02-backend/apps-script/enrollments/EnrollmentService.gs';
 // @ts-ignore
 import EnrollmentRepository from '../../02-backend/apps-script/enrollments/EnrollmentRepository.gs';
 
-import { adaptStudentInput } from '../../src/domains/students/studentApi';
+import { adaptStudentInput, fetchStudents } from '../../src/domains/students/studentApi';
 import { mapApiErrorsToFields } from '../../src/domains/students/studentValidation';
 
 describe('Phase 5 — Students and Enrollments Domain Services', () => {
@@ -164,5 +168,60 @@ describe('Phase 5 — Students and Enrollments Domain Services', () => {
     expect(updateEnr.success).toBe(true);
     expect(updateEnr.data.enrollment_status).toBe('COMPLETED');
     expect(Boolean(updateEnr.data.closed_at)).toBe(true);
+  });
+
+  it('safely handles duplicate header rows and reads real records correctly', () => {
+    const sheet = spreadsheet.getSheetByName(SheetRegistry.SHEET_NAMES.STUDENTS);
+    // Simulating sheet with duplicate header in Row 2, then actual data in Row 3
+    const headers = SheetRegistry.getExpectedHeaders(SheetRegistry.SHEET_NAMES.STUDENTS);
+    sheet!.rows = [
+      [...headers], // Row 1: Header
+      [...headers], // Row 2: Duplicate header
+      ['stu_test1', 'test', 'student', '', '', 'test parent', '', '9876543210', '', 'student@example.com', '', 'ACTIVE', '', '', '', '2026-10-20T00:00:00.000Z', '2026-10-20T00:00:00.000Z', '', '']
+    ];
+
+    const records = RowReader.readAllRecords(sheet, HeaderMapper);
+    // Must ignore Row 2 and return only Row 3
+    expect(records.length).toBe(1);
+    expect(records[0].student_id).toBe('stu_test1');
+    expect(records[0].first_name).toBe('test');
+
+    // Students_list must return the enriched record
+    const listRes = StudentService.Students_list(spreadsheet, { status: 'ALL' });
+    expect(listRes.success).toBe(true);
+    expect(listRes.data.length).toBe(1);
+    expect(listRes.data[0].full_name).toBe('test student');
+  });
+
+  it('proves newly created student appears immediately in fresh Students_list with enrichments', () => {
+    // Empty list initially
+    const emptyList = StudentService.Students_list(spreadsheet, { status: 'ALL' });
+    expect(emptyList.data.length).toBe(0);
+
+    // Create student
+    const created = StudentService.Students_create(spreadsheet, {
+      full_name: 'test student',
+      email: 'student@example.com',
+      phone: '9876543210',
+      parent_name: 'test parent',
+      parent_phone: '9876543210',
+    }, actor);
+    expect(created.success).toBe(true);
+
+    // Immediate list read
+    const freshList = StudentService.Students_list(spreadsheet, { status: 'ALL' });
+    expect(freshList.data.length).toBe(1);
+    expect(freshList.data[0].student_id).toBe(created.data.student_id);
+    expect(freshList.data[0].full_name).toBe('test student');
+    expect(freshList.data[0].email).toBe('student@example.com');
+    expect(freshList.data[0].phone).toBe('9876543210');
+    expect(freshList.data[0].status).toBe('ACTIVE');
+
+    // Search query matches
+    const searchMatch = StudentService.Students_list(spreadsheet, { query: 'test' });
+    expect(searchMatch.data.length).toBe(1);
+
+    const noMatch = StudentService.Students_list(spreadsheet, { query: 'nonexistent' });
+    expect(noMatch.data.length).toBe(0);
   });
 });

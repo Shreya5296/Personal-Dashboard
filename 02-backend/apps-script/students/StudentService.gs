@@ -205,17 +205,17 @@ function Students_reactivate(spreadsheet, studentId, actor) {
 
 function Students_list(spreadsheet, filter) {
   var records = _stuRepo.Students_getAll(spreadsheet);
-  var status = filter && filter.status ? filter.status : 'ACTIVE';
-  var search = filter && filter.search ? String(filter.search).toLowerCase().trim() : '';
+  var status = filter && filter.status ? String(filter.status).trim() : 'ALL';
+  var search = filter && (filter.search || filter.query) ? String(filter.search || filter.query).toLowerCase().trim() : '';
 
   var filtered = records.filter(function(s) {
-    if (status !== 'ALL' && s.student_status !== status) return false;
+    if (status && status !== 'ALL' && s.student_status !== status) return false;
     if (search) {
-      var fullName = (s.first_name + ' ' + (s.last_name || '')).toLowerCase();
+      var fullName = (s.full_name || (s.first_name + ' ' + (s.last_name || ''))).toLowerCase();
       var prefName = (s.preferred_name || '').toLowerCase();
-      var phone = (s.primary_phone || '').toLowerCase();
-      var email = (s.parent_email || '').toLowerCase();
-      var pName = (s.parent_guardian_name || '').toLowerCase();
+      var phone = (s.primary_phone || s.phone || '').toLowerCase();
+      var email = (s.parent_email || s.email || '').toLowerCase();
+      var pName = (s.parent_guardian_name || s.parent_name || '').toLowerCase();
       if (fullName.indexOf(search) === -1 &&
           prefName.indexOf(search) === -1 &&
           phone.indexOf(search) === -1 &&

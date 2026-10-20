@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { sendApiRequest } from '../../src/api/apiClient';
+import { fetchStudents } from '../../src/domains/students/studentApi';
 import { ApiClientError, ApiNetworkError } from '../../src/api/apiErrors';
 import * as configModule from '../../src/config/runtimeConfig';
 
@@ -101,5 +102,49 @@ describe('Frontend API Client', () => {
     });
 
     await expect(sendApiRequest('auth.login', { key: 'invalid' })).rejects.toThrow(ApiNetworkError);
+  });
+
+  it('fetchStudents robustly parses direct array, data.students, or data.items', async () => {
+    vi.spyOn(configModule, 'getRuntimeConfig').mockReturnValue({
+      appsScriptUrl: 'https://script.google.com/macros/s/test/exec',
+      googleClientId: 'test-client',
+      enableMockAuth: true,
+      appEnv: 'test',
+    });
+
+    const mockStudents = [{ student_id: 'stu_1', full_name: 'Test Student' }];
+
+    // 1. Direct array in data
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true, data: mockStudents }),
+    });
+    const res1 = await fetchStudents();
+    expect(res1).toHaveLength(1);
+    expect(res1[0].student_id).toBe('stu_1');
+
+    // 2. Wrapped in data.students
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true, data: { students: mockStudents } }),
+    });
+    const res2 = await fetchStudents();
+    expect(res2).toHaveLength(1);
+
+    // 3. Wrapped in data.items
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true, data: { items: mockStudents } }),
+    });
+    const res3 = await fetchStudents();
+    expect(res3).toHaveLength(1);
+
+    // 4. Empty or missing data
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true, data: null }),
+    });
+    const res4 = await fetchStudents();
+    expect(res4).toHaveLength(0);
   });
 });

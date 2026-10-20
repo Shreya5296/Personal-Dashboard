@@ -75,12 +75,15 @@ NEXT ACTION
   * Classes & Attendance: classes.schedule and classes.recordAttendance registered, start_time/duration mapped, student picker added to scheduling.
   * Reports & Dashboard: camelCase and snake_case metrics aligned across Overview and Financial Summary.
   * Student Profile: integrated Classes & Attendance and Meeting Links tabs.
-- Full regression suite passing: 62/62 tests across 15 test suites. Clean build in 685ms. All 111 files <= 149 lines.
-- All 64 backend files synchronized to Apps Script via clasp; deployment AKfycbx4d_VG4CsZIEAomX_OjNMuej06ktTYmKLME5ennLsI7mx3Fn5b-YBu9CRqe7NwrUVH3w redeployed to version 4 in-place.
-- Network request failed during login debugged and resolved:
-  * Traced live HTTP requests to deployment endpoint: clasp deploy reset web app access to ANYONE (Google Accounts only) instead of ANYONE_ANONYMOUS because appsscript.json was configured with "access": "ANYONE".
-  * When anonymous browser fetch called the endpoint, Google issued a 302 redirect to accounts.google.com/v3/signin, which lacks CORS headers for localhost, causing browser fetch to reject with TypeError: Failed to fetch ("Network request failed").
-  * Fixed appsscript.json by setting "access": "ANYONE_ANONYMOUS" and pushed via clasp; redeployed version 4 in-place keeping existing deployment ID.
-  * Added alias fallback in AuthService.gs to accept payload.key, payload.adminKey, or payload.authKey.
-  * Added regression tests in tests/frontend/apiClient.test.ts and tests/backend/securityHardening.test.ts.
-- Next action: Owner interactive retry of admin login at http://localhost:5173/.
+- Full regression suite passing: 65/65 tests across 15 test suites. Clean build in 1.00s. All 111 files <= 149 lines.
+- All 64 backend files synchronized to Apps Script via clasp; deployment AKfycbx4d_VG4CsZIEAomX_OjNMuej06ktTYmKLME5ennLsI7mx3Fn5b-YBu9CRqe7NwrUVH3w redeployed to version 5 in-place.
+- Student directory listing and duplicate header row resolved:
+  * Traced full list flow from StudentsPage.tsx -> studentApi.ts -> StudentService.gs -> StudentRepository.gs -> RowReader.gs.
+  * Root cause: RowReader.gs and RowWriter.gs attempted to read rows via sheet.getData(), which was only defined on the test MockSheet. On a real Google Sheet, sheet.getData was undefined, causing rawData to default to [].
+  * This caused readAllRecords to always return [] in production ("No students found"), and caused appendRecord to falsely believe the sheet was empty and append a duplicate header row (Row 2).
+  * Fixed RowReader.gs and RowWriter.gs to use sheet.getDataRange().getValues() in Google Apps Script with mock fallback.
+  * Added duplicate header row detection in RowReader.gs to automatically ignore Row 2 duplicate headers without deleting or rewriting rows.
+  * Updated StudentService.gs to support query/search and default empty status to ALL.
+  * Enhanced studentApi.ts to robustly parse direct arrays or wrapped { students: [...] } / { items: [...] } response structures.
+  * Added automated regression tests in tests/domains/studentsAndEnrollments.test.ts and tests/frontend/apiClient.test.ts (65/65 passing).
+- Next action: Owner interactive verification of student directory at http://localhost:5173/students.

@@ -25,15 +25,29 @@ export async function fetchStudents(
   token?: string | null
 ): Promise<Student[]> {
   const payload: Record<string, unknown> = {};
-  if (filter.query) payload.query = filter.query;
-  if (filter.status) payload.status = filter.status;
+  if (filter.query) {
+    payload.query = filter.query;
+    payload.search = filter.query;
+  }
+  if (filter.status) {
+    payload.status = filter.status;
+  }
 
-  const response = await sendApiRequest<Student[]>(
+  const response = await sendApiRequest<Student[] | Record<string, unknown>>(
     'students.list',
     payload,
     { token }
   );
-  return response.data || [];
+
+  if (Array.isArray(response.data)) {
+    return response.data as Student[];
+  }
+  if (response.data && typeof response.data === 'object') {
+    const obj = response.data as Record<string, unknown>;
+    if (Array.isArray(obj.students)) return obj.students as Student[];
+    if (Array.isArray(obj.items)) return obj.items as Student[];
+  }
+  return [];
 }
 
 export async function getStudentById(
