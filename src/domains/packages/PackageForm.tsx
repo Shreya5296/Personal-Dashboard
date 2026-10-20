@@ -59,8 +59,8 @@ export const PackageForm: React.FC<PackageFormProps> = ({
         <FormField label="Price (₹ INR)">
           <input
             type="number"
-            min={0}
-            step={100}
+            min="0"
+            step="any"
             value={price}
             onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
             style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)' }}

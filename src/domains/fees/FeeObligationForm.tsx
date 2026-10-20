@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { FeeObligationInput } from './feeTypes';
+import { validateFeeInput } from './feeValidation';
 import { FormField } from '../../components/forms/FormField';
 import { Button } from '../../components/buttons/Button';
 import { toInputDateFormat } from '../../lib/dateFormat';
+import { ApiClientError } from '../../api/apiErrors';
 
 export interface FeeObligationFormProps {
   studentId: string;
@@ -18,47 +20,97 @@ export const FeeObligationForm: React.FC<FeeObligationFormProps> = ({
   isLoading = false,
 }) => {
   const [description, setDescription] = useState('Monthly Tuition Fee');
-  const [amountDue, setAmountDue] = useState(5000);
+  const [amountDue, setAmountDue] = useState<number | string>(5000);
   const [dueDate, setDueDate] = useState(toInputDateFormat());
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSubmit({
-      student_id: studentId,
-      description: description.trim(),
+    setServerError(null);
+
+    const validation = validateFeeInput({
+      description,
       amount_due: Number(amountDue),
       due_date: dueDate,
     });
+
+    if (!validation.isValid) {
+      setErrors(validation.errors);
+      return;
+    }
+
+    try {
+      await onSubmit({
+        student_id: studentId,
+        description: description.trim(),
+        amount_due: Number(amountDue),
+        due_date: dueDate,
+      });
+    } catch (err: unknown) {
+      if (err instanceof ApiClientError && err.details) {
+        const fieldErrors: Record<string, string> = {};
+        for (const [k, v] of Object.entries(err.details)) {
+          if (k === 'obligation_description') fieldErrors.description = String(v);
+          else fieldErrors[k] = String(v);
+        }
+        setErrors(fieldErrors);
+      }
+      setServerError((err as Error)?.message || 'Failed to create fee obligation');
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-      <FormField label="Fee Description" required>
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+      {serverError && (
+        <div style={{
+          padding: '0.75rem 1rem',
+          backgroundColor: '#fee2e2',
+          border: '1px solid #ef4444',
+          borderRadius: 'var(--radius-md)',
+          color: '#b91c1c',
+          fontSize: '0.875rem',
+        }}>
+          ⚠️ {serverError}
+        </div>
+      )}
+
+      <FormField label="Fee Description" required error={errors.description}>
         <input
           type="text"
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          onChange={(e) => {
+            setDescription(e.target.value);
+            if (errors.description) setErrors((prev) => ({ ...prev, description: '' }));
+          }}
           placeholder="e.g. March 2026 Tuition"
           style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)' }}
         />
       </FormField>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
-        <FormField label="Amount Due (₹ INR)" required>
+        <FormField label="Amount Due (₹ INR)" required error={errors.amount_due}>
           <input
             type="number"
-            min={1}
-            step={50}
+            min="1"
+            step="any"
             value={amountDue}
-            onChange={(e) => setAmountDue(parseFloat(e.target.value) || 0)}
+            onChange={(e) => {
+              setAmountDue(e.target.value === '' ? '' : parseFloat(e.target.value));
+              if (errors.amount_due) setErrors((prev) => ({ ...prev, amount_due: '' }));
+            }}
+            placeholder="5000"
             style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)' }}
           />
         </FormField>
-        <FormField label="Due Date" required>
+        <FormField label="Due Date" required error={errors.due_date}>
           <input
             type="date"
             value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
+            onChange={(e) => {
+              setDueDate(e.target.value);
+              if (errors.due_date) setErrors((prev) => ({ ...prev, due_date: '' }));
+            }}
             style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)' }}
           />
         </FormField>

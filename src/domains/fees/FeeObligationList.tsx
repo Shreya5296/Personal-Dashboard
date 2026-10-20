@@ -2,17 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { FeeObligation, FeeObligationInput } from './feeTypes';
 import { fetchFeeObligations, createFeeObligation, voidFeeObligation } from './feeApi';
-import { FeeStatus } from './FeeStatus';
 import { FeeObligationForm } from './FeeObligationForm';
 import { PaymentForm } from '../payments/PaymentForm';
 import { recordPayment } from '../payments/paymentApi';
 import { PaymentInput } from '../payments/paymentTypes';
-import { DataTable, Column } from '../../components/tables/DataTable';
-import { formatCurrency } from '../../lib/currencyFormat';
-import { formatDate } from '../../lib/dateFormat';
+import { DataTable } from '../../components/tables/DataTable';
 import { Button } from '../../components/buttons/Button';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { EmptyState } from '../../components/feedback/EmptyState';
+import { getFeeColumns } from './feeColumns';
 
 export const FeeObligationList: React.FC<{ studentId?: string }> = ({ studentId }) => {
   const { token } = useAuth();
@@ -21,6 +19,7 @@ export const FeeObligationList: React.FC<{ studentId?: string }> = ({ studentId 
   const [isAdding, setIsAdding] = useState(false);
   const [payingFee, setPayingFee] = useState<FeeObligation | null>(null);
   const [formLoading, setFormLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -38,9 +37,11 @@ export const FeeObligationList: React.FC<{ studentId?: string }> = ({ studentId 
 
   const handleCreate = async (input: FeeObligationInput) => {
     setFormLoading(true);
+    setSuccessMessage(null);
     try {
       await createFeeObligation(input, token);
       setIsAdding(false);
+      setSuccessMessage(`Fee obligation of ₹${input.amount_due.toLocaleString('en-IN')} created successfully.`);
       await loadData();
     } finally {
       setFormLoading(false);
@@ -49,9 +50,11 @@ export const FeeObligationList: React.FC<{ studentId?: string }> = ({ studentId 
 
   const handleRecordPayment = async (input: PaymentInput) => {
     setFormLoading(true);
+    setSuccessMessage(null);
     try {
       await recordPayment(input, token);
       setPayingFee(null);
+      setSuccessMessage(`Payment of ₹${input.amount.toLocaleString('en-IN')} recorded successfully.`);
       await loadData();
     } finally {
       setFormLoading(false);
@@ -65,43 +68,42 @@ export const FeeObligationList: React.FC<{ studentId?: string }> = ({ studentId 
     }
   };
 
-  const columns: Column<FeeObligation>[] = [
-    { key: 'description', header: 'Description' },
-    { key: 'amount_due', header: 'Amount Due', render: (f) => formatCurrency(f.amount_due) },
-    { key: 'amount_paid', header: 'Paid', render: (f) => formatCurrency(f.amount_paid) },
-    { key: 'outstanding_balance', header: 'Outstanding', render: (f) => formatCurrency(f.outstanding_balance) },
-    { key: 'due_date', header: 'Due Date', render: (f) => formatDate(f.due_date) },
-    { key: 'status', header: 'Status', render: (f) => <FeeStatus status={f.status} /> },
-    {
-      key: 'actions',
-      header: 'Actions',
-      render: (f) => (
-        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-          {f.status !== 'VOID' && f.outstanding_balance > 0 && (
-            <Button variant="primary" onClick={() => setPayingFee(f)}>
-              Pay
-            </Button>
-          )}
-          {f.status !== 'VOID' && f.amount_paid === 0 && (
-            <Button variant="outline" onClick={() => handleVoid(f.fee_id)}>
-              Void
-            </Button>
-          )}
-        </div>
-      ),
-    },
-  ];
+  const columns = getFeeColumns({ onPay: setPayingFee, onVoid: handleVoid });
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
         <h4 style={{ margin: 0 }}>Fee Obligations & Invoices</h4>
         {studentId && (
-          <Button variant="secondary" onClick={() => setIsAdding(!isAdding)}>
+          <Button variant="secondary" onClick={() => { setIsAdding(!isAdding); setSuccessMessage(null); }}>
             {isAdding ? 'Cancel' : '+ New Fee Obligation'}
           </Button>
         )}
       </div>
+
+      {successMessage && (
+        <div style={{
+          padding: '0.75rem 1rem',
+          backgroundColor: '#dcfce7',
+          border: '1px solid #22c55e',
+          borderRadius: 'var(--radius-md)',
+          color: '#15803d',
+          fontSize: '0.875rem',
+          marginBottom: 'var(--space-4)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}>
+          <span>✓ {successMessage}</span>
+          <button
+            type="button"
+            onClick={() => setSuccessMessage(null)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', fontWeight: 'bold' }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {isAdding && studentId && (
         <div style={{ padding: 'var(--space-4)', backgroundColor: 'var(--color-bg-subtle)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)' }}>

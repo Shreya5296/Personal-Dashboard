@@ -87,3 +87,11 @@ NEXT ACTION
   * Enhanced studentApi.ts to robustly parse direct arrays or wrapped { students: [...] } / { items: [...] } response structures.
   * Added automated regression tests in tests/domains/studentsAndEnrollments.test.ts and tests/frontend/apiClient.test.ts (65/65 passing).
 - Next action: Owner interactive verification of student directory at http://localhost:5173/students.
+- Fee obligation & payment amount constraint issue resolved:
+  * Traced UI button failure and 4951–5001 constraint on Student Profile Fee Obligations tab.
+  * Root cause: FeeObligationForm.tsx, PaymentForm.tsx had min={1} step={50}, which under HTML5 number validation restricts valid entries to 1 + 50k (e.g. 4951, 5001). ₹5,000 was flagged as invalid by the browser, blocking submit silently before React onSubmit fired.
+  * Fix: Changed step={50} to step="any" and min="1" across FeeObligationForm.tsx, PaymentForm.tsx, and PackageForm.tsx.
+  * Form UX & Resilience: Added frontend validation (feeValidation.ts), field-level error display, top-level server error banner, and guaranteed loading state reset.
+  * Success feedback: Added prominent green success banner to FeeObligationList.tsx upon obligation creation.
+  * File limit compliance: Extracted feeColumns.tsx to keep all files <= 149 lines (113 files verified).
+  * Automated testing: Added tests/frontend/feeValidation.test.ts and updated tests/domains/financialLedger.test.ts. 71/71 tests passing across 16 test suites. Clean build verified.

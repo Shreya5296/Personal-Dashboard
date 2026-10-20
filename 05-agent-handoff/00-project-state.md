@@ -44,9 +44,9 @@ Update every field below as work proceeds.
 | Last completed phase | Phase 12 — Release and Handover |
 | Current Git branch | main |
 | Last phase commit | 2f531bf |
-| Last full regression run | 65 vitest tests passed (100% pass across 15 suites, 111 micro-files checked) |
+| Last full regression run | 71 vitest tests passed (100% pass across 16 suites, 113 micro-files checked) |
 | Real-data use | Prohibited until security release gate passes |
-| Last state update | Student directory listing & duplicate header resolved: RowReader & RowWriter updated from mock-only sheet.getData() to real sheet.getDataRange().getValues(); duplicate header row safely skipped; studentApi response extraction generalized; redeployed to version 5; 65 tests passing |
+| Last state update | Fee obligation & payment form validation resolved: fixed HTML5 step constraint (step="any"), added feeValidation.ts, feeColumns.tsx, error & success alerts in FeeObligationForm/List, tests/frontend/feeValidation.test.ts (71/71 tests passing, clean build, all 113 files <= 149 lines) |
 
 ## 5. Phase Register
 
@@ -106,12 +106,12 @@ Record command, outcome, and concise evidence for each relevant check. A command
 | Secure frontend-to-backend feasibility | PASSED | Phase 1 spike verified (7/7 tests passed, spikes/feasibility/FEASIBILITY_REPORT.md) |
 | Formatting / lint | PASSED | Line limits & forbidden catch-all checks passing (scripts/check-line-limits.js) |
 | Type checking | PASSED | TypeScript strict checking (tsc --noEmit) passed |
-| Source-file line limit (maximum 149) | PASSED | Automated check passed (npm run check:lines, 111 files verified <= 149 lines) |
-| Unit tests | PASSED | Vitest runner passed (65/65 tests passed across 15 test files) |
-| Integration tests | PASSED | End-to-end lifecycle and domain service tests passed (15 test files, 100% pass) |
+| Source-file line limit (maximum 149) | PASSED | Automated check passed (npm run check:lines, 113 files verified <= 149 lines) |
+| Unit tests | PASSED | Vitest runner passed (71/71 tests passed across 16 test files) |
+| Integration tests | PASSED | End-to-end lifecycle and domain service tests passed (16 test files, 100% pass) |
 | End-to-end / acceptance tests | PASSED | Full synthetic lifecycle test (tests/integration/endToEndLifecycle.test.ts) passed |
 | Security release gate | PASSED_LOCAL | Server-side HMAC token validation, constant-time SHA256 comparison, brute-force lockout, 2MB size limit verified |
-| Full regression suite | PASSED | npm run check (111 files, 0 errors, 65 passed tests) and npm run build passed |
+| Full regression suite | PASSED | npm run check (113 files, 0 errors, 71 passed tests) and npm run build passed |
 
 ## 9. Decisions and Specification Issues
 

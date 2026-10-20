@@ -118,4 +118,46 @@ describe('Phase 5 — Financial Ledger and Payments Domain', () => {
     expect(summary.data.totalReceived).toBe(5000);
     expect(summary.data.totalOutstanding).toBe(0);
   });
+
+  it('validates fee obligation amounts and rejects invalid inputs', () => {
+    // Rejects zero amount
+    const zeroRes = FeeService.FeeObligations_create(spreadsheet, {
+      student_id: studentId,
+      obligation_description: 'Zero Fee',
+      amount_due: 0,
+      due_date: '2026-02-15'
+    }, actor);
+    expect(zeroRes.success).toBe(false);
+    expect(zeroRes.code).toBe('VALIDATION_ERROR');
+
+    // Rejects negative amount
+    const negRes = FeeService.FeeObligations_create(spreadsheet, {
+      student_id: studentId,
+      obligation_description: 'Negative Fee',
+      amount_due: -100,
+      due_date: '2026-02-15'
+    }, actor);
+    expect(negRes.success).toBe(false);
+    expect(negRes.code).toBe('VALIDATION_ERROR');
+
+    // Rejects missing description
+    const noDescRes = FeeService.FeeObligations_create(spreadsheet, {
+      student_id: studentId,
+      obligation_description: '',
+      amount_due: 5000,
+      due_date: '2026-02-15'
+    }, actor);
+    expect(noDescRes.success).toBe(false);
+    expect(noDescRes.code).toBe('VALIDATION_ERROR');
+
+    // Accepts ₹5,000 standard amount
+    const valid5000Res = FeeService.FeeObligations_create(spreadsheet, {
+      student_id: studentId,
+      obligation_description: 'Standard Term Tuition',
+      amount_due: 5000,
+      due_date: '2026-03-01'
+    }, actor);
+    expect(valid5000Res.success).toBe(true);
+    expect(valid5000Res.data.amount_due).toBe(5000);
+  });
 });

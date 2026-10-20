@@ -46,8 +46,8 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
         <FormField label="Amount Paid (₹ INR)" required>
           <input
             type="number"
-            min={1}
-            step={50}
+            min="1"
+            step="any"
             value={amount}
             onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
             style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)' }}
