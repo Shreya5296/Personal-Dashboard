@@ -76,7 +76,7 @@ Keep one entry per unresolved blocker. Remove or close an entry only after verif
 |---|---|---|---|---|---|
 | B-001 | Specification and repository baseline audit | Required before implementation | Agent: completed Phase 0 audit | CLOSED | All repository documents verified; no conflicting specs. |
 | B-002 | Live Google Cloud OAuth client & production Apps Script deployment | Required for live production hosting; synthetic local/test environment used for development and test suites | Owner: configure production secrets in Vercel/Apps Script per Doc 07 | PENDING_OWNER_CONFIG | Synthetic and mock environments used for development and verification. |
-| B-003 | Clasp authorization for target Apps Script project | Required to push backend to project 1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL | Owner: re-authenticate clasp with spreadsheet owner account or share spreadsheet/script with infineo.live@gmail.com | PENDING_OWNER_AUTH | Clasp reports "The caller does not have permission" for infineo.live@gmail.com on target project. |
+| B-003 | Clasp authorization for target Apps Script project | Required to push backend to project 1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL | Owner: re-authenticate clasp with spreadsheet owner account or share spreadsheet/script with infineo.live@gmail.com | CLOSED | Authenticated as ashreya0502@gmail.com; 63 backend files pushed successfully. |
 
 Do not let an unavailable credential, external account, deployment permission, or human-only action silently count as complete. Continue independent work that is safe, and mark dependent gates `BLOCKED` until the dependency is resolved.
 
@@ -139,4 +139,4 @@ Never infer that work was completed merely because the previous agent said it wa
 
 ## 11. Next Action
 
-Target Apps Script project configured locally in .clasp.json (Project ID: 1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL, rootDir: 02-backend/apps-script). Execution paused: clasp authorization on this Mac currently belongs to infineo.live@gmail.com, which lacks permissions on the target project. Awaiting owner action to re-authenticate clasp with the project-owning Google account or grant editor access to infineo.live@gmail.com.
+Backend deployment to Apps Script project 1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL completed (63 files uploaded). Awaiting owner 1-click execution of setup/RunBootstrap.gs in the Apps Script editor to grant SpreadsheetApp permission and initialize the 12 canonical tabs on spreadsheet 1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8.

@@ -67,4 +67,4 @@ CURRENT EXECUTION STATUS
 - Implementation mode authorized using synthetic data and isolated local/test environments.
 
 NEXT ACTION
-- Configured .clasp.json with Project ID 1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL and rootDir 02-backend/apps-script. Awaiting owner action to re-authenticate clasp with spreadsheet owner Google account (or share spreadsheet/script with infineo.live@gmail.com) to complete push and bootstrap.
+- Backend code uploaded to Apps Script project 1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL (63 files pushed). Awaiting owner 1-click execution of setup/RunBootstrap.gs in the web editor to approve SpreadsheetApp permission and initialize the 12 canonical tabs on spreadsheet 1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8.
