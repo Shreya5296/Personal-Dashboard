@@ -68,7 +68,8 @@ CURRENT EXECUTION STATUS
 - Decision: Zero Google Cloud Console / Zero GCP dependency architecture confirmed and implemented.
 
 NEXT ACTION
-- Focused security & platform verification completed: fixed-length SHA-256 constant-time comparison, CacheService concurrency & global DoS tradeoffs analyzed, 2MB payload guard, HMAC byte encodings verified, strict sessionStorage enforcement, replay threat model documented.
-- All 64 backend files synchronized to Apps Script. 52/52 tests passing. Production build clean (737ms). Line limits verified (111 files <= 149 lines).
-- Frontend Admin Access Key login implemented (RequireAdmin.tsx). Zero-GCP architecture complete.
-- Ready for owner deployment: Owner configures ADMIN_AUTH_KEY in Apps Script Script Properties, creates Web App deployment (Execute as: Me, Access: Anyone), and copies /exec URL into local .env.local.
+- Production Apps Script Web App deployed and verified live at https://script.google.com/macros/s/AKfycbx4d_VG4CsZIEAomX_OjNMuej06ktTYmKLME5ennLsI7mx3Fn5b-YBu9CRqe7NwrUVH3w/exec.
+- .env.local configured with VITE_APPS_SCRIPT_URL and excluded via .gitignore.
+- Development server active on http://localhost:5173/.
+- Live endpoint tests confirmed: system health check (200), unauthenticated access rejected with 401 UNAUTHORIZED, invalid admin key rejected with 401 UNAUTHORIZED. Script properties ADMIN_AUTH_KEY, SPREADSHEET_ID, and ADMIN_EMAILS verified active.
+- Next action: Owner enters their private ADMIN_AUTH_KEY into http://localhost:5173/ to verify interactive browser sign-in and sign-out.
