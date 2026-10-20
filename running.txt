@@ -67,4 +67,4 @@ CURRENT EXECUTION STATUS
 - Implementation mode authorized using synthetic data and isolated local/test environments.
 
 NEXT ACTION
-- Owner executing spreadsheet initialization on private canonical spreadsheet (ID: 1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8). Awaiting owner confirmation of 12 initialized canonical tabs.
+- Configured .clasp.json with Project ID 1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL and rootDir 02-backend/apps-script. Awaiting owner action to re-authenticate clasp with spreadsheet owner Google account (or share spreadsheet/script with infineo.live@gmail.com) to complete push and bootstrap.

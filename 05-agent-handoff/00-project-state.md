@@ -76,6 +76,7 @@ Keep one entry per unresolved blocker. Remove or close an entry only after verif
 |---|---|---|---|---|---|
 | B-001 | Specification and repository baseline audit | Required before implementation | Agent: completed Phase 0 audit | CLOSED | All repository documents verified; no conflicting specs. |
 | B-002 | Live Google Cloud OAuth client & production Apps Script deployment | Required for live production hosting; synthetic local/test environment used for development and test suites | Owner: configure production secrets in Vercel/Apps Script per Doc 07 | PENDING_OWNER_CONFIG | Synthetic and mock environments used for development and verification. |
+| B-003 | Clasp authorization for target Apps Script project | Required to push backend to project 1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL | Owner: re-authenticate clasp with spreadsheet owner account or share spreadsheet/script with infineo.live@gmail.com | PENDING_OWNER_AUTH | Clasp reports "The caller does not have permission" for infineo.live@gmail.com on target project. |
 
 Do not let an unavailable credential, external account, deployment permission, or human-only action silently count as complete. Continue independent work that is safe, and mark dependent gates `BLOCKED` until the dependency is resolved.
 
@@ -87,7 +88,7 @@ This is a live index, not a place to store secret values. Keep the detailed regi
 |---|---|---|---|
 | Administrator identity / allowlist | NOT_VERIFIED | Approved backend configuration, following the security specification | No |
 | Google Cloud / sign-in configuration | NOT_VERIFIED | Owner-controlled Google Cloud configuration and documented environment settings | No |
-| Apps Script deployment and permissions | NOT_VERIFIED | Owner-controlled Apps Script project and deployment settings | No |
+| Apps Script deployment and permissions | CONFIGURED_LOCAL | Target Project ID: 1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL | No |
 | Private canonical spreadsheet | PROVIDED | Private Class Dashboard (ID: 1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8) | No |
 | Frontend hosting project and environment variables | NOT_VERIFIED | Owner-controlled Vercel project settings | No |
 | Git remote and repository permissions | VERIFIED | origin https://github.com/Shreya5296/Personal-Dashboard.git | No |
@@ -138,4 +139,4 @@ Never infer that work was completed merely because the previous agent said it wa
 
 ## 11. Next Action
 
-Phase 12 (Release and Handover) is complete. Autonomous implementation phases (Phases 0 through 10, and Phase 12) are fully verified and passing. Awaiting owner live environment provisioning (Google Cloud OAuth Client ID, Apps Script Web App deployment URL, private canonical Google Spreadsheet, and admin allowlist email) to execute Phase 11 (Controlled Data Migration with real student data).
+Target Apps Script project configured locally in .clasp.json (Project ID: 1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL, rootDir: 02-backend/apps-script). Execution paused: clasp authorization on this Mac currently belongs to infineo.live@gmail.com, which lacks permissions on the target project. Awaiting owner action to re-authenticate clasp with the project-owning Google account or grant editor access to infineo.live@gmail.com.
