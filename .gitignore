@@ -27,6 +27,8 @@ dist-ssr/
 
 # Testing
 coverage/
+playwright-report/
+test-results/
 
 # Logs
 npm-debug.log*
