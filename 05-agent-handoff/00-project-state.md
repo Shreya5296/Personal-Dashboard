@@ -44,9 +44,9 @@ Update every field below as work proceeds.
 | Last completed phase | Phase 12 — Release and Handover |
 | Current Git branch | main |
 | Last phase commit | e01832d |
-| Last full regression run | 43 vitest tests passed (100% pass, 111 micro-files checked) |
+| Last full regression run | 49 vitest tests passed (100% pass, 111 micro-files checked) |
 | Real-data use | Prohibited until security release gate passes |
-| Last state update | Backend uploaded; spreadsheet bootstrap completed & verified (12 tabs, 167 headers) |
+| Last state update | Backend security hardening complete: synthetic mock bypass removed from prod runtime, token audience/issuer/expiry/email verification enforced, diagnostic cleaned, 63 files synchronized to Apps Script |
 
 ## 5. Phase Register
 
@@ -86,9 +86,9 @@ This is a live index, not a place to store secret values. Keep the detailed regi
 
 | Input / setup item | Status | Where it must be configured | Secret value stored here? |
 |---|---|---|---|
-| Administrator identity / allowlist | SAVED_PENDING_CONFIRMATION | SPREADSHEET_ID and ADMIN_EMAILS saved in Apps Script Project Settings | No |
-| Google Cloud / sign-in configuration | NOT_VERIFIED | Owner-controlled Google Cloud configuration and documented environment settings | No |
-| Apps Script deployment and permissions | UPLOADED_AND_BOOTSTRAPPED | Project ID: 1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL (64 files pushed, VerifyProperties diagnostic pushed) | No |
+| Administrator identity / allowlist | VERIFIED | SPREADSHEET_ID and ADMIN_EMAILS (ashreya0502@gmail.com) verified via safe diagnostic | No |
+| Google Cloud / sign-in configuration | PENDING_CONFIG | SPREADSHEET_ID and ADMIN_EMAILS verified; GOOGLE_CLIENT_ID pending owner setup | No |
+| Apps Script deployment and permissions | HARDENED_READY_FOR_DEPLOY | Project ID: 1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL (63 files pushed, auth hardened) | No |
 | Private canonical spreadsheet | INITIALIZED | Private Class Dashboard (ID: 1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8, 12 tabs initialized) | No |
 | Frontend hosting project and environment variables | NOT_VERIFIED | Owner-controlled Vercel project settings | No |
 | Git remote and repository permissions | VERIFIED | origin https://github.com/Shreya5296/Personal-Dashboard.git | No |
@@ -106,11 +106,11 @@ Record command, outcome, and concise evidence for each relevant check. A command
 | Formatting / lint | PASSED | Line limits & forbidden catch-all checks passing (scripts/check-line-limits.js) |
 | Type checking | PASSED | TypeScript strict checking (tsc --noEmit) passed |
 | Source-file line limit (maximum 149) | PASSED | Automated check passed (npm run check:lines, 111 files verified <= 149 lines) |
-| Unit tests | PASSED | Vitest runner passed (43/43 tests passed across 13 test files) |
-| Integration tests | PASSED | End-to-end lifecycle and domain service tests passed (13 test files, 100% pass) |
+| Unit tests | PASSED | Vitest runner passed (49/49 tests passed across 14 test files) |
+| Integration tests | PASSED | End-to-end lifecycle and domain service tests passed (14 test files, 100% pass) |
 | End-to-end / acceptance tests | PASSED | Full synthetic lifecycle test (tests/integration/endToEndLifecycle.test.ts) passed |
-| Security release gate | PASSED_LOCAL | Server-side token validation, admin allowlist, URL scheme sanitation, and ID generation verified |
-| Full regression suite | PASSED | npm run check (111 files, 0 errors, 43 passed tests) and npm run build passed |
+| Security release gate | PASSED_LOCAL | Server-side token validation, admin allowlist, audience/issuer/expiry check, mock token rejection in prod runtime verified |
+| Full regression suite | PASSED | npm run check (111 files, 0 errors, 49 passed tests) and npm run build passed |
 
 ## 9. Decisions and Specification Issues
 
@@ -139,4 +139,4 @@ Never infer that work was completed merely because the previous agent said it wa
 
 ## 11. Next Action
 
-Script Properties (`SPREADSHEET_ID`, `ADMIN_EMAILS`) saved. Safe diagnostic `setup/VerifyProperties.gs` pushed to Apps Script. Awaiting owner 1-click execution of `verifyScriptPropertiesSafeDiagnostic` in Apps Script editor to confirm exact match of spreadsheet ID and admin email. Upon confirmation, diagnostic file will be removed and authentication hardening applied before creating the Web App deployment.
+Script Properties verified (`SPREADSHEET_ID` exact match, `ADMIN_EMAILS` exact match). Diagnostic function removed from `ApiEntry.gs`. Backend authentication hardened: mock tokens strictly rejected in production runtime (`typeof UrlFetchApp !== 'undefined'`), audience/issuer/expiry/email verification enforced. All 63 files pushed to Apps Script. Next action is creating the versioned Web App deployment in Apps Script editor and configuring `VITE_APPS_SCRIPT_URL` in local `.env.local`.
