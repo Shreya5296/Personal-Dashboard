@@ -88,7 +88,7 @@ This is a live index, not a place to store secret values. Keep the detailed regi
 | Administrator identity / allowlist | NOT_VERIFIED | Approved backend configuration, following the security specification | No |
 | Google Cloud / sign-in configuration | NOT_VERIFIED | Owner-controlled Google Cloud configuration and documented environment settings | No |
 | Apps Script deployment and permissions | NOT_VERIFIED | Owner-controlled Apps Script project and deployment settings | No |
-| Private canonical spreadsheet | NOT_VERIFIED | Owner-controlled Google Spreadsheet; ID supplied only through approved backend configuration | No |
+| Private canonical spreadsheet | PROVIDED | Private Class Dashboard (ID: 1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8) | No |
 | Frontend hosting project and environment variables | NOT_VERIFIED | Owner-controlled Vercel project settings | No |
 | Git remote and repository permissions | VERIFIED | origin https://github.com/Shreya5296/Personal-Dashboard.git | No |
 

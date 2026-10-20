@@ -16,6 +16,10 @@ dist-ssr/
 .env.test.local
 .env.production.local
 
+# Apps Script clasp files
+.clasp.json
+.clasprc.json
+
 # Editor directories
 .vscode/
 .idea/

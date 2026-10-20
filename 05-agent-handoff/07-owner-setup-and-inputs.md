@@ -240,7 +240,7 @@ Maintain this compact register outside any secret store. Use references or maske
 | Development Apps Script deployment | PENDING | | Backend integration |
 | Production Apps Script deployment | PENDING | | Production release |
 | Development spreadsheet | PENDING | | Integration tests |
-| Production master spreadsheet | PENDING | | Production release and migration |
+| Production master spreadsheet | PROVIDED | Private Class Dashboard (ID: 1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8) | Production release and migration |
 | Source spreadsheet inventory | PENDING | | Migration planning |
 | Business-policy confirmations | PENDING | | Dependent business workflows |
 | Backup location and recovery operator | PENDING | | Migration and production release |
