@@ -20,8 +20,13 @@ function bootstrapSpreadsheet(spreadsheet, registry, schemaVersion) {
       }
     } else {
       // If sheet exists but is empty, add headers
-      var existingHeaders = sheet.getHeaders ? sheet.getHeaders() : [];
-      if (existingHeaders.length === 0 && headers && headers.length > 0) {
+      var isEmpty = false;
+      if (typeof sheet.getLastRow === 'function') {
+        isEmpty = sheet.getLastRow() === 0;
+      } else if (typeof sheet.getHeaders === 'function') {
+        isEmpty = sheet.getHeaders().length === 0;
+      }
+      if (isEmpty && headers && headers.length > 0) {
         sheet.appendRow(headers);
       }
     }
@@ -29,7 +34,15 @@ function bootstrapSpreadsheet(spreadsheet, registry, schemaVersion) {
 
   // Seed default AppConfig entries if empty
   var configSheet = spreadsheet.getSheetByName(registry.SHEET_NAMES.APP_CONFIG);
-  if (configSheet && configSheet.getLastRowNum && configSheet.getLastRowNum() <= 1) {
+  var configLastRow = 0;
+  if (configSheet) {
+    if (typeof configSheet.getLastRow === 'function') {
+      configLastRow = configSheet.getLastRow();
+    } else if (typeof configSheet.getLastRowNum === 'function') {
+      configLastRow = configSheet.getLastRowNum();
+    }
+  }
+  if (configSheet && configLastRow <= 1) {
     var now = new Date().toISOString();
     var version = schemaVersion || '1.0.0';
     configSheet.appendRow(['schema_version', version, 'Canonical schema version', now]);

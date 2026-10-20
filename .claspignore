@@ -1,0 +1,8 @@
+# Ignore all files by default
+**/*
+
+# Explicitly allow script files and manifest
+!appsscript.json
+!**/*.gs
+!**/*.js
+!**/*.html

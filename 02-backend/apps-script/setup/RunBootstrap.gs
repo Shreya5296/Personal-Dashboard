@@ -7,7 +7,27 @@
  */
 
 function runBootstrap() {
-  var spreadsheet = SpreadsheetApp.openById('1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8');
+  var targetSpreadsheetId = '1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8';
+  var spreadsheet = null;
+
+  try {
+    spreadsheet = SpreadsheetApp.openById(targetSpreadsheetId);
+  } catch (err) {
+    if (typeof SpreadsheetApp.getActiveSpreadsheet === 'function') {
+      var active = SpreadsheetApp.getActiveSpreadsheet();
+      if (active && active.getId() === targetSpreadsheetId) {
+        spreadsheet = active;
+      }
+    }
+  }
+
+  if (!spreadsheet) {
+    throw new Error('Target spreadsheet could not be opened. Target ID: ' + targetSpreadsheetId);
+  }
+
+  if (spreadsheet.getId() !== targetSpreadsheetId) {
+    throw new Error('Safety check failed: opened spreadsheet ID (' + spreadsheet.getId() + ') does not match target ID (' + targetSpreadsheetId + ')');
+  }
 
   var registry = {
     SHEET_NAMES: SHEET_NAMES,
