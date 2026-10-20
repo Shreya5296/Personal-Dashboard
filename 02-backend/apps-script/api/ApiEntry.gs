@@ -56,6 +56,7 @@ function doPost(e) {
     var context = {
       operation: req.operation,
       payload: req.payload,
+      data: req.payload,
       requestId: requestId,
       idempotencyKey: req.idempotencyKey,
       verifiedEmail: auth.email,

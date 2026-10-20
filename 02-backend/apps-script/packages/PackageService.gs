@@ -32,18 +32,23 @@ function Packages_create(spreadsheet, data, actor) {
 
   var now = new Date().toISOString();
   var id = _pkgIdGen.generatePackageId();
+  var rawQty = data.purchased_classes !== undefined ? data.purchased_classes : data.total_classes;
+  var rawPrice = (data.package_price !== undefined && data.package_price !== null && data.package_price !== '')
+    ? Number(data.package_price)
+    : ((data.price !== undefined && data.price !== null && data.price !== '') ? Number(data.price) : '');
+
   var record = {
     package_id: id,
     student_id: data.student_id,
     enrollment_id: data.enrollment_id || '',
     package_name: String(data.package_name).trim(),
-    purchased_classes: Number(data.purchased_classes),
-    package_price: data.package_price !== undefined && data.package_price !== null ? Number(data.package_price) : '',
+    purchased_classes: Number(rawQty),
+    package_price: rawPrice,
     currency: 'INR',
     purchase_date: data.purchase_date || '',
     start_date: data.start_date || '',
     expiry_date: data.expiry_date || '',
-    package_status: data.package_status || 'ACTIVE',
+    package_status: data.package_status || data.status || 'ACTIVE',
     notes: data.notes ? String(data.notes).trim() : '',
     created_at: now,
     updated_at: now,
@@ -91,6 +96,9 @@ function Packages_enrichWithBalance(spreadsheet, pkgRecord) {
   enriched.consumed_classes = netConsumed;
   enriched.remaining_classes = remaining;
   enriched.is_exhausted = remaining <= 0;
+  enriched.total_classes = Number(pkgRecord.purchased_classes) || 0;
+  enriched.price = (pkgRecord.package_price !== '' && pkgRecord.package_price !== undefined) ? Number(pkgRecord.package_price) : 0;
+  enriched.status = pkgRecord.package_status || 'ACTIVE';
 
   return enriched;
 }

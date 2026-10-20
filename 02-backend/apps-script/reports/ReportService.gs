@@ -59,8 +59,11 @@ function Reports_getDashboardOverview(spreadsheet) {
     data: {
       activeStudentsCount: activeStudents,
       upcomingClassesCount: upcomingCount,
+      classesUpcoming7Days: upcomingCount,
       overdueFeesTotal: overdueTotal,
+      outstandingFeesTotal: overdueTotal,
       exhaustedPackagesCount: exhaustedCount,
+      currency: 'INR',
       generatedAt: now.toISOString()
     }
   };
@@ -94,7 +97,9 @@ function Reports_getFinancialSummary(spreadsheet) {
     success: true,
     data: {
       totalBilled: totalBilled,
+      totalInvoiced: totalBilled,
       totalReceived: totalReceived,
+      totalCollected: totalReceived,
       totalOutstanding: totalOutstanding,
       currency: 'INR',
       generatedAt: new Date().toISOString()

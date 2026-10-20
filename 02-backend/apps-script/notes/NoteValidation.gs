@@ -9,7 +9,8 @@ function validateNoteInput(data) {
     errors.student_id = 'Student ID is required';
   }
 
-  if (!data.note_text || !String(data.note_text).trim()) {
+  var text = data.note_text || data.content;
+  if (!text || !String(text).trim()) {
     errors.note_text = 'Note text is required';
   }
 

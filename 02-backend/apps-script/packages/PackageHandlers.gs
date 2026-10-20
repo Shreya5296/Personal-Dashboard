@@ -10,7 +10,7 @@ function registerPackageOperations(router) {
   if (!reg) return;
 
   reg('packages.list', function(ctx) {
-    var studentId = ctx.payload && ctx.payload.studentId;
+    var studentId = ctx.payload && (ctx.payload.studentId || ctx.payload.student_id);
     var raw = studentId
       ? _pkgRepoH.Packages_getByStudentId(ctx.spreadsheet, studentId)
       : _pkgRepoH.Packages_getAll(ctx.spreadsheet);
@@ -20,6 +20,35 @@ function registerPackageOperations(router) {
     });
 
     return { success: true, data: enriched };
+  });
+
+  reg('packages.getBalance', function(ctx) {
+    var studentId = ctx.payload && (ctx.payload.studentId || ctx.payload.student_id);
+    if (!studentId) {
+      return { success: false, code: 'VALIDATION_ERROR', message: 'Missing studentId' };
+    }
+    var raw = _pkgRepoH.Packages_getByStudentId(ctx.spreadsheet, studentId);
+    var totalPurchased = 0;
+    var totalConsumed = 0;
+    var totalRestored = 0;
+    var remainingClasses = 0;
+
+    for (var i = 0; i < raw.length; i++) {
+      var enriched = _pkgSvcH.Packages_enrichWithBalance(ctx.spreadsheet, raw[i]);
+      totalPurchased += Number(raw[i].purchased_classes) || 0;
+      totalConsumed += enriched.consumed_classes || 0;
+      remainingClasses += enriched.remaining_classes || 0;
+    }
+
+    return {
+      success: true,
+      data: {
+        totalPurchased: totalPurchased,
+        totalConsumed: totalConsumed,
+        totalRestored: totalRestored,
+        remainingClasses: remainingClasses
+      }
+    };
   });
 
   reg('packages.get', function(ctx) {

@@ -6,7 +6,8 @@ var _routerImp = typeof registerOperation === 'function' ? { registerOperation: 
 var _impService = typeof previewImportData === 'function' ? { previewImportData: previewImportData, executeImportData: executeImportData } : (typeof require !== 'undefined' ? require('./ImportService.gs') : null);
 
 _routerImp.registerOperation('imports.preview', function(context) {
-  var rows = (context.data && context.data.rows) || [];
+  var p = context.payload || context.data || {};
+  var rows = p.rows || [];
   var result = _impService.previewImportData(rows);
   return {
     success: true,
@@ -15,7 +16,8 @@ _routerImp.registerOperation('imports.preview', function(context) {
 });
 
 _routerImp.registerOperation('imports.execute', function(context) {
-  var rows = (context.data && context.data.rows) || [];
+  var p = context.payload || context.data || {};
+  var rows = p.rows || [];
   var result = _impService.executeImportData(rows, context.actorId, context.verifiedEmail);
   return {
     success: true,

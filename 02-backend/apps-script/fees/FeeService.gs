@@ -29,7 +29,7 @@ function FeeObligations_create(spreadsheet, data, actor) {
     student_id: data.student_id,
     enrollment_id: data.enrollment_id || '',
     package_id: data.package_id || '',
-    obligation_description: String(data.obligation_description).trim(),
+    obligation_description: String(data.obligation_description || data.description).trim(),
     amount_due: Math.round(Number(data.amount_due) * 100) / 100,
     currency: 'INR',
     issue_date: data.issue_date || now.split('T')[0],
@@ -128,6 +128,13 @@ function FeeObligations_enrichWithBalances(spreadsheet, feeRecord) {
   enriched.outstanding_amount = outstanding;
   enriched.is_overdue = isOverdue;
   enriched.obligation_status = derivedStatus;
+
+  // UI convenience aliases
+  enriched.fee_id = feeRecord.fee_obligation_id;
+  enriched.description = feeRecord.obligation_description;
+  enriched.amount_paid = paidAmount;
+  enriched.outstanding_balance = outstanding;
+  enriched.status = derivedStatus;
 
   return enriched;
 }

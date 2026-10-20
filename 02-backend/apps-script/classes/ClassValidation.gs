@@ -9,9 +9,17 @@ function validateClassScheduleInput(data) {
     errors.student_id = 'Student ID is required';
   }
 
-  if (!data.scheduled_start || !data.scheduled_end) {
+  var start = data.scheduled_start || data.start_time;
+  var end = data.scheduled_end;
+  if (!end && start && data.duration_minutes) {
+    try {
+      end = new Date(new Date(start).getTime() + (Number(data.duration_minutes) || 60) * 60000).toISOString();
+    } catch (e) {}
+  }
+
+  if (!start || !end) {
     errors.schedule = 'Scheduled start and end timestamps are required';
-  } else if (String(data.scheduled_end) <= String(data.scheduled_start)) {
+  } else if (String(end) <= String(start)) {
     errors.scheduled_end = 'Scheduled end time must be later than start time';
   }
 
@@ -23,10 +31,12 @@ function validateClassScheduleInput(data) {
 
 function validateClassCompleteInput(data) {
   var errors = {};
-  if (!data.class_session_id) errors.class_session_id = 'Class session ID is required';
+  var sid = data.class_session_id || data.session_id;
+  if (!sid) errors.class_session_id = 'Class session ID is required';
 
+  var att = data.attendance_status || (data.outcome === 'NO_SHOW' ? 'ABSENT' : data.outcome);
   var validAttendance = ['ATTENDED', 'ABSENT', 'EXCUSED'];
-  if (!data.attendance_status || validAttendance.indexOf(data.attendance_status) === -1) {
+  if (!att || validAttendance.indexOf(att) === -1) {
     errors.attendance_status = 'Attendance status must be ATTENDED, ABSENT, or EXCUSED';
   }
 

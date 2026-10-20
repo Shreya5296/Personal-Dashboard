@@ -6,6 +6,8 @@ import { StudentNotes } from '../notes/StudentNotes';
 import { EnrollmentList } from '../enrollments/EnrollmentList';
 import { PackageList } from '../packages/PackageList';
 import { FeeObligationList } from '../fees/FeeObligationList';
+import { ClassSchedule } from '../classes/ClassSchedule';
+import { MeetingLinkList } from '../meeting-links/MeetingLinkList';
 
 export interface StudentProfilePageProps {
   student: Student;
@@ -13,7 +15,7 @@ export interface StudentProfilePageProps {
   onEdit: () => void;
 }
 
-type TabType = 'enrollments' | 'packages' | 'fees' | 'notes';
+type TabType = 'enrollments' | 'packages' | 'fees' | 'classes' | 'meeting-links' | 'notes';
 
 export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
   student,
@@ -26,6 +28,8 @@ export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
     { id: 'enrollments', label: 'Enrollments' },
     { id: 'packages', label: 'Packages & Balances' },
     { id: 'fees', label: 'Fee Obligations' },
+    { id: 'classes', label: 'Classes & Attendance' },
+    { id: 'meeting-links', label: 'Meeting Links' },
     { id: 'notes', label: 'Student Notes' },
   ];
 
@@ -67,6 +71,8 @@ export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
         {activeTab === 'enrollments' && <EnrollmentList studentId={student.student_id} />}
         {activeTab === 'packages' && <PackageList studentId={student.student_id} />}
         {activeTab === 'fees' && <FeeObligationList studentId={student.student_id} />}
+        {activeTab === 'classes' && <ClassSchedule studentId={student.student_id} />}
+        {activeTab === 'meeting-links' && <MeetingLinkList studentId={student.student_id} />}
         {activeTab === 'notes' && <StudentNotes studentId={student.student_id} />}
       </div>
     </div>

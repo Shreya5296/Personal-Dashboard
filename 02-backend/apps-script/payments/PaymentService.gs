@@ -18,13 +18,18 @@ function Payments_record(spreadsheet, data, actor) {
     return { success: false, code: 'VALIDATION_ERROR', message: 'Payment validation failed', details: v.errors };
   }
 
+  var feeObId = data.fee_obligation_id || data.fee_id || data.feeId;
+  var transRef = (data.transaction_reference !== undefined && data.transaction_reference !== null)
+    ? String(data.transaction_reference).trim()
+    : ((data.reference_number !== undefined && data.reference_number !== null) ? String(data.reference_number).trim() : '');
+
   // Execute within concurrency lock for transaction serialization
   var lockRes = _payLock.withLock(10000, function() {
     // 1. Check idempotency
     var existingKeyPayment = _payRepo.Payments_findByIdempotencyKey(spreadsheet, data.idempotency_key);
     if (existingKeyPayment) {
       if (existingKeyPayment.student_id === data.student_id &&
-          existingKeyPayment.fee_obligation_id === data.fee_obligation_id &&
+          existingKeyPayment.fee_obligation_id === feeObId &&
           Number(existingKeyPayment.amount) === Number(data.amount)) {
         return { success: true, data: existingKeyPayment, meta: { idempotentRetry: true } };
       }
@@ -36,7 +41,7 @@ function Payments_record(spreadsheet, data, actor) {
     }
 
     // 2. Validate obligation
-    var obligation = _payFeeRepo.FeeObligations_getById(spreadsheet, data.fee_obligation_id);
+    var obligation = _payFeeRepo.FeeObligations_getById(spreadsheet, feeObId);
     if (!obligation) {
       return { success: false, code: 'RECORD_NOT_FOUND', message: 'Referenced fee obligation not found' };
     }
@@ -64,12 +69,12 @@ function Payments_record(spreadsheet, data, actor) {
     var record = {
       payment_id: paymentId,
       student_id: data.student_id,
-      fee_obligation_id: data.fee_obligation_id,
+      fee_obligation_id: feeObId,
       payment_date: data.payment_date || now.split('T')[0],
       amount: payAmount,
       currency: 'INR',
       payment_method: data.payment_method,
-      transaction_reference: data.transaction_reference ? String(data.transaction_reference).trim() : '',
+      transaction_reference: transRef,
       idempotency_key: String(data.idempotency_key).trim(),
       payment_status: 'RECORDED',
       notes: data.notes ? String(data.notes).trim() : '',

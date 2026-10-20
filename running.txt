@@ -68,8 +68,13 @@ CURRENT EXECUTION STATUS
 - Decision: Zero Google Cloud Console / Zero GCP dependency architecture confirmed and implemented.
 
 NEXT ACTION
-- Production Apps Script Web App deployed and verified live at https://script.google.com/macros/s/AKfycbx4d_VG4CsZIEAomX_OjNMuej06ktTYmKLME5ennLsI7mx3Fn5b-YBu9CRqe7NwrUVH3w/exec.
-- .env.local configured with VITE_APPS_SCRIPT_URL and excluded via .gitignore.
-- Development server active on http://localhost:5173/.
-- Live endpoint tests confirmed: system health check (200), unauthenticated access rejected with 401 UNAUTHORIZED, invalid admin key rejected with 401 UNAUTHORIZED. Script properties ADMIN_AUTH_KEY, SPREADSHEET_ID, and ADMIN_EMAILS verified active.
-- Next action: Owner enters their private ADMIN_AUTH_KEY into http://localhost:5173/ to verify interactive browser sign-in and sign-out.
+- Dashboard functionality audit and adapter alignment complete:
+  * Students: bidirectional field adaptation (full_name, phone, parent_name <-> canonical columns), profile enriched.
+  * Enrollments & Packages: packages.getBalance registered, total_classes/price normalized, student filtering fixed.
+  * Fees & Payments: description/fee_id aliases normalized, in-line "Pay" action added to fee list, payment idempotency verified.
+  * Classes & Attendance: classes.schedule and classes.recordAttendance registered, start_time/duration mapped, student picker added to scheduling.
+  * Reports & Dashboard: camelCase and snake_case metrics aligned across Overview and Financial Summary.
+  * Student Profile: integrated Classes & Attendance and Meeting Links tabs.
+- Full regression suite passing: 58/58 tests across 15 test suites. Clean build in 2.12s. All 111 files <= 149 lines.
+- All 64 backend files synchronized to Apps Script via clasp.
+- Next action: Owner interactive testing of dashboard screens on http://localhost:5173/ with synthetic data.

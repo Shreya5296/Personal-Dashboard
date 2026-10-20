@@ -14,14 +14,16 @@ function registerStudentOperations(router) {
   });
 
   reg('students.get', function(ctx) {
-    if (!ctx.payload || !ctx.payload.studentId) {
+    var sid = ctx.payload && (ctx.payload.studentId || ctx.payload.student_id);
+    if (!sid) {
       return { success: false, code: 'VALIDATION_ERROR', message: 'Missing studentId in payload' };
     }
-    var student = _stuRepoH.Students_getById(ctx.spreadsheet, ctx.payload.studentId);
+    var student = _stuRepoH.Students_getById(ctx.spreadsheet, sid);
     if (!student) {
-      return { success: false, code: 'RECORD_NOT_FOUND', message: 'Student not found: ' + ctx.payload.studentId };
+      return { success: false, code: 'RECORD_NOT_FOUND', message: 'Student not found: ' + sid };
     }
-    return { success: true, data: student };
+    var enrich = typeof Students_enrich === 'function' ? Students_enrich : (_stuSvc && _stuSvc.Students_enrich ? _stuSvc.Students_enrich : function(x) { return x; });
+    return { success: true, data: enrich(student) };
   });
 
   reg('students.create', function(ctx) {
@@ -33,10 +35,11 @@ function registerStudentOperations(router) {
   });
 
   reg('students.update', function(ctx) {
-    if (!ctx.payload || !ctx.payload.studentId) {
+    var sid = ctx.payload && (ctx.payload.studentId || ctx.payload.student_id);
+    if (!sid) {
       return { success: false, code: 'VALIDATION_ERROR', message: 'Missing studentId in payload' };
     }
-    return _stuSvc.Students_update(ctx.spreadsheet, ctx.payload.studentId, ctx.payload, {
+    return _stuSvc.Students_update(ctx.spreadsheet, sid, ctx.payload, {
       actorId: ctx.actorId,
       email: ctx.verifiedEmail,
       requestId: ctx.requestId
@@ -44,10 +47,11 @@ function registerStudentOperations(router) {
   });
 
   reg('students.archive', function(ctx) {
-    if (!ctx.payload || !ctx.payload.studentId) {
+    var sid = ctx.payload && (ctx.payload.studentId || ctx.payload.student_id);
+    if (!sid) {
       return { success: false, code: 'VALIDATION_ERROR', message: 'Missing studentId in payload' };
     }
-    return _stuSvc.Students_archive(ctx.spreadsheet, ctx.payload.studentId, {
+    return _stuSvc.Students_archive(ctx.spreadsheet, sid, {
       actorId: ctx.actorId,
       email: ctx.verifiedEmail,
       requestId: ctx.requestId
@@ -55,10 +59,11 @@ function registerStudentOperations(router) {
   });
 
   reg('students.reactivate', function(ctx) {
-    if (!ctx.payload || !ctx.payload.studentId) {
+    var sid = ctx.payload && (ctx.payload.studentId || ctx.payload.student_id);
+    if (!sid) {
       return { success: false, code: 'VALIDATION_ERROR', message: 'Missing studentId in payload' };
     }
-    return _stuSvc.Students_reactivate(ctx.spreadsheet, ctx.payload.studentId, {
+    return _stuSvc.Students_reactivate(ctx.spreadsheet, sid, {
       actorId: ctx.actorId,
       email: ctx.verifiedEmail,
       requestId: ctx.requestId

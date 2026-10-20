@@ -17,15 +17,17 @@ function validatePackageInput(data, isUpdate) {
     }
   }
 
-  if (!isUpdate || data.purchased_classes !== undefined) {
-    var qty = Number(data.purchased_classes);
+  if (!isUpdate || data.purchased_classes !== undefined || data.total_classes !== undefined) {
+    var rawQty = data.purchased_classes !== undefined ? data.purchased_classes : data.total_classes;
+    var qty = Number(rawQty);
     if (isNaN(qty) || qty <= 0 || !Number.isInteger(qty)) {
       errors.purchased_classes = 'Purchased classes must be a positive integer';
     }
   }
 
-  if (data.package_price !== undefined && data.package_price !== null && data.package_price !== '') {
-    var price = Number(data.package_price);
+  var rawPrice = data.package_price !== undefined ? data.package_price : data.price;
+  if (rawPrice !== undefined && rawPrice !== null && rawPrice !== '') {
+    var price = Number(rawPrice);
     if (isNaN(price) || price < 0) {
       errors.package_price = 'Package price must be a non-negative number';
     }
@@ -37,9 +39,10 @@ function validatePackageInput(data, isUpdate) {
     }
   }
 
-  if (data.package_status) {
+  var rawStatus = data.package_status || data.status;
+  if (rawStatus) {
     var allowed = ['ACTIVE', 'EXHAUSTED', 'EXPIRED', 'CANCELLED', 'CLOSED'];
-    if (allowed.indexOf(data.package_status) === -1) {
+    if (allowed.indexOf(rawStatus) === -1) {
       errors.package_status = 'Status must be one of: ' + allowed.join(', ');
     }
   }

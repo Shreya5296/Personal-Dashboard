@@ -43,10 +43,10 @@ Update every field below as work proceeds.
 | Current phase status | PASSED |
 | Last completed phase | Phase 12 — Release and Handover |
 | Current Git branch | main |
-| Last phase commit | 176354c |
-| Last full regression run | 52 vitest tests passed (100% pass, 111 micro-files checked) |
+| Last phase commit | 2f531bf |
+| Last full regression run | 58 vitest tests passed (100% pass across 15 suites, 111 micro-files checked) |
 | Real-data use | Prohibited until security release gate passes |
-| Last state update | Live Apps Script deployment verified: .env.local configured, dev server active on port 5173, live invalid-key and unauthenticated rejection verified |
+| Last state update | Full dashboard functionality audit completed: resolved property/operation name mismatches across Students, Enrollments, Packages, Fees, Payments, Classes, Reports, and Imports; added payment recording & student selection; 64 backend files synchronized to Apps Script |
 
 ## 5. Phase Register
 

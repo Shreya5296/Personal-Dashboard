@@ -10,7 +10,7 @@ function registerClassOperations(router) {
   if (!reg) return;
 
   reg('classes.list', function(ctx) {
-    var studentId = ctx.payload && ctx.payload.studentId;
+    var studentId = ctx.payload && (ctx.payload.studentId || ctx.payload.student_id);
     var includeRestorations = ctx.payload && ctx.payload.includeRestorations;
     var all = _clsRepoH.Classes_getAll(ctx.spreadsheet);
 
@@ -18,22 +18,44 @@ function registerClassOperations(router) {
       if (!includeRestorations && c.class_credit_effect === 'CREDIT_BACK') return false;
       if (studentId && c.student_id !== studentId) return false;
       return true;
+    }).map(function(c) {
+      var copy = Object.assign({}, c);
+      // UI convenience aliases
+      copy.session_id = c.class_session_id;
+      copy.topic = c.class_title;
+      copy.start_time = c.scheduled_start;
+      copy.status = c.session_status;
+      if (c.scheduled_start && c.scheduled_end) {
+        try {
+          var diffMs = new Date(c.scheduled_end).getTime() - new Date(c.scheduled_start).getTime();
+          copy.duration_minutes = Math.max(15, Math.round(diffMs / 60000));
+        } catch (e) {
+          copy.duration_minutes = 60;
+        }
+      } else {
+        copy.duration_minutes = 60;
+      }
+      return copy;
     });
 
     return { success: true, data: filtered };
   });
 
-  reg('classes.create', function(ctx) {
+  var scheduleHandler = function(ctx) {
     return _clsSvcH.Classes_schedule(ctx.spreadsheet, ctx.payload, {
       actorId: ctx.actorId, email: ctx.verifiedEmail, requestId: ctx.requestId
     });
-  });
+  };
+  reg('classes.create', scheduleHandler);
+  reg('classes.schedule', scheduleHandler);
 
-  reg('classes.complete', function(ctx) {
+  var completeHandler = function(ctx) {
     return _clsSvcH.Classes_complete(ctx.spreadsheet, ctx.payload, {
       actorId: ctx.actorId, email: ctx.verifiedEmail, requestId: ctx.requestId
     });
-  });
+  };
+  reg('classes.complete', completeHandler);
+  reg('classes.recordAttendance', completeHandler);
 
   reg('classes.cancel', function(ctx) {
     return _clsSvcH.Classes_cancel(ctx.spreadsheet, ctx.payload, {

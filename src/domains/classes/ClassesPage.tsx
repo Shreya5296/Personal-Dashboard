@@ -43,7 +43,6 @@ export const ClassesPage: React.FC = () => {
         }}>
           <h3 style={{ margin: '0 0 var(--space-4)' }}>Schedule New Class Session</h3>
           <ClassSessionForm
-            studentId="stu_general"
             onSubmit={handleScheduleSubmit}
             onCancel={() => setIsScheduling(false)}
             isLoading={formLoading}

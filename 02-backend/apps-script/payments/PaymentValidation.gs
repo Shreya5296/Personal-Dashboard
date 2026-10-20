@@ -9,7 +9,8 @@ function validatePaymentRecordInput(data) {
     errors.student_id = 'Student ID is required';
   }
 
-  if (!data.fee_obligation_id || !String(data.fee_obligation_id).trim()) {
+  var feeId = data.fee_obligation_id || data.fee_id || data.feeId;
+  if (!feeId || !String(feeId).trim()) {
     errors.fee_obligation_id = 'Fee obligation ID is required for every payment in V1';
   }
 
@@ -35,7 +36,8 @@ function validatePaymentRecordInput(data) {
 
 function validatePaymentVoidInput(data) {
   var errors = {};
-  if (!data.payment_id) errors.payment_id = 'Payment ID is required';
+  var payId = data.payment_id || data.paymentId;
+  if (!payId) errors.payment_id = 'Payment ID is required';
   if (!data.void_reason || !String(data.void_reason).trim()) {
     errors.void_reason = 'A valid void reason is required';
   }

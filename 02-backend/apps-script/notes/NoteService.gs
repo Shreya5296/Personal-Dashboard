@@ -27,7 +27,7 @@ function Notes_create(spreadsheet, data, actor) {
     note_id: id,
     student_id: data.student_id,
     note_type: data.note_type || 'GENERAL',
-    note_text: String(data.note_text).trim(),
+    note_text: String(data.note_text || data.content).trim(),
     follow_up_date: data.follow_up_date || '',
     follow_up_status: data.follow_up_status || 'NOT_REQUIRED',
     created_at: now,

@@ -4,6 +4,9 @@ import { FeeObligation, FeeObligationInput } from './feeTypes';
 import { fetchFeeObligations, createFeeObligation, voidFeeObligation } from './feeApi';
 import { FeeStatus } from './FeeStatus';
 import { FeeObligationForm } from './FeeObligationForm';
+import { PaymentForm } from '../payments/PaymentForm';
+import { recordPayment } from '../payments/paymentApi';
+import { PaymentInput } from '../payments/paymentTypes';
 import { DataTable, Column } from '../../components/tables/DataTable';
 import { formatCurrency } from '../../lib/currencyFormat';
 import { formatDate } from '../../lib/dateFormat';
@@ -16,6 +19,7 @@ export const FeeObligationList: React.FC<{ studentId?: string }> = ({ studentId 
   const [fees, setFees] = useState<FeeObligation[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
+  const [payingFee, setPayingFee] = useState<FeeObligation | null>(null);
   const [formLoading, setFormLoading] = useState(false);
 
   const loadData = async () => {
@@ -43,6 +47,17 @@ export const FeeObligationList: React.FC<{ studentId?: string }> = ({ studentId 
     }
   };
 
+  const handleRecordPayment = async (input: PaymentInput) => {
+    setFormLoading(true);
+    try {
+      await recordPayment(input, token);
+      setPayingFee(null);
+      await loadData();
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
   const handleVoid = async (feeId: string) => {
     if (confirm('Are you sure you want to void this fee obligation?')) {
       await voidFeeObligation(feeId, token);
@@ -60,12 +75,20 @@ export const FeeObligationList: React.FC<{ studentId?: string }> = ({ studentId 
     {
       key: 'actions',
       header: 'Actions',
-      render: (f) =>
-        f.status !== 'VOID' && f.amount_paid === 0 ? (
-          <Button variant="outline" onClick={() => handleVoid(f.fee_id)}>
-            Void
-          </Button>
-        ) : null,
+      render: (f) => (
+        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+          {f.status !== 'VOID' && f.outstanding_balance > 0 && (
+            <Button variant="primary" onClick={() => setPayingFee(f)}>
+              Pay
+            </Button>
+          )}
+          {f.status !== 'VOID' && f.amount_paid === 0 && (
+            <Button variant="outline" onClick={() => handleVoid(f.fee_id)}>
+              Void
+            </Button>
+          )}
+        </div>
+      ),
     },
   ];
 
@@ -83,6 +106,20 @@ export const FeeObligationList: React.FC<{ studentId?: string }> = ({ studentId 
       {isAdding && studentId && (
         <div style={{ padding: 'var(--space-4)', backgroundColor: 'var(--color-bg-subtle)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)' }}>
           <FeeObligationForm studentId={studentId} onSubmit={handleCreate} onCancel={() => setIsAdding(false)} isLoading={formLoading} />
+        </div>
+      )}
+
+      {payingFee && (
+        <div style={{ padding: 'var(--space-4)', backgroundColor: 'var(--color-bg-subtle)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)' }}>
+          <h4 style={{ margin: '0 0 var(--space-3)' }}>Record Payment for {payingFee.description}</h4>
+          <PaymentForm
+            studentId={payingFee.student_id}
+            feeId={payingFee.fee_id}
+            defaultAmount={payingFee.outstanding_balance}
+            onSubmit={handleRecordPayment}
+            onCancel={() => setPayingFee(null)}
+            isLoading={formLoading}
+          />
         </div>
       )}
 

@@ -10,7 +10,7 @@ function registerMeetingLinkOperations(router) {
   if (!reg) return;
 
   reg('meetingLinks.list', function(ctx) {
-    var studentId = ctx.payload && ctx.payload.studentId;
+    var studentId = ctx.payload && (ctx.payload.studentId || ctx.payload.student_id);
     var data = studentId
       ? _mlRepoH.MeetingLinks_getByStudentId(ctx.spreadsheet, studentId)
       : _mlRepoH.MeetingLinks_getAll(ctx.spreadsheet);
@@ -26,10 +26,11 @@ function registerMeetingLinkOperations(router) {
   });
 
   reg('meetingLinks.deactivate', function(ctx) {
-    if (!ctx.payload || !ctx.payload.meetingLinkId) {
+    var mid = ctx.payload && (ctx.payload.meetingLinkId || ctx.payload.meeting_link_id);
+    if (!mid) {
       return { success: false, code: 'VALIDATION_ERROR', message: 'Missing meetingLinkId' };
     }
-    return _mlSvcH.MeetingLinks_deactivate(ctx.spreadsheet, ctx.payload.meetingLinkId, {
+    return _mlSvcH.MeetingLinks_deactivate(ctx.spreadsheet, mid, {
       actorId: ctx.actorId,
       email: ctx.verifiedEmail,
       requestId: ctx.requestId

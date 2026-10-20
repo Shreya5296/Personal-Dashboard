@@ -10,15 +10,27 @@ function registerEnrollmentOperations(router) {
   if (!reg) return;
 
   reg('enrollments.list', function(ctx) {
-    var studentId = ctx.payload && ctx.payload.studentId;
+    var studentId = ctx.payload && (ctx.payload.studentId || ctx.payload.student_id);
     var data = studentId
       ? _enrRepoH.Enrollments_getByStudentId(ctx.spreadsheet, studentId)
       : _enrRepoH.Enrollments_getAll(ctx.spreadsheet);
-    return { success: true, data: data };
+
+    var enriched = data.map(function(e) {
+      var copy = Object.assign({}, e);
+      copy.course_name = e.subject_or_level || 'General';
+      copy.level_or_grade = e.academic_year || '';
+      copy.status = e.enrollment_status || 'ACTIVE';
+      return copy;
+    });
+
+    return { success: true, data: enriched };
   });
 
   reg('enrollments.create', function(ctx) {
-    return _enrSvcH.Enrollments_create(ctx.spreadsheet, ctx.payload, {
+    var p = Object.assign({}, ctx.payload);
+    p.subject_or_level = p.subject_or_level || p.course_name || 'General';
+    p.academic_year = p.academic_year || p.level_or_grade || '2026';
+    return _enrSvcH.Enrollments_create(ctx.spreadsheet, p, {
       actorId: ctx.actorId,
       email: ctx.verifiedEmail,
       requestId: ctx.requestId
@@ -26,10 +38,11 @@ function registerEnrollmentOperations(router) {
   });
 
   reg('enrollments.update', function(ctx) {
-    if (!ctx.payload || !ctx.payload.enrollmentId) {
+    var eid = ctx.payload && (ctx.payload.enrollmentId || ctx.payload.enrollment_id);
+    if (!eid) {
       return { success: false, code: 'VALIDATION_ERROR', message: 'Missing enrollmentId in payload' };
     }
-    return _enrSvcH.Enrollments_update(ctx.spreadsheet, ctx.payload.enrollmentId, ctx.payload, {
+    return _enrSvcH.Enrollments_update(ctx.spreadsheet, eid, ctx.payload, {
       actorId: ctx.actorId,
       email: ctx.verifiedEmail,
       requestId: ctx.requestId

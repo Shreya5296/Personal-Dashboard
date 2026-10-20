@@ -10,15 +10,22 @@ function registerNoteOperations(router) {
   if (!reg) return;
 
   reg('notes.list', function(ctx) {
-    var studentId = ctx.payload && ctx.payload.studentId;
+    var studentId = ctx.payload && (ctx.payload.studentId || ctx.payload.student_id);
     var data = studentId
       ? _noteRepoH.Notes_getByStudentId(ctx.spreadsheet, studentId)
       : _noteRepoH.Notes_getAll(ctx.spreadsheet);
-    return { success: true, data: data };
+    var enriched = data.map(function(n) {
+      var copy = Object.assign({}, n);
+      copy.content = n.note_text;
+      return copy;
+    });
+    return { success: true, data: enriched };
   });
 
   reg('notes.create', function(ctx) {
-    return _noteSvcH.Notes_create(ctx.spreadsheet, ctx.payload, {
+    var p = Object.assign({}, ctx.payload);
+    p.note_text = p.note_text || p.content;
+    return _noteSvcH.Notes_create(ctx.spreadsheet, p, {
       actorId: ctx.actorId,
       email: ctx.verifiedEmail,
       requestId: ctx.requestId

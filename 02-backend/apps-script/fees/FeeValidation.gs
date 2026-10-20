@@ -9,7 +9,8 @@ function validateFeeObligationInput(data) {
     errors.student_id = 'Student ID is required';
   }
 
-  if (!data.obligation_description || !String(data.obligation_description).trim()) {
+  var desc = data.obligation_description || data.description;
+  if (!desc || !String(desc).trim()) {
     errors.obligation_description = 'Description is required';
   }
 
@@ -30,7 +31,8 @@ function validateFeeObligationInput(data) {
 
 function validateFeeVoidInput(data) {
   var errors = {};
-  if (!data.fee_obligation_id) {
+  var feeId = data.fee_obligation_id || data.fee_id || data.feeId;
+  if (!feeId) {
     errors.fee_obligation_id = 'Fee obligation ID is required';
   }
   if (!data.void_reason || !String(data.void_reason).trim()) {

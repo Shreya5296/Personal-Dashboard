@@ -9,8 +9,38 @@ var _stuAudit = typeof recordAuditEvent === 'function' ? { recordAuditEvent: rec
 var _stuReg = typeof SHEET_NAMES !== 'undefined' ? { SHEET_NAMES: SHEET_NAMES, getExpectedHeaders: getExpectedHeaders } : (typeof require !== 'undefined' ? require('../sheets/SheetRegistry.gs') : null);
 var _stuMap = typeof createHeaderMap === 'function' ? { createHeaderMap: createHeaderMap, rowToRecord: rowToRecord, recordToRow: recordToRow } : (typeof require !== 'undefined' ? require('../sheets/HeaderMapper.gs') : null);
 
+function Students_enrich(s) {
+  if (!s) return s;
+  var copy = Object.assign({}, s);
+  copy.full_name = (s.first_name + (s.last_name ? ' ' + s.last_name : '')).trim();
+  copy.phone = s.primary_phone || '';
+  copy.email = s.parent_email || '';
+  copy.parent_name = s.parent_guardian_name || '';
+  copy.parent_phone = s.secondary_phone || s.primary_phone || '';
+  copy.status = s.student_status || 'ACTIVE';
+  copy.notes = s.internal_summary || '';
+  return copy;
+}
+
 function Students_create(spreadsheet, data, actor) {
-  var v = _stuVal.validateStudentInput(data, false);
+  var rawFirst = data.first_name;
+  var rawLast = data.last_name;
+  if (!rawFirst && data.full_name) {
+    var parts = String(data.full_name).trim().split(/\s+/);
+    rawFirst = parts[0];
+    rawLast = parts.slice(1).join(' ');
+  }
+  var rawParent = data.parent_guardian_name || data.parent_name || '';
+  var rawPhone = data.primary_phone || data.phone || data.parent_phone || '';
+
+  var normalized = Object.assign({}, data, {
+    first_name: rawFirst,
+    last_name: rawLast,
+    parent_guardian_name: rawParent,
+    primary_phone: rawPhone
+  });
+
+  var v = _stuVal.validateStudentInput(normalized, false);
   if (!v.valid) {
     return { success: false, code: 'VALIDATION_ERROR', message: 'Student validation failed', details: v.errors };
   }
@@ -19,24 +49,24 @@ function Students_create(spreadsheet, data, actor) {
   var studentId = _stuIdGen.generateStudentId();
   var record = {
     student_id: studentId,
-    first_name: String(data.first_name).trim(),
-    last_name: data.last_name ? String(data.last_name).trim() : '',
-    preferred_name: data.preferred_name ? String(data.preferred_name).trim() : '',
-    date_of_birth: data.date_of_birth || '',
-    parent_guardian_name: String(data.parent_guardian_name).trim(),
-    parent_guardian_relationship: data.parent_guardian_relationship ? String(data.parent_guardian_relationship).trim() : '',
-    primary_phone: String(data.primary_phone).trim(),
-    secondary_phone: data.secondary_phone ? String(data.secondary_phone).trim() : '',
-    parent_email: data.parent_email ? String(data.parent_email).trim() : '',
-    city: data.city ? String(data.city).trim() : '',
+    first_name: String(normalized.first_name).trim(),
+    last_name: normalized.last_name ? String(normalized.last_name).trim() : '',
+    preferred_name: normalized.preferred_name ? String(normalized.preferred_name).trim() : '',
+    date_of_birth: normalized.date_of_birth || '',
+    parent_guardian_name: String(normalized.parent_guardian_name).trim(),
+    parent_guardian_relationship: normalized.parent_guardian_relationship ? String(normalized.parent_guardian_relationship).trim() : '',
+    primary_phone: String(normalized.primary_phone).trim(),
+    secondary_phone: normalized.secondary_phone ? String(normalized.secondary_phone).trim() : '',
+    parent_email: normalized.parent_email ? String(normalized.parent_email).trim() : '',
+    city: normalized.city ? String(normalized.city).trim() : '',
     student_status: 'ACTIVE',
-    first_enrollment_date: data.first_enrollment_date || '',
-    last_active_date: data.last_active_date || '',
-    internal_summary: data.internal_summary ? String(data.internal_summary).trim() : '',
+    first_enrollment_date: normalized.first_enrollment_date || '',
+    last_active_date: normalized.last_active_date || '',
+    internal_summary: normalized.internal_summary || normalized.notes ? String(normalized.internal_summary || normalized.notes).trim() : '',
     created_at: now,
     updated_at: now,
     archived_at: '',
-    source_reference: data.source_reference || ''
+    source_reference: normalized.source_reference || ''
   };
 
   _stuRepo.Students_insert(spreadsheet, record);
@@ -51,7 +81,7 @@ function Students_create(spreadsheet, data, actor) {
     request_id: actor.requestId
   });
 
-  return { success: true, data: record };
+  return { success: true, data: Students_enrich(record) };
 }
 
 function Students_update(spreadsheet, studentId, updates, actor) {
@@ -170,11 +200,16 @@ function Students_list(spreadsheet, filter) {
     return true;
   });
 
-  return { success: true, data: filtered, meta: { total: filtered.length } };
+  var enrichedList = filtered.map(function(s) {
+    return Students_enrich(s);
+  });
+
+  return { success: true, data: enrichedList, meta: { total: filtered.length } };
 }
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
+    Students_enrich: Students_enrich,
     Students_create: Students_create,
     Students_update: Students_update,
     Students_archive: Students_archive,

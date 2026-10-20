@@ -10,7 +10,7 @@ function registerFeeOperations(router) {
   if (!reg) return;
 
   reg('fees.list', function(ctx) {
-    var studentId = ctx.payload && ctx.payload.studentId;
+    var studentId = ctx.payload && (ctx.payload.studentId || ctx.payload.student_id);
     var raw = studentId
       ? _feeRepoH.FeeObligations_getByStudentId(ctx.spreadsheet, studentId)
       : _feeRepoH.FeeObligations_getAll(ctx.spreadsheet);
@@ -23,7 +23,9 @@ function registerFeeOperations(router) {
   });
 
   reg('fees.create', function(ctx) {
-    return _feeSvcH.FeeObligations_create(ctx.spreadsheet, ctx.payload, {
+    var p = Object.assign({}, ctx.payload);
+    p.obligation_description = p.obligation_description || p.description;
+    return _feeSvcH.FeeObligations_create(ctx.spreadsheet, p, {
       actorId: ctx.actorId,
       email: ctx.verifiedEmail,
       requestId: ctx.requestId
@@ -31,7 +33,10 @@ function registerFeeOperations(router) {
   });
 
   reg('fees.void', function(ctx) {
-    return _feeSvcH.FeeObligations_void(ctx.spreadsheet, ctx.payload, {
+    var p = Object.assign({}, ctx.payload);
+    p.fee_obligation_id = p.fee_obligation_id || p.fee_id || p.feeId;
+    p.void_reason = p.void_reason || p.reason || 'Voided by administrator';
+    return _feeSvcH.FeeObligations_void(ctx.spreadsheet, p, {
       actorId: ctx.actorId,
       email: ctx.verifiedEmail,
       requestId: ctx.requestId
