@@ -17,10 +17,13 @@ import TokenValidation from '../../02-backend/apps-script/auth/TokenValidation.g
 import AuthService from '../../02-backend/apps-script/auth/AuthService.gs';
 // @ts-ignore
 import AdminAuthorization from '../../02-backend/apps-script/auth/AdminAuthorization.gs';
+// @ts-ignore
+import RequestParser from '../../02-backend/apps-script/api/RequestParser.gs';
 
 describe('Zero-GCP Backend Security Hardening & Session Authentication', () => {
   let spreadsheet: MockSpreadsheet;
   const originalUrlFetchApp = (globalThis as unknown as { UrlFetchApp?: unknown }).UrlFetchApp;
+  const originalCacheService = (globalThis as unknown as { CacheService?: unknown }).CacheService;
   const testSecretKey = 'test_admin_secret_key_123';
   const adminEmail = 'ashreya0502@gmail.com';
 
@@ -35,6 +38,11 @@ describe('Zero-GCP Backend Security Hardening & Session Authentication', () => {
       (globalThis as unknown as { UrlFetchApp?: unknown }).UrlFetchApp = originalUrlFetchApp;
     } else {
       delete (globalThis as unknown as { UrlFetchApp?: unknown }).UrlFetchApp;
+    }
+    if (originalCacheService !== undefined) {
+      (globalThis as unknown as { CacheService?: unknown }).CacheService = originalCacheService;
+    } else {
+      delete (globalThis as unknown as { CacheService?: unknown }).CacheService;
     }
   });
 
@@ -55,6 +63,42 @@ describe('Zero-GCP Backend Security Hardening & Session Authentication', () => {
     const loginRes = AuthService.handleAuthLogin({ key: 'wrong_password_attempt' });
     expect(loginRes.success).toBe(false);
     expect(loginRes.code).toBe('UNAUTHORIZED');
+  });
+
+  it('enforces brute-force lockout after 5 consecutive failed login attempts via CacheService', () => {
+    const store = new Map<string, string>();
+    (globalThis as unknown as { CacheService: unknown }).CacheService = {
+      getScriptCache: () => ({
+        get: (k: string) => store.get(k) || null,
+        put: (k: string, v: string) => store.set(k, v),
+        remove: (k: string) => store.delete(k),
+      }),
+    };
+
+    // 4 failed attempts: all return UNAUTHORIZED
+    for (let i = 0; i < 4; i++) {
+      const res = AuthService.handleAuthLogin({ key: 'bad_attempt' });
+      expect(res.code).toBe('UNAUTHORIZED');
+    }
+
+    // 5th failed attempt: triggers lockout
+    const res5 = AuthService.handleAuthLogin({ key: 'bad_attempt' });
+    expect(res5.code).toBe('UNAUTHORIZED');
+    expect(store.get('auth_lockout')).toBe('1');
+
+    // 6th attempt: blocked by rate limiter
+    const res6 = AuthService.handleAuthLogin({ key: testSecretKey });
+    expect(res6.code).toBe('RATE_LIMITED');
+    expect(res6.message).toContain('Too many failed login attempts');
+  });
+
+  it('rejects request payloads exceeding the maximum size limit of 2MB', () => {
+    const largeContents = 'x'.repeat(2 * 1024 * 1024 + 10);
+    const parsed = RequestParser.parseApiRequest({
+      postData: { contents: largeContents },
+    });
+    expect(parsed.valid).toBe(false);
+    expect(parsed.code).toBe('PAYLOAD_TOO_LARGE');
   });
 
   it('rejects tampered token payloads and signatures', () => {
@@ -154,5 +198,20 @@ describe('Zero-GCP Backend Security Hardening & Session Authentication', () => {
     const unauthRes = ApiEntry.doPost(unauthPost);
     expect(unauthRes.payload.success).toBe(false);
     expect(unauthRes.payload.error.code).toBe('UNAUTHORIZED');
+
+    // 4. Data operation (students.list) without token must fail before spreadsheet access
+    const unauthDataPost = {
+      postData: {
+        contents: JSON.stringify({
+          apiVersion: '1',
+          operation: 'students.list',
+          requestId: 'req_unauth_data_test',
+          payload: {},
+        }),
+      },
+    };
+    const unauthDataRes = ApiEntry.doPost(unauthDataPost);
+    expect(unauthDataRes.payload.success).toBe(false);
+    expect(unauthDataRes.payload.error.code).toBe('UNAUTHORIZED');
   });
 });

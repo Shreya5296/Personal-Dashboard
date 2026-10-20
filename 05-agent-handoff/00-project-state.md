@@ -44,9 +44,9 @@ Update every field below as work proceeds.
 | Last completed phase | Phase 12 — Release and Handover |
 | Current Git branch | main |
 | Last phase commit | e01832d |
-| Last full regression run | 50 vitest tests passed (100% pass, 111 micro-files checked) |
+| Last full regression run | 52 vitest tests passed (100% pass, 111 micro-files checked) |
 | Real-data use | Prohibited until security release gate passes |
-| Last state update | Zero-GCP architecture implemented: Google Cloud Console/OAuth dependency removed; native HMAC-SHA256 session token authentication deployed |
+| Last state update | Security review complete: fixed-length SHA-256 constant-time comparison, CacheService throttling, 2MB payload limit, replay threat model documented, 64 files synchronized |
 
 ## 5. Phase Register
 
@@ -107,11 +107,11 @@ Record command, outcome, and concise evidence for each relevant check. A command
 | Formatting / lint | PASSED | Line limits & forbidden catch-all checks passing (scripts/check-line-limits.js) |
 | Type checking | PASSED | TypeScript strict checking (tsc --noEmit) passed |
 | Source-file line limit (maximum 149) | PASSED | Automated check passed (npm run check:lines, 111 files verified <= 149 lines) |
-| Unit tests | PASSED | Vitest runner passed (50/50 tests passed across 14 test files) |
+| Unit tests | PASSED | Vitest runner passed (52/52 tests passed across 14 test files) |
 | Integration tests | PASSED | End-to-end lifecycle and domain service tests passed (14 test files, 100% pass) |
 | End-to-end / acceptance tests | PASSED | Full synthetic lifecycle test (tests/integration/endToEndLifecycle.test.ts) passed |
-| Security release gate | PASSED_LOCAL | Server-side HMAC token validation, admin allowlist, timing attack mitigation, mock token rejection in prod runtime verified |
-| Full regression suite | PASSED | npm run check (111 files, 0 errors, 50 passed tests) and npm run build passed |
+| Security release gate | PASSED_LOCAL | Server-side HMAC token validation, constant-time SHA256 comparison, brute-force lockout, 2MB size limit verified |
+| Full regression suite | PASSED | npm run check (111 files, 0 errors, 52 passed tests) and npm run build passed |
 
 ## 9. Decisions and Specification Issues
 
@@ -140,4 +140,4 @@ Never infer that work was completed merely because the previous agent said it wa
 
 ## 11. Next Action
 
-Zero-GCP architecture verified and synchronized (all 64 backend files pushed to Apps Script; 50/50 tests passing; build clean). Next action: Owner adds `ADMIN_AUTH_KEY` to Apps Script Script Properties, creates the Web App deployment (Execute as: Me, Access: Anyone), and configures `VITE_APPS_SCRIPT_URL` in local `.env.local` to connect frontend and backend.
+Security review complete. All 64 backend files synchronized to Apps Script. 52/52 tests passing. Ready for owner deployment: Owner adds `ADMIN_AUTH_KEY` to Apps Script Script Properties, creates Web App deployment (Execute as: Me, Access: Anyone), and saves `/exec` URL into local `.env.local`.

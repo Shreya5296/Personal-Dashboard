@@ -1,6 +1,9 @@
 /**
  * RequestParser: Parses and validates the incoming API request envelope.
+ * Enforces payload size limits, JSON parsing, API versioning, and structure validation.
  */
+
+var MAX_PAYLOAD_BYTES = 2 * 1024 * 1024; // 2MB safety limit
 
 function parseApiRequest(e) {
   if (!e || !e.postData || !e.postData.contents) {
@@ -13,6 +16,17 @@ function parseApiRequest(e) {
   }
 
   var raw = e.postData.contents;
+
+  // Enforce request size limit to prevent memory exhaustion
+  if (typeof raw === 'string' && raw.length > MAX_PAYLOAD_BYTES) {
+    return {
+      valid: false,
+      code: 'PAYLOAD_TOO_LARGE',
+      message: 'Request payload exceeds maximum allowed size of 2MB',
+      requestId: 'req_init'
+    };
+  }
+
   var envelope;
   try {
     envelope = typeof raw === 'string' ? JSON.parse(raw) : raw;
@@ -56,5 +70,8 @@ function parseApiRequest(e) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { parseApiRequest: parseApiRequest };
+  module.exports = {
+    parseApiRequest: parseApiRequest,
+    MAX_PAYLOAD_BYTES: MAX_PAYLOAD_BYTES
+  };
 }

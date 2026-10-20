@@ -1,6 +1,15 @@
 /**
  * TokenValidation: Zero-GCP cryptographic session token engine.
  * Generates and validates HMAC-SHA256 signed session tokens using server-held secret key.
+ *
+ * Security & Threat Model Notes:
+ * 1. Bearer Token Model: Tokens are bearer credentials.
+ * 2. Nonce Handling: The nonce ensures every issued token has a distinct cryptographic signature,
+ *    preventing deterministic token generation. However, the backend does not persist a stateful nonce
+ *    replay log in Sheets to avoid performance degradation and quota burn.
+ * 3. Replay & Interception Mitigation: Protection relies on mandatory TLS (HTTPS) in transit,
+ *    tamper-proof HMAC-SHA256 signatures, short expiration windows (8-hour default), and frontend
+ *    storage in isolated browser sessionStorage (cleared upon tab close or sign-out).
  */
 
 function computeHmacSignature(value, secretKey) {

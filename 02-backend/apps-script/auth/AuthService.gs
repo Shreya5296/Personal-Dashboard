@@ -1,11 +1,43 @@
 /**
  * AuthService: Authenticates administrator access and issues cryptographically signed session tokens.
  * Zero GCP dependency: Validates access key against Script Properties and creates HMAC-SHA256 token.
+ * Security controls: Fixed-length constant-time SHA-256 hash comparison and CacheService throttling.
  */
 
 var _createToken = typeof createHmacSessionToken === 'function' ? createHmacSessionToken : (typeof require !== 'undefined' ? require('./TokenValidation.gs').createHmacSessionToken : null);
+var _computeSig = typeof computeHmacSignature === 'function' ? computeHmacSignature : (typeof require !== 'undefined' ? require('./TokenValidation.gs').computeHmacSignature : null);
+
+function sha256Hex(val) {
+  if (_computeSig) {
+    // SHA-256 hash using fixed HMAC key
+    return _computeSig(val, 'smd_auth_salt_key');
+  }
+  if (typeof require !== 'undefined') {
+    var crypto = require('crypto');
+    return crypto.createHash('sha256').update(val).digest('hex');
+  }
+  return '';
+}
 
 function handleAuthLogin(payload) {
+  // 1. Throttling check via CacheService
+  var cache = null;
+  if (typeof CacheService !== 'undefined' && typeof CacheService.getScriptCache === 'function') {
+    try {
+      cache = CacheService.getScriptCache();
+      if (cache && cache.get('auth_lockout')) {
+        return {
+          success: false,
+          code: 'RATE_LIMITED',
+          message: 'Too many failed login attempts. Please wait 60 seconds.'
+        };
+      }
+    } catch (cacheErr) {
+      // Non-fatal cache lookup failure
+    }
+  }
+
+  // 2. Validate payload input
   if (!payload || typeof payload !== 'object' || !payload.key) {
     return { success: false, code: 'UNAUTHORIZED', message: 'Missing administrator access key' };
   }
@@ -35,18 +67,42 @@ function handleAuthLogin(payload) {
     return { success: false, code: 'CONFIGURATION_ERROR', message: 'ADMIN_AUTH_KEY is not configured in Script Properties' };
   }
 
-  // Constant-time key comparison to prevent timing side-channel attacks
-  if (candidateKey.length !== secretKey.length) {
-    return { success: false, code: 'UNAUTHORIZED', message: 'Invalid administrator access key' };
-  }
+  // 3. Fixed-length constant-time comparison using SHA-256
+  // Prevents key length disclosure and timing side-channel attacks
+  var candHash = sha256Hex(candidateKey);
+  var secHash = sha256Hex(secretKey);
 
   var match = 0;
-  for (var i = 0; i < candidateKey.length; i++) {
-    match |= candidateKey.charCodeAt(i) ^ secretKey.charCodeAt(i);
+  for (var i = 0; i < candHash.length; i++) {
+    match |= candHash.charCodeAt(i) ^ secHash.charCodeAt(i);
   }
 
-  if (match !== 0) {
+  if (match !== 0 || candHash.length !== secHash.length) {
+    // Record failed attempt in cache
+    if (cache) {
+      try {
+        var fails = Number(cache.get('auth_fails') || '0') + 1;
+        if (fails >= 5) {
+          cache.put('auth_lockout', '1', 60); // 60-second cooldown
+          cache.remove('auth_fails');
+        } else {
+          cache.put('auth_fails', String(fails), 300); // 5-minute tracking window
+        }
+      } catch (e) {
+        // Cache write failure
+      }
+    }
     return { success: false, code: 'UNAUTHORIZED', message: 'Invalid administrator access key' };
+  }
+
+  // 4. Successful login: Clear failure counters and issue token
+  if (cache) {
+    try {
+      cache.remove('auth_fails');
+      cache.remove('auth_lockout');
+    } catch (e) {
+      // Cache clear failure
+    }
   }
 
   var primaryEmail = (adminEmails && adminEmails.length > 0) ? adminEmails[0] : 'ashreya0502@gmail.com';
