@@ -15,10 +15,13 @@ function parseApiRequest(e) {
     };
   }
 
-  var raw = e.postData.contents;
-
   // Enforce request size limit to prevent memory exhaustion
-  if (typeof raw === 'string' && raw.length > MAX_PAYLOAD_BYTES) {
+  // Checks e.postData.length provided by Google Apps Script gateway, or string length
+  var postLength = (typeof e.postData.length === 'number' && e.postData.length > 0)
+    ? e.postData.length
+    : (typeof e.postData.contents === 'string' ? e.postData.contents.length : 0);
+
+  if (postLength > MAX_PAYLOAD_BYTES) {
     return {
       valid: false,
       code: 'PAYLOAD_TOO_LARGE',
@@ -26,6 +29,8 @@ function parseApiRequest(e) {
       requestId: 'req_init'
     };
   }
+
+  var raw = e.postData.contents;
 
   var envelope;
   try {

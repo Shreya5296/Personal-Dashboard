@@ -43,10 +43,10 @@ Update every field below as work proceeds.
 | Current phase status | PASSED |
 | Last completed phase | Phase 12 — Release and Handover |
 | Current Git branch | main |
-| Last phase commit | e01832d |
+| Last phase commit | ce56fb9 |
 | Last full regression run | 52 vitest tests passed (100% pass, 111 micro-files checked) |
 | Real-data use | Prohibited until security release gate passes |
-| Last state update | Security review complete: fixed-length SHA-256 constant-time comparison, CacheService throttling, 2MB payload limit, replay threat model documented, 64 files synchronized |
+| Last state update | Platform verification & security hardening complete: CacheService concurrency, request-size guard, HMAC encoding, sessionStorage enforcement, tested facts vs platform limitations documented, 64 files synchronized |
 
 ## 5. Phase Register
 
@@ -75,8 +75,8 @@ Keep one entry per unresolved blocker. Remove or close an entry only after verif
 | ID | Blocker / dependency | Impact | Owner / action required | Status | Evidence |
 |---|---|---|---|---|---|
 | B-001 | Specification and repository baseline audit | Required before implementation | Agent: completed Phase 0 audit | CLOSED | All repository documents verified; no conflicting specs. |
-| B-002 | Production Apps Script Web App deployment & ADMIN_AUTH_KEY | Required for live frontend connection; synthetic local/test environment verified | Owner: configure ADMIN_AUTH_KEY in Apps Script Script Properties & create Web App deployment | PENDING_OWNER_CONFIG | Zero-GCP architecture verified (50/50 tests passing). |
-| B-003 | Clasp authorization for target Apps Script project | Required to push backend to project 1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL | Owner: re-authenticate clasp with spreadsheet owner account or share spreadsheet/script with infineo.live@gmail.com | CLOSED | Authenticated as ashreya0502@gmail.com; 63 backend files pushed successfully. |
+| B-002 | Production Apps Script Web App deployment & ADMIN_AUTH_KEY | Required for live frontend connection; synthetic local/test environment verified | Owner: configure ADMIN_AUTH_KEY in Apps Script Script Properties & create Web App deployment | READY_FOR_OWNER_DEPLOYMENT | Zero-GCP architecture verified (52/52 tests passing, 64 files pushed). |
+| B-003 | Clasp authorization for target Apps Script project | Required to push backend to project 1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL | Owner: re-authenticate clasp with spreadsheet owner account or share spreadsheet/script with infineo.live@gmail.com | CLOSED | Authenticated as ashreya0502@gmail.com; 64 backend files pushed successfully. |
 
 Do not let an unavailable credential, external account, deployment permission, or human-only action silently count as complete. Continue independent work that is safe, and mark dependent gates `BLOCKED` until the dependency is resolved.
 

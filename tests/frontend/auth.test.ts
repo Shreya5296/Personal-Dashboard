@@ -30,7 +30,7 @@ describe('Frontend Authentication Logic', () => {
 
   it('stores and clears token in web storage', () => {
     expect(getStoredToken()).toBeNull();
-    handleSuccessfulSignIn('test_token_123', true);
+    handleSuccessfulSignIn('test_token_123');
     expect(getStoredToken()).toBe('test_token_123');
     handleSignOut();
     expect(getStoredToken()).toBeNull();

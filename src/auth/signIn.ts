@@ -32,8 +32,8 @@ export function buildUserFromToken(token: string): AuthUser {
   };
 }
 
-export function handleSuccessfulSignIn(token: string, remember = true): AuthUser {
+export function handleSuccessfulSignIn(token: string): AuthUser {
   const user = buildUserFromToken(token);
-  storeToken(token, remember);
+  storeToken(token);
   return user;
 }

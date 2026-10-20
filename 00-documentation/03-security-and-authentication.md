@@ -78,7 +78,7 @@ By firm project decision, Google Cloud Platform (GCP) and Google Cloud Console s
    - **Authentication Handshake (`auth.login`)**:
      1. The administrator enters their Admin Access Key into the dashboard login screen.
      2. The frontend sends `auth.login` with the key via `POST` to the Apps Script endpoint.
-     3. The backend executes a constant-time comparison against `ADMIN_AUTH_KEY` to prevent timing side-channel attacks.
+     3. The backend executes a fixed-length constant-time comparison against `ADMIN_AUTH_KEY` (hashing both the candidate key and configured key with SHA-256 before byte-by-byte comparison) to prevent timing side-channel attacks and key length leakage.
      4. On successful verification, the backend generates an HMAC-SHA256 signed session token using Google Apps Script's native `Utilities.computeHmacSha256Signature()`.
      5. The token embeds the caller identity (`ashreya0502@gmail.com`), issuer (`personal-dashboard-backend`), issue timestamp, expiration (default 8 hours), and a cryptographic nonce.
      6. Format: `payloadBase64.hmacSha256SignatureHex`.
@@ -87,6 +87,44 @@ By firm project decision, Google Cloud Platform (GCP) and Google Cloud Console s
      2. The backend recomputes the HMAC-SHA256 signature using the server's private `ADMIN_AUTH_KEY` and compares in constant time.
      3. The backend verifies that the token is unexpired and that the verified email matches `ADMIN_EMAILS`.
      4. Only requests with a cryptographically valid, unexpired token matching the administrator allowlist are permitted to proceed.
+
+### 5.2 Cryptographic Implementation & Platform Behavior: Tested Facts vs. Platform Limitations
+
+A rigorous security review distinguishes platform limitations from verified application guarantees:
+
+1. **`CacheService` Concurrency & Brute-Force Throttling**:
+   - *Implementation*: `AuthService.gs` utilizes `CacheService.getScriptCache()` to track consecutive failed attempts (`auth_fail_count`) and set an `auth_lockout` key for 60 seconds when failed attempts reach 5.
+   - *Platform Limitation (Eventual Consistency)*: `CacheService` is an edge cache distributed across Google infrastructure lacking atomic read-and-increment operations. In high-concurrency race conditions, simultaneous failed attempts on different edge nodes can increment against the same cached value, permitting 5–8 attempts before lockout activates.
+   - *Platform Limitation (Denial-of-Service Risk)*: Google Apps Script Web Apps deployed with *Who has access: Anyone* do not expose the client IP address in `e` of `doPost(e)`. Consequently, failed attempt tracking is global to the script. An external attacker repeatedly failing 5 login attempts can trigger the 60-second lockout for the legitimate administrator. Mitigating factors: the owner's Apps Script `/exec` URL is private and not published, and legitimate authentication requires zero failed attempts.
+   - *No Database Writes*: Failed attempts never read or write to Google Sheets, preserving spreadsheet quota.
+
+2. **Spreadsheet Access Protection (Fail-Closed Architecture)**:
+   - *Verified Fact*: In `ApiEntry.gs`, request parsing (Step 1), token verification (Step 3), and admin authorization (Step 4) are strictly executed **before** `_getSpreadsheet()` is ever called.
+   - *Verified Fact*: Unauthenticated, expired, or non-admin requests are rejected with `401 UNAUTHORIZED` or `403 FORBIDDEN` immediately. No spreadsheet read or write occurs for rejected requests.
+   - *Verified Fact*: The `doGet(e)` handler returns only static service health metadata (`status: 'ok', service: 'Student Management Dashboard API'`) without opening the spreadsheet or reading any data.
+
+3. **Browser Cross-Origin Behavior to Apps Script `/exec`**:
+   - *CORS Preflight Prevention*: The frontend API client issues requests with `Content-Type: text/plain;charset=utf-8` carrying JSON payloads. This is a CORS-safelisted content type that prevents the browser from sending an `OPTIONS` preflight request, which Apps Script cannot handle.
+   - *Redirect & Header Attachment*: Google Apps Script handles incoming `POST` requests by responding with an `HTTP 302 Found` redirect to a dynamic sandboxed sub-domain (`https://script.googleusercontent.com/macros/echo?...`). The redirect target appends `Access-Control-Allow-Origin: *`.
+   - *Browser Transport*: Modern browser `fetch(..., { redirect: 'follow' })` transparently follows this redirect and resolves the response data.
+   - *Security Perimeter*: Because Google attaches `Access-Control-Allow-Origin: *` to the echoed response, **CORS is not an access control mechanism**. The application's sole security perimeter is server-side cryptographic HMAC-SHA256 token verification and administrator allowlist validation.
+
+4. **Request-Size Guard**:
+   - *Verified Fact*: In `RequestParser.gs`, incoming requests are inspected before JSON parsing: `postLength = e.postData.length || e.postData.contents.length`.
+   - *Memory Protection*: Payloads exceeding `MAX_PAYLOAD_BYTES` (2MB = 2,097,152 bytes) are rejected immediately with `PAYLOAD_TOO_LARGE` without parsing JSON. This protects the Apps Script 50MB execution memory quota against out-of-memory crashes from hostile or oversized payloads.
+
+5. **HMAC Byte Representation & Encodings**:
+   - *Verified Fact*: `TokenValidation.gs` signs the Base64 ASCII string representation of the JSON payload. Base64 characters (`A-Z`, `a-z`, `0-9`, `+`, `/`, `=`) have identical byte values in ASCII, UTF-8, and ISO-8859-1.
+   - *Signature Conversion*: `Utilities.computeHmacSha256Signature(Utilities.MacAlgorithm.HMAC_SHA_256, payloadBase64, key)` yields signed bytes (`int8_t` [-128, 127]). The script converts each byte to unsigned (`byte < 0 ? byte + 256 : byte`) and formats as a 2-digit lowercase hex character, producing a 64-character hex digest bit-for-bit identical to RFC 2104 and standard Node.js `crypto.createHmac('sha256', key).digest('hex')`.
+
+6. **Replay Threat Model & Nonce Reality**:
+   - *Verified Fact*: The token contains a random cryptographic nonce (`nonce: 'NONCE-' + ...`). This ensures that tokens generated within the same second have distinct signatures.
+   - *Platform Limitation (Stateless Nonce)*: Because the backend is stateless and does not maintain a persistent consumed-nonce revocation table, **the nonce does not prevent token replay if an active token is intercepted**.
+   - *Replay Mitigations*:
+     a) **Mandatory TLS/HTTPS**: All transport between browser and Google infrastructure is encrypted via HTTPS, protecting tokens from passive network eavesdropping.
+     b) **Strict `sessionStorage` Storage**: Tokens are stored solely in memory and tab-isolated `sessionStorage`. They are never written to `localStorage` (protecting against persistent cross-tab extraction) and are wiped immediately upon browser tab closure or explicit sign-out.
+     c) **Zero Logging**: Tokens and access keys are never logged in client telemetry, console output, or Apps Script execution logs.
+     d) **Short Lifespan**: Tokens expire after 8 hours.
 
 ## 6. Token Verification Requirements
 
@@ -118,15 +156,13 @@ Requirements:
 
 - Do not store privileged Google credentials in browser storage.
 - Do not place identity tokens in URLs, query strings, or fragments.
-- Do not log tokens or attach them to analytics events.
-- Do not persist identity tokens in `localStorage` by default.
-- Prefer short-lived identity credentials and a supported renewal or re-authentication flow.
+- Do not log tokens or attach them to analytics events or console output.
+- Tokens must be stored exclusively in `sessionStorage` (and memory). Persistence in `localStorage` is completely prohibited to prevent cross-tab persistence and token survival across browser restarts.
+- Clear identity tokens and authenticated user data from `sessionStorage` and memory immediately upon explicit sign-out, session expiration, or tab closure.
 - Handle expiration, failed renewal, and sign-out explicitly.
 - Clear protected data held in frontend memory when the session ends.
 - Avoid displaying cached personal data after an authentication failure.
-- Do not treat browser storage as proof of authorization.
-
-If the chosen Google sign-in library maintains its own state, its documented lifecycle and security properties must be followed. Do not build a custom token-storage mechanism without a documented need.
+- Do not treat browser storage as proof of authorization; every backend request must cryptographically validate the token.
 
 ## 8. Backend Authorization
 
