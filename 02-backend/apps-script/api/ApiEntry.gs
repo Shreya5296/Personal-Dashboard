@@ -71,9 +71,74 @@ function doGet(e) {
   });
 }
 
+function verifyScriptPropertiesSafeDiagnostic() {
+  var sheetId = null;
+  var adminEmails = null;
+
+  if (typeof PropertiesService !== 'undefined') {
+    var props = PropertiesService.getScriptProperties();
+    sheetId = props.getProperty('SPREADSHEET_ID');
+    adminEmails = props.getProperty('ADMIN_EMAILS') || props.getProperty('ADMIN_EMAIL');
+  }
+
+  var expectedSheetId = '1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8';
+  var expectedAdmin = 'ashreya0502@gmail.com';
+
+  var sheetMatch = (sheetId === expectedSheetId);
+  var adminList = adminEmails ? adminEmails.split(',').map(function(e) { return e.trim().toLowerCase(); }) : [];
+  var adminMatch = (adminList.indexOf(expectedAdmin) !== -1);
+
+  var sheetOpenSuccess = false;
+  var tabCount = 0;
+  var errorMsg = null;
+
+  if (sheetMatch && typeof SpreadsheetApp !== 'undefined') {
+    try {
+      var ss = SpreadsheetApp.openById(sheetId);
+      sheetOpenSuccess = true;
+      tabCount = ss.getSheets().length;
+    } catch (e) {
+      errorMsg = e.message;
+    }
+  }
+
+  var adminCheckPassed = false;
+  var unauthorizedRejected = false;
+  if (typeof isAuthorizedAdmin === 'function') {
+    adminCheckPassed = isAuthorizedAdmin(expectedAdmin);
+    unauthorizedRejected = !isAuthorizedAdmin('unauthorized_test_user@example.com');
+  }
+
+  var report = {
+    SPREADSHEET_ID_set: !!sheetId,
+    SPREADSHEET_ID_matches_expected: sheetMatch,
+    ADMIN_EMAILS_set: !!adminEmails,
+    ADMIN_EMAILS_contains_target: adminMatch,
+    spreadsheet_open_success: sheetOpenSuccess,
+    tab_count: tabCount,
+    admin_auth_check_passed: adminCheckPassed,
+    unauthorized_check_rejected: unauthorizedRejected,
+    error: errorMsg
+  };
+
+  Logger.log('=== SCRIPT PROPERTIES VERIFICATION REPORT ===');
+  Logger.log('SPREADSHEET_ID Set: ' + report.SPREADSHEET_ID_set);
+  Logger.log('SPREADSHEET_ID Matches Expected: ' + report.SPREADSHEET_ID_matches_expected);
+  Logger.log('ADMIN_EMAILS Set: ' + report.ADMIN_EMAILS_set);
+  Logger.log('ADMIN_EMAILS Contains ' + expectedAdmin + ': ' + report.ADMIN_EMAILS_contains_target);
+  Logger.log('Spreadsheet Open Success: ' + report.spreadsheet_open_success);
+  Logger.log('Total Tabs Found: ' + report.tab_count);
+  Logger.log('Admin Auth Check Passed: ' + report.admin_auth_check_passed);
+  Logger.log('Unauthorized Check Rejected: ' + report.unauthorized_check_rejected);
+  Logger.log('=== END REPORT ===');
+
+  return report;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     doPost: doPost,
-    doGet: doGet
+    doGet: doGet,
+    verifyScriptPropertiesSafeDiagnostic: verifyScriptPropertiesSafeDiagnostic
   };
 }
