@@ -84,4 +84,22 @@ describe('Frontend API Client', () => {
     globalThis.fetch = vi.fn().mockRejectedValue(new Error('Network down'));
     await expect(sendApiRequest('students.list')).rejects.toThrow(ApiNetworkError);
   });
+
+  it('throws ApiNetworkError when response body is non-JSON HTML (e.g., auth redirect)', async () => {
+    vi.spyOn(configModule, 'getRuntimeConfig').mockReturnValue({
+      appsScriptUrl: 'https://script.google.com/macros/s/test/exec',
+      googleClientId: 'test-client',
+      enableMockAuth: true,
+      appEnv: 'test',
+    });
+
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => {
+        throw new SyntaxError("Unexpected token '<', '<!DOCTYPE '... is not valid JSON");
+      },
+    });
+
+    await expect(sendApiRequest('auth.login', { key: 'invalid' })).rejects.toThrow(ApiNetworkError);
+  });
 });

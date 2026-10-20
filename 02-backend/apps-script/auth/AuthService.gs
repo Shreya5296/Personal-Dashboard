@@ -38,11 +38,12 @@ function handleAuthLogin(payload) {
   }
 
   // 2. Validate payload input
-  if (!payload || typeof payload !== 'object' || !payload.key) {
+  var candidateKey = payload && (payload.key || payload.adminKey || payload.authKey);
+  if (!payload || typeof payload !== 'object' || !candidateKey) {
     return { success: false, code: 'UNAUTHORIZED', message: 'Missing administrator access key' };
   }
 
-  var candidateKey = String(payload.key).trim();
+  candidateKey = String(candidateKey).trim();
   var secretKey = null;
   var adminEmails = [];
 

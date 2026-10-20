@@ -65,6 +65,17 @@ describe('Zero-GCP Backend Security Hardening & Session Authentication', () => {
     expect(loginRes.code).toBe('UNAUTHORIZED');
   });
 
+  it('accepts key, adminKey, or authKey in auth.login payload', () => {
+    const res1 = AuthService.handleAuthLogin({ key: testSecretKey });
+    expect(res1.success).toBe(true);
+
+    const res2 = AuthService.handleAuthLogin({ adminKey: testSecretKey });
+    expect(res2.success).toBe(true);
+
+    const res3 = AuthService.handleAuthLogin({ authKey: testSecretKey });
+    expect(res3.success).toBe(true);
+  });
+
   it('enforces brute-force lockout after 5 consecutive failed login attempts via CacheService', () => {
     const store = new Map<string, string>();
     (globalThis as unknown as { CacheService: unknown }).CacheService = {
