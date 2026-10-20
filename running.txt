@@ -67,5 +67,6 @@ CURRENT EXECUTION STATUS
 - Implementation mode authorized using synthetic data and isolated local/test environments.
 
 NEXT ACTION
-- Spreadsheet bootstrap completed and verified on spreadsheet 1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8 (12 canonical tabs and 167 column headers match canonical schema with 0 discrepancies).
-- Next safe step: Configure Apps Script Script Properties (SPREADSHEET_ID, ADMIN_EMAILS) and deploy Apps Script Web App to connect the local React/Vite frontend.
+- Script Properties (SPREADSHEET_ID, ADMIN_EMAILS) saved by owner.
+- Temporary diagnostic runner setup/VerifyProperties.gs pushed to Apps Script. Awaiting owner 1-click execution of verifyScriptPropertiesSafeDiagnostic in Apps Script editor to confirm exact match of spreadsheet ID and admin email.
+- Pre-deployment security review completed: identified mock token bypass to disable in production runtime, token audience check hardening, and quota mitigation options before creating the Web App deployment.

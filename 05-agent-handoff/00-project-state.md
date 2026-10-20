@@ -86,9 +86,9 @@ This is a live index, not a place to store secret values. Keep the detailed regi
 
 | Input / setup item | Status | Where it must be configured | Secret value stored here? |
 |---|---|---|---|
-| Administrator identity / allowlist | NOT_VERIFIED | Approved backend configuration, following the security specification | No |
+| Administrator identity / allowlist | SAVED_PENDING_CONFIRMATION | SPREADSHEET_ID and ADMIN_EMAILS saved in Apps Script Project Settings | No |
 | Google Cloud / sign-in configuration | NOT_VERIFIED | Owner-controlled Google Cloud configuration and documented environment settings | No |
-| Apps Script deployment and permissions | UPLOADED_AND_BOOTSTRAPPED | Project ID: 1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL (63 files pushed, bootstrap verified) | No |
+| Apps Script deployment and permissions | UPLOADED_AND_BOOTSTRAPPED | Project ID: 1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL (64 files pushed, VerifyProperties diagnostic pushed) | No |
 | Private canonical spreadsheet | INITIALIZED | Private Class Dashboard (ID: 1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8, 12 tabs initialized) | No |
 | Frontend hosting project and environment variables | NOT_VERIFIED | Owner-controlled Vercel project settings | No |
 | Git remote and repository permissions | VERIFIED | origin https://github.com/Shreya5296/Personal-Dashboard.git | No |
@@ -139,4 +139,4 @@ Never infer that work was completed merely because the previous agent said it wa
 
 ## 11. Next Action
 
-Spreadsheet bootstrap completed and verified on spreadsheet `1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8` (all 12 tabs initialized with exact canonical schemas). Next safe action is configuring Apps Script Script Properties (`SPREADSHEET_ID`, `ADMIN_EMAILS`) and deploying the Web App to enable live end-to-end communication with the local React/Vite dashboard frontend.
+Script Properties (`SPREADSHEET_ID`, `ADMIN_EMAILS`) saved. Safe diagnostic `setup/VerifyProperties.gs` pushed to Apps Script. Awaiting owner 1-click execution of `verifyScriptPropertiesSafeDiagnostic` in Apps Script editor to confirm exact match of spreadsheet ID and admin email. Upon confirmation, diagnostic file will be removed and authentication hardening applied before creating the Web App deployment.
