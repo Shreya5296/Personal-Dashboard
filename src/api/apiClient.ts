@@ -2,6 +2,7 @@ import { generateRequestId } from './requestId';
 import { ApiResponse } from './apiResponse';
 import { ApiClientError, ApiNetworkError } from './apiErrors';
 import { getRuntimeConfig } from '../config/runtimeConfig';
+import { handleMockApiRequest } from './mockDataStore';
 
 export interface RequestOptions {
   token?: string | null;
@@ -19,6 +20,10 @@ export async function sendApiRequest<T = unknown>(
   const url = config.appsScriptUrl;
   const requestId = options.requestId || generateRequestId();
   const idempKey = options.idempotencyKey || (payload.idempotency_key as string | undefined) || undefined;
+
+  if (config.useMockData) {
+    return handleMockApiRequest<T>(operation, payload, requestId);
+  }
 
   const bodyData = {
     apiVersion: '1',

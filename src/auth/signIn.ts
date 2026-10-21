@@ -20,8 +20,27 @@ export function parseJwtPayload(token: string): Record<string, unknown> | null {
 }
 
 export function buildUserFromToken(token: string): AuthUser {
+  try {
+    if (typeof sessionStorage !== 'undefined') {
+      const stored = sessionStorage.getItem('smd_auth_user');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed.email) {
+          return {
+            email: parsed.email,
+            name: parsed.name || (parsed.email ? parsed.email.split('@')[0] : 'Administrator'),
+            picture: parsed.picture,
+            isAdmin: true,
+          };
+        }
+      }
+    }
+  } catch {
+    // Ignore storage parse errors
+  }
+
   const payload = parseJwtPayload(token);
-  const email = (payload?.email as string) || 'admin@example.com';
+  const email = (payload?.email as string) || 'ashreya0502@gmail.com';
   const name = (payload?.name as string) || (payload?.email ? (payload.email as string).split('@')[0] : 'Administrator');
   const picture = payload?.picture as string | undefined;
 

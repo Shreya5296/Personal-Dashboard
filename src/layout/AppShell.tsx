@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styles from './layout.module.css';
 import { Sidebar, NavSection } from './Sidebar';
 import { TopBar } from './TopBar';
@@ -14,11 +14,18 @@ export const AppShell: React.FC<AppShellProps> = ({
   onNavigate,
   children,
 }) => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
     <div className={styles.shell}>
-      <Sidebar activeSection={activeSection} onNavigate={onNavigate} />
+      <Sidebar
+        activeSection={activeSection}
+        onNavigate={onNavigate}
+        isOpen={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+      />
       <div className={styles.mainArea}>
-        <TopBar />
+        <TopBar onToggleMenu={() => setMobileMenuOpen((open) => !open)} />
         <main className={styles.content}>{children}</main>
       </div>
     </div>

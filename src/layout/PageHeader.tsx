@@ -10,17 +10,37 @@ export interface PageHeaderProps {
 export const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle, actions }) => {
   return (
     <div className={styles.pageHeader}>
-      <div>
-        <h1 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, margin: 0, color: 'var(--color-text-main)' }}>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <h1
+          style={{
+            fontSize: 'var(--font-size-xl)',
+            fontWeight: 700,
+            margin: 0,
+            color: 'var(--color-text-main)',
+            letterSpacing: '-0.02em',
+            lineHeight: 1.25,
+          }}
+        >
           {title}
         </h1>
         {subtitle && (
-          <p style={{ margin: 'var(--space-1) 0 0', color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)' }}>
+          <p
+            style={{
+              margin: '4px 0 0',
+              color: 'var(--color-text-muted)',
+              fontSize: 'var(--font-size-sm)',
+              lineHeight: 1.4,
+            }}
+          >
             {subtitle}
           </p>
         )}
       </div>
-      {actions && <div style={{ display: 'flex', gap: 'var(--space-3)' }}>{actions}</div>}
+      {actions && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+          {actions}
+        </div>
+      )}
     </div>
   );
 };
