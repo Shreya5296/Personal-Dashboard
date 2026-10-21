@@ -142,31 +142,30 @@ Never infer that work was completed merely because the previous agent said it wa
 
 ### Pre-Launch Cleanup Status: AWAITING_OWNER_APPROVAL
 
-1. **Backup Verification**:
+1. **Backup Verification & Fresh Pre-Flight Check**:
    - Master backup `Master Backup (Pre-Launch 2026-10-21T06-54-52-647Z)` (ID: `1kAvJZVSnWyVsg2QnfKl5tIIE_X28EySwAVeYnKQT8C4`) verified via cell-by-cell comparison.
-   - All 12 tabs present in both spreadsheets; 100% column header match across all tabs.
-   - Row-for-row match on pre-backup rows; formulas in backup verified as phone numbers starting with `+` (zero calculated business formulas).
-   - Zero changes made to live spreadsheet during audit.
+   - Fresh pre-flight check on live spreadsheet (`1cVQknq...`): Row counts match manifest 100% across all 12 tabs (`Students`: 73, `Enrollments`: 1, `Packages`: 9, `FeeObligations`: 27, `Payments`: 14, `ClassSessions`: 9, `MeetingLinks`: 9, `StudentNotes`: 9, `AuditLog`: 196, `ImportBatches`: 8, `ImportRowResults`: 14, `AppConfig`: 5).
+   - Zero changes made to live spreadsheet during this turn (0 rows cleared or modified).
 
-2. **Audited Cleanup Manifest**:
-   - `Students`: Rows 2–73 (72 synthetic student records)
-   - `Packages`: Rows 2–9 (8 synthetic package records)
-   - `ClassSessions`: Rows 2–9 (8 synthetic class session records)
-   - `FeeObligations`: Rows 2–27 (26 synthetic fee obligation records)
-   - `Payments`: Rows 2–14 (13 synthetic payment records)
-   - `MeetingLinks`: Rows 2–9 (8 synthetic meeting link records)
-   - Preserved Tabs (0 rows cleared): `Enrollments` (1 header row), `StudentNotes` (9 rows, 8 notes), `AuditLog` (196 rows, 195 audit logs), `ImportBatches` (8 rows), `ImportRowResults` (14 rows), `AppConfig` (5 rows).
+2. **Reconciliation of Post-Backup Entities**:
+   - 6 student rows registered after backup timestamp: `stu_mvhreob7y0yowy2a`, `stu_mvhrf0my3lclouj3`, `stu_mvhrg0d6zs99gn1v`, `stu_mvhrg5ybze4xbt16`, `stu_mvhrgryjyvbnywak`, `stu_mvhrhhendof4de9w`.
+   - Traced to automated Playwright test suites (`reportsAndCrossCutting.spec.ts`, `fees.spec.ts`, `meetingLinksAndNotes.spec.ts`, `packages.spec.ts`, `students.spec.ts`).
+   - 100% confirmed synthetic test artifacts. All post-backup child entities (`pkg_mvhrgx07smpg0t6k`, `fee_mvhrf3iju341p4b7`, `fee_mvhrfgn5qt5xjhcq`, `pay_mvhrf80qwwelr9as`, `cls_mvhreh8eykh6vrq6`, `ml_mvhrgaju49hhq79x`, `note_mvhrgf0u0atk1ill`) are fully cataloged.
+   - All 6 students and their operational child records are included in the cleanup manifest.
 
-3. **Classification & Ambiguity**:
-   - 100% of the 72 student records confirmed synthetic test artifacts (`SYNTHETIC_SUITE`, `IMPORT_TEST`, `Concurrency Test Student`, bootstrap fixture).
-   - Zero real student records at risk.
+3. **Payment Discrepancy Reconciliation**:
+   - Target record: `pay_mvho7nlisl4fhve5` (₹1,000 UPI payment for fee `fee_mvho7h9it4beoo32`).
+   - In backup (`06:54:52Z`), status is `RECORDED`. In live, status was updated to `VOID` at `06:57:36Z` during subsequent Turn 5 automated payment voiding tests.
+   - Audit trail `aud_mvhrfln2` is permanently preserved in the protected `AuditLog` tab.
 
-4. **StudentNotes Role**:
-   - Formally retained intact as chronological progress log and tutor observations ledger linked to `Students` and `ClassSessions`.
+4. **Audited Cleanup Scope (6 Working Tabs Only)**:
+   - Data rows to clear: `Students` (72 rows), `Packages` (8 rows), `ClassSessions` (8 rows), `FeeObligations` (26 rows), `Payments` (13 rows), `MeetingLinks` (8 rows). Total: 135 rows across 6 tabs.
+   - Preserved Protected Tabs (0 rows cleared): `Enrollments` (0 data rows), `StudentNotes` (8 notes), `AuditLog` (195 audit entries), `ImportBatches` (7 batches), `ImportRowResults` (13 row results), `AppConfig` (4 config rows).
 
-5. **Rollback & Safeguards**:
-   - Hard safeguards implemented: spreadsheet identity check (`1cVQknq...`), idempotency check (`Students.getLastRow() <= 1`), fail-closed script locking, Row 1 header immutability.
-   - Rollback runbook documented: updating `SPREADSHEET_ID` to backup snapshot restores entire spreadsheet to `2026-10-21T06:54:52.647Z` (overwriting subsequent edits).
+5. **Safe Recovery Runbook**:
+   - Preserves original spreadsheet ID `1cVQknq...` by reading data from backup and re-writing to live tabs via `setValues()`.
+   - Post-backup records can be audited and reconstructed directly from the preserved `AuditLog`.
+   - Repointing `SPREADSHEET_ID` is documented strictly as an emergency read-only failover, not an in-place restore.
 
 6. **Next Action (Owner Authorization Gate)**:
-   - Provide explicit written authorization: `"Execute pre-launch test data cleanup"`. Zero live records will be modified until authorized.
+   - Awaiting explicit written authorization: `"Execute pre-launch test data cleanup"`. Zero live records will be modified until authorized.

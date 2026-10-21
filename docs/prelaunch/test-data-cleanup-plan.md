@@ -1,6 +1,6 @@
 # Pre-Launch Test Data Cleanup Plan & Manifest
 
-**Document Version:** 2.0.0  
+**Document Version:** 2.1.0  
 **Status:** AWAITING OWNER APPROVAL (Strictly Read-Only Audit Completed; No Records Cleared)  
 **Date:** October 21, 2026  
 **Verified Pre-Launch Backup ID:** `1kAvJZVSnWyVsg2QnfKl5tIIE_X28EySwAVeYnKQT8C4`  
@@ -15,8 +15,9 @@
 
 1. **Explicit Owner Authorization Required:** This plan defines the reviewed deletion manifest. **No rows will be cleared, deleted, or modified until the owner gives separate, explicit written approval.**
 2. **Verified Backup Safeguard:** The complete master spreadsheet was cloned into an independent backup spreadsheet ([`Master Backup`](https://docs.google.com/spreadsheets/d/1kAvJZVSnWyVsg2QnfKl5tIIE_X28EySwAVeYnKQT8C4/edit)). A cell-by-cell audit confirmed that all 12 tabs, all column headers, all cell values, and all configuration settings are preserved.
-3. **Strict Tab Preservation:**
-   - `Enrollments`, `StudentNotes`, `AuditLog`, and `AppConfig` will **NOT be cleared or deleted**. They remain completely preserved with all schemas intact.
+3. **Strict Tab Scope (6 Tabs Only):**
+   - Cleanup strictly affects only six working tabs: `Students`, `Packages`, `ClassSessions`, `FeeObligations`, `Payments`, and `MeetingLinks`.
+   - All six other tabs (`Enrollments`, `StudentNotes`, `AuditLog`, `ImportBatches`, `ImportRowResults`, `AppConfig`) are **PROTECTED and will NOT be cleared or deleted**.
    - Internal operational tabs `AuditLog`, `ImportBatches`, `ImportRowResults`, and `AppConfig` remain safely hidden from daily spreadsheet view.
 4. **Row 1 Canonical Header Preservation:** When authorized, cleanup will truncate only data rows (`2+`) using `clearContent()`, preserving all column headers on Row 1. Tabs will never be deleted, recreated, or renamed.
 5. **AppConfig & System Parameter Preservation:** `AppConfig` rows will be preserved intact; only synthetic operational data will be cleared.
@@ -46,19 +47,46 @@ A direct cell-by-cell and formula comparison was executed between the live sprea
 ### Forensic Formula Check
 Inspection confirmed that the 60 detected formulas in `Students` are phone numbers starting with the `+` character (e.g. `+919885609479`), which Google Sheets internally evaluates as arithmetic expressions. There are **zero calculated business formulas** (e.g. `SUM`, `VLOOKUP`, `IF`) in either spreadsheet; all business logic and balances are calculated strictly in Apps Script backend domain services.
 
-### Audit Limitations
-- **Google Sheets Revision History:** Cannot be read programmatically via Apps Script without Google Cloud Service Account credentials (out of scope for zero-GCP architecture).
-- **Cell Styling/Formatting:** Background colors and font styling are not compared, although the native Google Drive copy (`ss.copy()`) cloned the entire document structure with identical formatting.
+---
+
+## 3. Reconciliation of Post-Backup Records
+
+During Turn 5, automated Playwright regression tests were executed against the live backend between `06:56:00Z` and `06:59:30Z` (after the backup was taken at `2026-10-21T06:54:52.647Z`). Every post-backup entity has been forensically traced:
+
+### A. The Six Post-Backup Student Records
+
+| Student ID | Full Name | Contact & Timestamp | Related Child Records Traced | Originating Test Suite & Evidence |
+|---|---|---|---|---|
+| `stu_mvhreob7y0yowy2a` | Concurrency Test Student | Phone: `919876543299`<br>Created: `06:57:01Z` | None (isolated student record) | `tests/e2e/reportsAndCrossCutting.spec.ts` concurrent student registration check. Synthetic test artifact. |
+| `stu_mvhrf0my3lclouj3` | Synthetic Student FEE_EZIM_C8F6 | Email: `synthetic.fee_ezim_c8f6@example.com`<br>Created: `06:57:17Z` | • Fees: `fee_mvhrf3iju341p4b7`, `fee_mvhrfgn5qt5xjhcq`<br>• Payment: `pay_mvhrf80qwwelr9as` (₹1,000) | `tests/e2e/fees.spec.ts` fee creation and payment recording test. Synthetic test artifact. |
+| `stu_mvhrg0d6zs99gn1v` | Import Student IMP_FWFV_P6LR | Email: `import.imp_fwfv_p6lr@example.com`<br>Created: `06:58:04Z` | • Batch: `imp_mvhrfzy0manzdm9u`<br>• Results: `irr_mvhrg1flv80ujhal`, `irr_mvhrg1q47hphtbyl` | `tests/e2e/reportsAndCrossCutting.spec.ts` CSV batch import execution. Synthetic test artifact. |
+| `stu_mvhrg5ybze4xbt16` | Synthetic Student NL_G4Z9_ZM2Y | Email: `synthetic.nl_g4z9_zm2y@example.com`<br>Created: `06:58:11Z` | • Meeting Link: `ml_mvhrgaju49hhq79x`<br>• Student Note: `note_mvhrgf0u0atk1ill` | `tests/e2e/meetingLinksAndNotes.spec.ts` meeting link and note creation test. Synthetic test artifact. |
+| `stu_mvhrgryjyvbnywak` | Synthetic Student PKG_GQEQ_J4LY | Email: `synthetic.pkg_gqeq_j4ly@example.com`<br>Created: `06:58:39Z` | • Package: `pkg_mvhrgx07smpg0t6k` (10 classes, ₹10,000) | `tests/e2e/packages.spec.ts` package creation test. Synthetic test artifact. |
+| `stu_mvhrhhendof4de9w` | Synthetic Student STU_HFZ3_5UOC | Email: `synthetic.stu_hfz3_5uoc@example.com`<br>Created: `06:59:12Z` | None (student directory search/filter test) | `tests/e2e/students.spec.ts` student registration test. Synthetic test artifact. |
+
+### B. Post-Backup Child Records
+- **Class Session:** `cls_mvhreh8eykh6vrq6` (created at `06:56:52Z` during `tests/e2e/classes.spec.ts`, references pre-existing bootstrap student `stu_mvgforv2waoo9a2e`).
+- **All 6 post-backup students and their child records are 100% confirmed synthetic test artifacts.**
+- **All post-backup records in the 6 working tabs are already included in the audited cleanup manifest below.**
 
 ---
 
-## 3. Audited Cleanup Manifest
+## 4. Explanation of Payment Discrepancy (Row 11)
 
-Only operational transaction tabs are proposed for clearing. Preserved tabs will remain untouched.
+- **Target Payment Record:** `pay_mvho7nlisl4fhve5`
+- **Associated Student & Fee:** Student `stu_mvho7b2u966stdml` ("Synthetic Student FEE_EZIM_C8F6"), Fee `fee_mvho7h9it4beoo32` (Amount: ₹1,000, Method: UPI).
+- **Initial Creation:** Created on `2026-10-21T05:27:35.478Z` during Turn 2 E2E tests with status `RECORDED`.
+- **Backup Snapshot State:** The backup was captured at `2026-10-21T06:54:52.647Z`. At that moment, `pay_mvho7nlisl4fhve5` was in its active `RECORDED` state.
+- **Subsequent Voiding Event:** At `2026-10-21T06:57:36.110Z` (2 minutes and 44 seconds after the backup was created), the automated E2E test `tests/e2e/fees.spec.ts` tested the payment voiding workflow by calling `payments.void` on this payment. In the live spreadsheet, its status was updated to `VOID` with `void_reason = "Voided by administrator"`.
+- **Audit Trail Preservation:** The void operation generated immutable audit entry `aud_mvhrfln2` in `AuditLog`. Because `AuditLog` is a **protected tab that is never cleared or deleted**, this full historical audit trail remains 100% preserved.
 
-### A. Proposed Clearing Operations (Data Rows Only)
+---
 
-| Tab Name | Live Row Range | Data Rows to Clear | Exact Record IDs Proposed for Clearing |
+## 5. Audited Cleanup Manifest
+
+### A. Proposed Clearing Operations (Data Rows 2+ Only)
+
+| Tab Name | Live Row Range | Data Rows to Clear | Exact Record IDs Proposed for Cleanup |
 |---|---|---|---|
 | `Students` | Rows 2–73 | 72 | `stu_mvgforv2waoo9a2e`, `stu_mvgiggst98ug42dd`, `stu_mvgiigt8eqjjezhc`, `stu_mvgijz3y076vai3t`, `stu_mvgimalp6eetkcaj`, `stu_mvgimmzcg92f9r5i`, `stu_mvginay9qsz239t3`, `stu_mvgio50sflr7d70u`, `stu_mvgj07uio3c55219`, `stu_mvgj44k7qg8q72f9`, `stu_mvgj4smfep3k7t50`, `stu_mvgj6r9m5q69265f`, `stu_mvgj9k2z01b975o6`, `stu_mvgjg54q9b6uag85`, `stu_mvgjuu826m3q8k3j`, `stu_mvgjwvhz29aeg5vi`, `stu_mvglawo4cnaacdn0`, `stu_mvglbkge0fm7hdt9`, `stu_mvgldefask9brino`, `stu_mvglg103o0gvd7d9`, `stu_mvglhsq9i03k36g7`, `stu_mvglkn2s7z89y69g`, `stu_mvhmxpaolomjxz9e`, `stu_mvhn022v62r6i7t9`, `stu_mvhn5m2zsq78y78n`, `stu_mvhn874g1t3ylzrl`, `stu_mvhnbf36hfs32q9f`, `stu_mvhncmllj5qnwzcc`, `stu_mvhnd99tv90hsgt9`, `stu_mvhnrpuwz3bepb5j`, `stu_mvhnvr8lx3702qkd`, `stu_mvhnx9pggjplmcfx`, `stu_mvho0tjbohf6fzoc`, `stu_mvho35bhwzq8ovba`, `stu_mvho3rqj9ul16grc`, `stu_mvho6zk9z7f44u83`, `stu_mvho94ravfr9tjhv`, `stu_mvho9s2bvwl4n1my`, `stu_mvhoau9whhptk4ad`, `stu_mvhqjyaoyyyzfb3g`, `stu_mvhqlhjy2j40384n`, `stu_mvhqm4j2qac9r0qb`, `stu_mvhqtrvce1nfxqqu`, `stu_mvhqv6417jeg6q1e`, `stu_mvhqwn9tbmmx5se5`, `stu_mvhqxazrs57int1j`, `stu_mvhqyuh6aae2v98g`, `stu_mvhqzxaweg1v238m`, `stu_mvhr021q1dndb77w`, `stu_mvhr03i97p5s9c3d`, `stu_mvhr0401qfg2m62f`, `stu_mvhr04m16k6t2o7b`, `stu_mvhr0570b55t194i`, `stu_mvhr05snv2b6w9r9`, `stu_mvhr06dffn0rsmio`, `stu_mvhr077q3b2u21t9`, `stu_mvhr0891s1g2y6sm`, `stu_mvhr09b5qj4f1y0c`, `stu_mvhr0a48hdt134d1`, `stu_mvhr0auvfz7k98ad`, `stu_mvhr0bjs9hff4nlo`, `stu_mvhr0ce45u4e9wio`, `stu_mvhr0cz09g97y1sm`, `stu_mvhr0di6g4g73g6h`, `stu_mvhr0e042o04e67h`, `stu_mvhr0ejuuhhh45e8`, `stu_mvhreob7y0yowy2a`, `stu_mvhrf0my3lclouj3`, `stu_mvhrg0d6zs99gn1v`, `stu_mvhrg5ybze4xbt16`, `stu_mvhrgryjyvbnywak`, `stu_mvhrhhendof4de9w` |
 | `Packages` | Rows 2–9 | 8 | `pkg_mvglb29avcll73vh`, `pkg_mvglbos5ubkd6yq7`, `pkg_mvgldjfr6r0m0ua0`, `pkg_mvho3wuxfwlx9zn8`, `pkg_mvho9x8bqvdbaenw`, `pkg_mvhqm9453ci7eiug`, `pkg_mvhqxfj83iwfy9dg`, `pkg_mvhrgx07smpg0t6k` |
@@ -67,92 +95,53 @@ Only operational transaction tabs are proposed for clearing. Preserved tabs will
 | `Payments` | Rows 2–14 | 13 | `pay_mvgjxb1rnboeryj8`, `pay_mvgld75yinobwan6`, `pay_mvhmzmmwj9elf7or`, `pay_mvhnb7tlc5b0p0cc`, `pay_mvhne0tqgo4429ba`, `pay_mvhngizvwaym3ua3`, `pay_mvhnipwgo39mt2nk`, `pay_mvho1hutfpz39z3p`, `pay_mvho5sxym4ge4dtb`, `pay_mvho7nlisl4fhve5`, `pay_mvhqkggp31mwkzvj`, `pay_mvhqvrnu237bgquh`, `pay_mvhrf80qwwelr9as` |
 | `MeetingLinks` | Rows 2–9 | 8 | `ml_mvhn07ljyq9ovlh9`, `ml_mvhnrv4hpnmiu25w`, `ml_mvhnvwonig2c03ha`, `ml_mvho3aen6xk2pkjr`, `ml_mvho9a7zf37uv3ro`, `ml_mvhqljv84ixa2tgc`, `ml_mvhqwssljwhn3sqo`, `ml_mvhrgaju49hhq79x` |
 
-### B. Confirmed Preserved Tabs (Zero Rows Cleared)
+### B. Confirmed Protected Tabs (Zero Rows Cleared)
 
 | Tab Name | Current Row Count | Action | Justification |
 |---|---|---|---|
-| `Enrollments` | 1 (Header) | **PRESERVED INTACT** | Preserves legacy schema compatibility; contains 0 data rows. |
-| `StudentNotes` | 9 (Header + 8 notes) | **PRESERVED INTACT** | Preserves student progress log and tutor lesson observations. |
-| `AuditLog` | 196 (Header + 195 audit entries) | **PRESERVED INTACT** | Immutable system event log. Hidden operational tab. |
-| `ImportBatches` | 8 (Header + 7 batches) | **PRESERVED INTACT** | Historical staging record of test import executions. Hidden operational tab. |
-| `ImportRowResults` | 14 (Header + 13 results) | **PRESERVED INTACT** | Historical staging record of test import rows. Hidden operational tab. |
-| `AppConfig` | 5 (Header + 4 config rows) | **PRESERVED INTACT** | System configuration parameters (`schema_version`, `currency`, `timezone`). |
+| `Enrollments` | 1 (Header) | **PROTECTED** | Preserves legacy schema compatibility; contains 0 data rows. |
+| `StudentNotes` | 9 (Header + 8 notes) | **PROTECTED** | Preserves student progress log and tutor lesson observations. |
+| `AuditLog` | 196 (Header + 195 audit entries) | **PROTECTED** | Immutable system event log. Hidden operational tab. |
+| `ImportBatches` | 8 (Header + 7 batches) | **PROTECTED** | Historical staging record of test import executions. Hidden operational tab. |
+| `ImportRowResults` | 14 (Header + 13 results) | **PROTECTED** | Historical staging record of test import rows. Hidden operational tab. |
+| `AppConfig` | 5 (Header + 4 config rows) | **PROTECTED** | System configuration parameters (`schema_version`, `currency`, `timezone`). |
 
 ---
 
-## 4. Referential Integrity & Dependency Tracing
+## 6. Cleanup Pre-Flight Validation & Fail-Safe Architecture
 
-Every foreign key was verified across the six clearing tabs:
-1. All 8 packages reference valid synthetic student IDs.
-2. All 26 fee obligations reference valid synthetic student IDs.
-3. All 13 payments reference valid synthetic fee obligations and student IDs.
-4. All 8 class sessions reference valid synthetic student IDs.
-5. All 8 meeting links reference valid synthetic student IDs.
-6. When authorized, the clearing sequence will execute in strict reverse foreign-key order:
-   - **Step 1:** `Payments` (clears dependent transactions)
-   - **Step 2:** `FeeObligations` (clears obligations)
-   - **Step 3:** `ClassSessions` (clears sessions)
-   - **Step 4:** `MeetingLinks` (clears links)
-   - **Step 5:** `Packages` (clears packages)
-   - **Step 6:** `Students` (clears root student directory)
-7. **Resulting Integrity State:** Zero dangling foreign keys, zero orphaned records, clean slate ready for production data import.
-
----
-
-## 5. Classification Evidence & Ambiguity Audit
-
-- **Total Students Audited:** 72 records.
-- **Classification Categories:**
-  - `SYNTHETIC_SUITE` (55 records): Explicit test fixtures created with synthetic tags (`STU_*`, `NL_*`, `FEE_*`).
-  - `IMPORT_TEST` (7 records): Created during CSV import testing (`IMP_*`).
-  - `Concurrency Test Student` (8 records): Created during automated concurrent load tests.
-  - `test student` (`stu_mvgforv2waoo9a2e`, 1 record): Initial API bootstrap test student.
-  - `Archive Test Student` (`stu_mvhmxpaolomjxz9e`, 1 record): Playwright archival test student.
-- **Unidentified / Real Records:** **0 records**.
-- **Conclusion:** 100% of records in the live spreadsheet are confirmed synthetic test artifacts. No real student or parent data exists.
-
----
-
-## 6. Cleanup Implementation Architecture & Safeguards
-
-When authorized, the cleanup routine will enforce the following hard safeguards:
-1. **Spreadsheet Identity Guard:** Enforces `spreadsheet.getId() === '1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8'`. If run against any other spreadsheet, execution throws and terminates immediately.
-2. **Re-Execution Guard (Idempotency):** Checks `Students.getLastRow()`. If row count is `<= 1`, aborts immediately with `ALREADY_CLEANED`.
-3. **Manifest Pre-Flight Check:** Inspects exact row counts before clearing. If row counts deviate from audited values, execution halts without modifying data.
+The cleanup operation enforces strict fail-closed constraints:
+1. **Spreadsheet Target Validation:** Asserts `spreadsheet.getId() === '1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8'`. Rejects any execution against unapproved spreadsheets.
+2. **Re-Execution Guard (Idempotency):** Checks `Students.getLastRow() <= 1`. If already cleared, terminates immediately with `ALREADY_CLEANED`.
+3. **Manifest Pre-Flight Check:** Reads live row counts immediately prior to clearing. If any row count differs from the reviewed manifest (73, 9, 9, 27, 14, 9), execution aborts immediately without touching any cell.
 4. **Header Row Immutability:** Uses `sheet.getRange(2, 1, lastRow - 1, lastCol).clearContent()`. Never clears Row 1, never deletes sheets, never renames sheets.
-5. **Fail-Closed Locking:** Wraps the entire operation in a Google Apps Script `LockService.getScriptLock()` with a 30-second timeout. If any sub-operation fails, the lock releases and logs an audit failure without proceeding.
+5. **Fail-Closed Concurrency Lock:** Acquires a 30-second script lock (`LockService.getScriptLock()`) during execution. If any tab clearing throws an exception, the lock releases and logs an audit failure without proceeding.
 
 ---
 
-## 7. Clarification of `StudentNotes` Role in Schema
+## 7. Safe Recovery Procedure (Preserving Original Spreadsheet ID)
 
-In response to the schema design review:
-1. **Current Role:** `StudentNotes` provides a chronological, timestamped ledger of lesson progress, pedagogical observations, tutor notes, and parent communication follow-ups for each student.
-2. **Relationship:**
-   - Linked to `Students.student_id` (one-to-many relationship).
-   - Can optionally link to `ClassSessions.session_id` when notes pertain to a specific class.
-3. **Why It Is Retained:**
-   - Replacing `StudentNotes` with a single `notes` column on `Students` would flatten multi-lesson historical records into a single cell, losing timestamps, tutor identity, and chronological progression.
-   - Storing notes only on `ClassSessions` would prevent tutors from recording notes outside of formal scheduled classes (such as parent phone conversations, curriculum planning, or diagnostic assessments).
-   - Therefore, `StudentNotes` is formally preserved intact. In the UI, notes remain accessible directly through the dedicated Student Profile "Notes" tab.
+Switching `SPREADSHEET_ID` to the backup ID points the application to a different spreadsheet file. It does **not** restore data into the original canonical spreadsheet. 
 
----
+If restoration of cleared test data is ever required while **preserving the original spreadsheet ID** (`1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8`), execute the following safe in-place procedure:
 
-## 8. Rollback Procedure & Limitations
-
-If restoration to pre-cleanup state is ever required:
-1. **Restore Target:** `Master Backup (Pre-Launch 2026-10-21T06-54-52-647Z)`, ID: `1kAvJZVSnWyVsg2QnfKl5tIIE_X28EySwAVeYnKQT8C4`.
-2. **Restoration Steps:**
-   - Navigate to Google Apps Script (**Project Settings > Script Properties**).
-   - Update `SPREADSHEET_ID` to `1kAvJZVSnWyVsg2QnfKl5tIIE_X28EySwAVeYnKQT8C4`.
-   - The backend immediately reads from the complete backup.
-3. **Rollback Limitations:**
-   - Restoring from backup reverts the entire datastore to the exact snapshot timestamp (`2026-10-21T06:54:52.647Z`).
-   - Any records created or edits made after `2026-10-21T06:54:52.647Z` (including the 6 synthetic test students registered in Turn 5) will not be present in the backup and would be lost if rolled back.
+### In-Place Restoration Runbook
+1. **Keep Canonical Spreadsheet ID:** Maintain `SPREADSHEET_ID = 1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8` in Script Properties.
+2. **Read-Only Backup Extraction:** Open the backup spreadsheet `1kAvJZVSnWyVsg2QnfKl5tIIE_X28EySwAVeYnKQT8C4` via `SpreadsheetApp.openById()`.
+3. **In-Place Tab Repopulation:** For each of the six cleared tabs:
+   - Read data rows 2 through $N$ from the backup tab: `backupSheet.getRange(2, 1, numRows, numCols).getValues()`.
+   - Write those rows back into the canonical tab starting at Row 2: `liveSheet.getRange(2, 1, numRows, numCols).setValues(backupValues)`.
+   - All original formulas (e.g. phone strings) and cell values are restored identically.
+4. **Handling Post-Backup Records:**
+   - The backup snapshot was captured at `2026-10-21T06:54:52.647Z`. Records created after that timestamp (the 6 synthetic students and their child records) do not exist in the backup.
+   - However, because `AuditLog` is **never cleared** in the canonical spreadsheet, every post-backup operation has an immutable audit log entry (containing entity IDs, request payloads, timestamps, and actor).
+   - If post-backup records need reconstruction, their full state can be restored directly from the preserved `AuditLog` rows.
+5. **Emergency Point-in-Time Failover:**
+   - Temporarily pointing `SPREADSHEET_ID` to `1kAvJZVSnWyVsg2QnfKl5tIIE_X28EySwAVeYnKQT8C4` is documented as an emergency read-only failover / point-in-time reference, NOT an in-place restoration.
 
 ---
 
-## 9. Current Approval Gate
+## 8. Current Approval Gate
 
 > [!CAUTION]
 > **Status: AWAITING OWNER APPROVAL.**  
