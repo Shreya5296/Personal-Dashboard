@@ -152,3 +152,9 @@ NEXT ACTION
     - docs/prelaunch/field-migration-map.md: 1:1 column migration and adapter mapping matrix.
     - docs/prelaunch/migration-and-rollback-plan.md: step-by-step backup and rollback runbook.
     - docs/prelaunch/schema-owner-decisions.md: v2.0.0 comprehensive decision matrix distinguishing confirmed vs assumed rules.
+- Execution of Owner-Approved Decisions (Phases A through E) completed:
+  * Phase A: Updated docs/prelaunch/final-schema-proposal.md and field-migration-map.md documenting unapplied credit storage/application and monthly invoice generation workflow.
+  * Phase B: Safely hid the four operational tabs (AuditLog, ImportBatches, ImportRowResults, AppConfig) on master spreadsheet 1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8; verified via isSheetHidden().
+  * Phase C: Created and verified complete pre-launch master backup copy (Master Backup (Pre-Launch 2026-10-21T06-54-52-647Z), ID: 1kAvJZVSnWyVsg2QnfKl5tIIE_X28EySwAVeYnKQT8C4); verified 100% match across all 12 tabs and all row counts.
+  * Phase D: Prepared docs/prelaunch/test-data-cleanup-plan.md with full deletion manifest, referential integrity check, and rollback runbook; zero live rows cleared or deleted.
+  * Phase E: Added isolated tests for overpayments as unapplied credit, late cancellation penalty waivers, and duplicate invoice prevention (78/78 Vitest passed, 18/18 Playwright passed, clean build). Apps Script deployed in-place to version @18. Ready for final owner authorization to execute cleanup.

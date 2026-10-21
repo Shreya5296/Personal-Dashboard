@@ -39,14 +39,14 @@ Update every field below as work proceeds.
 |---|---|
 | Project | Student Management Dashboard |
 | Execution mode | Autonomous, sequential implementation |
-| Current phase | Minimal Schema Redesign & Multi-Model Billing Proposal |
-| Current phase status | PASSED_SCHEMA_PROPOSAL |
-| Last completed phase | Minimal Schema Redesign & Multi-Model Billing Proposal |
+| Current phase | Pre-Launch Decision Execution (Phases A-E) |
+| Current phase status | PASSED_PRELAUNCH_EXECUTION |
+| Last completed phase | Pre-Launch Decision Execution (Phases A-E) |
 | Current Git branch | main |
-| Last phase commit | a4a919d |
-| Last full regression run | 77 Vitest tests passed (17 test files) + 18/18 Playwright E2E tests passed live against deployed Apps Script Web App @17 (3.0m) |
+| Last phase commit | 65093c8 |
+| Last full regression run | 78 Vitest tests passed (17 test files) + 18/18 Playwright E2E tests passed live against deployed Apps Script Web App @18 (2.9m) |
 | Real-data use | Prohibited until security release gate passes (0 real student records imported) |
-| Last state update | Schema redesign review completed: schema-owner-decisions.md v2.0.0 updated with confirmed requirements vs assumptions needing approval; attendance matrix, per-class periodic invoicing, and multi-package isolation verified |
+| Last state update | Execution of approved decisions complete: operational tabs hidden on master sheet; Master Backup verified (1kAvJZVSn...); cleanup manifest prepared in docs/prelaunch/test-data-cleanup-plan.md; zero live rows deleted; awaiting owner cleanup authorization |
 
 ## 5. Phase Register
 

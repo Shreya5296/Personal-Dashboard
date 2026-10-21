@@ -58,11 +58,14 @@
 | `class_session_id` | `class_id` | Direct 1:1 copy | **Rename** | Concise standard key |
 | `student_id` | `student_id` | Direct 1:1 copy | **Keep** | Foreign key to `Students` |
 | `package_id` | `package_id` | Direct 1:1 copy | **Keep** | Foreign key to `Packages` |
+| `(new)` | `billed_fee_id` | Populated upon periodic monthly invoicing | **Add Column** | Prevents double-invoicing completed sessions |
 | `scheduled_start` (timestamp) | `class_date` + `start_time` | Split ISO into YYYY-MM-DD and HH:mm | **Separate** | Human-readable spreadsheet display & fast daily calendar filtering |
 | `scheduled_end` (timestamp) | `end_time` | Extracted HH:mm | **Separate** | Session timing boundary |
+| `(new)` | `duration_minutes` | Extracted difference in minutes | **Add Column** | Calendar block rendering |
 | `session_status` | `status` | `SCHEDULED`, `COMPLETED`, `CANCELLED`, `RESCHEDULED` | **Rename** | Standardized lifecycle status |
 | `attendance_status` | `teacher_attended` + `student_attended` | Boolean breakdown | **Refine** | Independent recording of teacher presence and student attendance |
 | `class_credit_effect` | `credit_deducted` | `CONSUME` $\rightarrow$ 1, `NO_CONSUME` $\rightarrow$ 0, `CREDIT_BACK` $\rightarrow$ -1 | **Convert** | Direct numerical credit adjustment; sums directly to total consumed credits |
+| `(new)` | `credit_waiver` | Explicit tutor waiver flag | **Add Column** | Records when tutor waives late-cancellation penalty |
 | `meeting_link_id` | `meeting_link` | Resolved direct URL or override URL | **Streamline** | One-click access to meeting room without looking up foreign keys |
 | `notes` | `notes` | Direct 1:1 copy | **Keep** | Homework, topics, or cancellation remarks |
 | `created_at`, `updated_at` | `created_at`, `updated_at` | Direct 1:1 copy | **Keep** | Audit timestamps |
@@ -77,6 +80,7 @@
 | `student_id` | `student_id` | Direct 1:1 copy | **Keep** | Foreign key to `Students` |
 | `package_id` | `package_id` | Direct 1:1 copy | **Keep** | Foreign key to `Packages` |
 | `obligation_description` | `billing_period` / `description` | Direct 1:1 copy | **Rename** | Accommodates monthly periods ("Oct 2026") and custom fees |
+| `(new)` | `billed_class_ids` | Stored comma-separated session IDs | **Add Column** | Explicit audit trail of sessions billed |
 | `amount_due` | `amount` | Direct 1:1 copy | **Rename** | Concise amount header |
 | `currency` | `currency` | Direct 1:1 copy (`INR`) | **Keep** | Currency isolation |
 | `due_date` | `due_date` | Direct 1:1 copy | **Keep** | Invoicing deadline |
@@ -97,6 +101,8 @@
 | `(new)` | `package_id` | Linked via `FeeObligations.package_id` | **Add Column** | Allows direct financial reporting by course package |
 | `payment_date` | `payment_date` | Direct 1:1 copy | **Keep** | Receipt date |
 | `amount` | `amount` | Direct 1:1 copy | **Keep** | Exact receipt value |
+| `(new)` | `applied_amount` | `min(amount, fee.outstanding)` | **Add Column** | Portion covering target obligation |
+| `(new)` | `unapplied_amount` | `max(0, amount - applied_amount)` | **Add Column** | Holds overpayment credit for future fees |
 | `currency` | `currency` | Direct 1:1 copy (`INR`) | **Keep** | Currency safety |
 | `payment_method` | `payment_method` | `UPI`, `BANK_TRANSFER`, `CASH`, `CHEQUE`, `OTHER` | **Keep** | Payment instrument tracking |
 | `transaction_reference` | `reference` | Direct 1:1 copy | **Rename** | Concise header (UTR / Cheque #) |
