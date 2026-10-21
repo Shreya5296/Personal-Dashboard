@@ -43,7 +43,7 @@ Update every field below as work proceeds.
 | Current phase status | AWAITING_OWNER_DECISION |
 | Last completed phase | Requirements-First Reconciliation Audit & Simplification Review |
 | Current Git branch | main |
-| Last phase commit | e354aef |
+| Last phase commit | 8c1fffd |
 | Last full regression run | 103 Vitest tests passed (21 test files) + line-limit check passing (117 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build (712ms) |
 | Real-data use | Ready for Phase 11 live production data import (0 real student records imported to date) |
 | Last state update | Requirements-first field and schema reconciliation complete: full 8-column field mapping produced in docs/prelaunch/requirements-reconciliation-report.md; all 6 original requirement areas re-established; confirmed mismatches documented (subject missing physical column, student_email missing, per_class/in_INR/next_due_date missing from Packages, student_name missing from child tables, MeetingLinks over-engineered, first_name/last_name split); simplest practical data models evaluated; PaymentAllocations table rejected as unnecessary enterprise overhead; billing terminology defined unambiguously; forms and workflows streamlined; 103/103 tests passing; clean working tree |
