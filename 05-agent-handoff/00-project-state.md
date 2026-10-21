@@ -39,14 +39,14 @@ Update every field below as work proceeds.
 |---|---|
 | Project | Student Management Dashboard |
 | Execution mode | Autonomous, sequential implementation |
-| Current phase | Pre-Launch Data Cleanup Execution |
-| Current phase status | PASSED_CLEANUP_VERIFIED |
-| Last completed phase | Owner-Authorized Pre-Launch Test Data Cleanup |
+| Current phase | Pre-Launch Schema Reconciliation Audit |
+| Current phase status | AWAITING_OWNER_REVIEW |
+| Last completed phase | Read-Only Schema Reconciliation Audit |
 | Current Git branch | main |
-| Last phase commit | 58c014d |
+| Last phase commit | 81522fe |
 | Last full regression run | 78 Vitest tests passed (17 test files) + 18/18 Playwright E2E tests passed live against deployed Apps Script Web App (2.9m) |
 | Real-data use | Ready for Phase 11 live production data import (0 real student records imported to date) |
-| Last state update | Owner-authorized cleanup executed & verified: exactly 135 data rows cleared across 6 target tabs; all 6 target tabs at Row 1 header only; all 6 protected tabs preserved intact; AuditLog appended entry aud_cleanup_1792570931713; live API reads return 0 records across working tabs; status: CLEANUP_COMPLETED |
+| Last state update | Schema reconciliation audit complete: 4-layer comparison across 12 tabs and 157 columns documented in docs/prelaunch/schema-reconciliation-report.md; StudentNotes orphaned test notes analyzed; recommendations categorized into Must Fix, Important Non-Blocking, and Intentional Differences; 0 live rows or schemas modified; status: AWAITING OWNER REVIEW |
 
 ## 5. Phase Register
 
@@ -138,30 +138,28 @@ When resuming after a crash, context loss, agent restart, or handoff:
 
 Never infer that work was completed merely because the previous agent said it was. Verify repository state, tests, and artifacts.
 
-## 11. Final Cleanup Outcome & Production Readiness Assessment
+## 11. Schema Reconciliation Audit & Release-Readiness Assessment
 
-### Pre-Launch Cleanup Status: PASSED_CLEANUP_VERIFIED
+### Current Status: AWAITING_OWNER_REVIEW
 
-1. **Owner-Authorized Cleanup Execution**:
-   - Explicit owner authorization received.
-   - Pre-flight validation gate executed on canonical spreadsheet (`1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8`) under script lock: asserted ID, tab presence, headers, and row counts (100% matched).
-   - Reverse foreign-key truncation executed cleanly on data rows 2+: `Payments` (13 rows) $\rightarrow$ `FeeObligations` (26 rows) $\rightarrow$ `ClassSessions` (8 rows) $\rightarrow$ `MeetingLinks` (8 rows) $\rightarrow$ `Packages` (8 rows) $\rightarrow$ `Students` (72 rows).
-   - Total rows cleared: **exactly 135 data rows**. Zero errors, zero partial failures.
+1. **Four-Layer Reconciliation Complete**:
+   - Compared: (1) Original Requirements, (2) Approved Schema Proposals, (3) Live Google Sheet Headers (12 tabs, 157 columns), and (4) Frontend/Backend Code & Tests.
+   - Comprehensive reconciliation matrix documented in [`docs/prelaunch/schema-reconciliation-report.md`](docs/prelaunch/schema-reconciliation-report.md).
+   - Confirmed backend adaptors seamlessly bridge live headers to simplified UI fields; zero functional breakages.
 
-2. **Verified Post-Clearing State (Direct Spreadsheet Inspection)**:
-   - Target Tabs: `Students` (1 row), `Packages` (1 row), `ClassSessions` (1 row), `FeeObligations` (1 row), `Payments` (1 row), `MeetingLinks` (1 row). Exactly Row 1 headers preserved with 0 data rows remaining.
-   - Protected Tabs: `Enrollments` (1 row), `StudentNotes` (9 rows, 8 notes), `AuditLog` (197 rows, 196 historical + 1 cleanup audit log), `ImportBatches` (8 rows), `ImportRowResults` (14 rows), `AppConfig` (5 rows). Preserved 100% intact.
-   - Zero unauthorized tabs, headers, rows, or cells modified. Spreadsheet ID and configuration properties remain untouched.
+2. **Resolution of `StudentNotes`**:
+   - The 8 retained rows in `StudentNotes` are orphaned test notes referencing cleared student IDs.
+   - They will never appear in any real student's profile.
+   - Recommended action: Keep tab visible; clear rows 2–9 in a separate authorized action before production data import.
+   - Invariant preserved: Zero edits, deletions, or visibility changes made during audit.
 
-3. **Live Application API Read Verification**:
-   - `students.list`: 0 records
-   - `packages.list`: 0 records
-   - `fees.list`: 0 records
-   - `payments.list`: 0 records
-   - `classes.list`: 0 records
-   - `meetingLinks.list`: 0 records
-   - `notes.list`: 8 historical progress notes preserved
+3. **Categorized Findings & Smallest Safe Corrections**:
+   - **Must Fix Before Real Data:** (a) Clear the 8 orphaned test rows in `StudentNotes` upon authorization; (b) Configure production `ADMIN_AUTH_KEY` in Google Apps Script properties.
+   - **Important but Non-Blocking:** (a) Add dedicated `subject` field to `StudentForm.tsx`; (b) Add "Generate Monthly Invoices" UI modal; (c) Display unapplied credit badge on payment form.
+   - **Intentional Differences to Retain:** Keep physical sheet headers intact (bridged via backend adaptors); keep relational meeting links; keep derived balances dynamic without native spreadsheet formulas.
 
-4. **Next Action (Owner Production Decisions)**:
-   - Configure custom production `ADMIN_AUTH_KEY` in Google Apps Script Script Properties if replacing temporary access key.
-   - Authorize Vercel frontend deployment and initiate Phase 11 production data onboarding.
+4. **Audit Invariants Preserved**:
+   - Zero live spreadsheet rows cleared, deleted, overwritten, or added.
+   - Zero tabs or columns renamed, hidden, unhidden, or merged.
+   - Zero changes to authentication, script properties, or deployment configuration.
+   - 78/78 tests passing, 113 files $\le 149$ lines, 0 TypeScript errors. Clean working tree.
