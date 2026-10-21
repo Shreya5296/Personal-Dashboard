@@ -87,6 +87,34 @@ export class MockSheet {
       this.rows.splice(index, 1);
     }
   }
+
+  getMaxColumns(): number {
+    let max = 0;
+    for (const r of this.rows) {
+      if (r.length > max) max = r.length;
+    }
+    return max;
+  }
+
+  deleteColumns(startCol: number, numCols: number): void {
+    const startIdx = startCol - 1;
+    for (const r of this.rows) {
+      if (r.length > startIdx) {
+        r.splice(startIdx, numCols);
+      }
+    }
+  }
+
+  insertColumnsAfter(afterCol: number, numCols: number): void {
+    for (const r of this.rows) {
+      while (r.length < afterCol) {
+        r.push('');
+      }
+      for (let i = 0; i < numCols; i++) {
+        r.splice(afterCol, 0, '');
+      }
+    }
+  }
 }
 
 export class MockSpreadsheet {
@@ -94,6 +122,14 @@ export class MockSpreadsheet {
 
   constructor() {
     this.sheets = new Map();
+  }
+
+  getId(): string {
+    return '1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8';
+  }
+
+  deleteSheet(sheet: MockSheet): void {
+    this.sheets.delete(sheet.name);
   }
 
   getSheetByName(name: string): MockSheet | null {

@@ -45,7 +45,7 @@ Update every field below as work proceeds.
 | Last completed phase | Master Cleanup Implementation (Backend, Frontend, Tests, Docs) |
 | Current Git branch | main |
 | Last phase commit | b5092ce |
-| Last full regression run | 107 Vitest tests passed (22 test files) + line-limit check passing (117 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build |
+| Last full regression run | 108 Vitest tests passed (23 test files) + line-limit check passing (117 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build |
 | Real-data use | Ready for Phase 11 live production data import (0 real student records imported to date) |
 | Last state update | Implemented full field and schema cleanup across backend, frontend, tests, and documentation. Unified to single student_name, separated student_email from parent_email, dedicated physical subject column, eliminated obsolete CRM fields (first_name, last_name, preferred_name, dob, etc.), added credit_applied to FeeObligations for exact overpayment accounting without extra tables, deprecated redundant Enrollments tab, created SchemaMigration.gs runner, verified 107/107 tests passing. |
 
