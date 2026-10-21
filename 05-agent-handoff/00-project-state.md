@@ -39,14 +39,14 @@ Update every field below as work proceeds.
 |---|---|
 | Project | Student Management Dashboard |
 | Execution mode | Autonomous, sequential implementation |
-| Current phase | Pre-Launch Decision Execution — Cleanup Audit |
-| Current phase status | AWAITING_OWNER_APPROVAL |
-| Last completed phase | Non-Destructive Cleanup-Readiness Audit |
+| Current phase | Pre-Launch Data Cleanup Execution |
+| Current phase status | PASSED_CLEANUP_VERIFIED |
+| Last completed phase | Owner-Authorized Pre-Launch Test Data Cleanup |
 | Current Git branch | main |
-| Last phase commit | c10b314 |
+| Last phase commit | 58c014d |
 | Last full regression run | 78 Vitest tests passed (17 test files) + 18/18 Playwright E2E tests passed live against deployed Apps Script Web App (2.9m) |
-| Real-data use | Prohibited until security release gate passes (0 real student records imported) |
-| Last state update | Read-only cleanup readiness audit completed: cell-by-cell comparison verified against Master Backup (1kAvJZVSn...); 100% headers match; 0 live rows modified; cleanup manifest audited down to exact record IDs; Enrollments, StudentNotes, AuditLog, AppConfig preserved; status: AWAITING OWNER APPROVAL |
+| Real-data use | Ready for Phase 11 live production data import (0 real student records imported to date) |
+| Last state update | Owner-authorized cleanup executed & verified: exactly 135 data rows cleared across 6 target tabs; all 6 target tabs at Row 1 header only; all 6 protected tabs preserved intact; AuditLog appended entry aud_cleanup_1792570931713; live API reads return 0 records across working tabs; status: CLEANUP_COMPLETED |
 
 ## 5. Phase Register
 
@@ -138,34 +138,30 @@ When resuming after a crash, context loss, agent restart, or handoff:
 
 Never infer that work was completed merely because the previous agent said it was. Verify repository state, tests, and artifacts.
 
-## 11. Final Cleanup-Readiness Assessment & Next Actions
+## 11. Final Cleanup Outcome & Production Readiness Assessment
 
-### Pre-Launch Cleanup Status: AWAITING_OWNER_APPROVAL
+### Pre-Launch Cleanup Status: PASSED_CLEANUP_VERIFIED
 
-1. **Backup Verification & Fresh Pre-Flight Check**:
-   - Master backup `Master Backup (Pre-Launch 2026-10-21T06-54-52-647Z)` (ID: `1kAvJZVSnWyVsg2QnfKl5tIIE_X28EySwAVeYnKQT8C4`) verified via cell-by-cell comparison.
-   - Fresh pre-flight check on live spreadsheet (`1cVQknq...`): Row counts match manifest 100% across all 12 tabs (`Students`: 73, `Enrollments`: 1, `Packages`: 9, `FeeObligations`: 27, `Payments`: 14, `ClassSessions`: 9, `MeetingLinks`: 9, `StudentNotes`: 9, `AuditLog`: 196, `ImportBatches`: 8, `ImportRowResults`: 14, `AppConfig`: 5).
-   - Zero changes made to live spreadsheet during this turn (0 rows cleared or modified).
+1. **Owner-Authorized Cleanup Execution**:
+   - Explicit owner authorization received.
+   - Pre-flight validation gate executed on canonical spreadsheet (`1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8`) under script lock: asserted ID, tab presence, headers, and row counts (100% matched).
+   - Reverse foreign-key truncation executed cleanly on data rows 2+: `Payments` (13 rows) $\rightarrow$ `FeeObligations` (26 rows) $\rightarrow$ `ClassSessions` (8 rows) $\rightarrow$ `MeetingLinks` (8 rows) $\rightarrow$ `Packages` (8 rows) $\rightarrow$ `Students` (72 rows).
+   - Total rows cleared: **exactly 135 data rows**. Zero errors, zero partial failures.
 
-2. **Reconciliation of Post-Backup Entities**:
-   - 6 student rows registered after backup timestamp: `stu_mvhreob7y0yowy2a`, `stu_mvhrf0my3lclouj3`, `stu_mvhrg0d6zs99gn1v`, `stu_mvhrg5ybze4xbt16`, `stu_mvhrgryjyvbnywak`, `stu_mvhrhhendof4de9w`.
-   - Traced to automated Playwright test suites (`reportsAndCrossCutting.spec.ts`, `fees.spec.ts`, `meetingLinksAndNotes.spec.ts`, `packages.spec.ts`, `students.spec.ts`).
-   - 100% confirmed synthetic test artifacts. All post-backup child entities (`pkg_mvhrgx07smpg0t6k`, `fee_mvhrf3iju341p4b7`, `fee_mvhrfgn5qt5xjhcq`, `pay_mvhrf80qwwelr9as`, `cls_mvhreh8eykh6vrq6`, `ml_mvhrgaju49hhq79x`, `note_mvhrgf0u0atk1ill`) are fully cataloged.
-   - All 6 students and their operational child records are included in the cleanup manifest.
+2. **Verified Post-Clearing State (Direct Spreadsheet Inspection)**:
+   - Target Tabs: `Students` (1 row), `Packages` (1 row), `ClassSessions` (1 row), `FeeObligations` (1 row), `Payments` (1 row), `MeetingLinks` (1 row). Exactly Row 1 headers preserved with 0 data rows remaining.
+   - Protected Tabs: `Enrollments` (1 row), `StudentNotes` (9 rows, 8 notes), `AuditLog` (197 rows, 196 historical + 1 cleanup audit log), `ImportBatches` (8 rows), `ImportRowResults` (14 rows), `AppConfig` (5 rows). Preserved 100% intact.
+   - Zero unauthorized tabs, headers, rows, or cells modified. Spreadsheet ID and configuration properties remain untouched.
 
-3. **Payment Discrepancy Reconciliation**:
-   - Target record: `pay_mvho7nlisl4fhve5` (₹1,000 UPI payment for fee `fee_mvho7h9it4beoo32`).
-   - In backup (`06:54:52Z`), status is `RECORDED`. In live, status was updated to `VOID` at `06:57:36Z` during subsequent Turn 5 automated payment voiding tests.
-   - Audit trail `aud_mvhrfln2` is permanently preserved in the protected `AuditLog` tab.
+3. **Live Application API Read Verification**:
+   - `students.list`: 0 records
+   - `packages.list`: 0 records
+   - `fees.list`: 0 records
+   - `payments.list`: 0 records
+   - `classes.list`: 0 records
+   - `meetingLinks.list`: 0 records
+   - `notes.list`: 8 historical progress notes preserved
 
-4. **Audited Cleanup Scope (6 Working Tabs Only)**:
-   - Data rows to clear: `Students` (72 rows), `Packages` (8 rows), `ClassSessions` (8 rows), `FeeObligations` (26 rows), `Payments` (13 rows), `MeetingLinks` (8 rows). Total: 135 rows across 6 tabs.
-   - Preserved Protected Tabs (0 rows cleared): `Enrollments` (0 data rows), `StudentNotes` (8 notes), `AuditLog` (195 audit entries), `ImportBatches` (7 batches), `ImportRowResults` (13 row results), `AppConfig` (4 config rows).
-
-5. **Safe Recovery Runbook**:
-   - Preserves original spreadsheet ID `1cVQknq...` by reading data from backup and re-writing to live tabs via `setValues()`.
-   - Post-backup records can be audited and reconstructed directly from the preserved `AuditLog`.
-   - Repointing `SPREADSHEET_ID` is documented strictly as an emergency read-only failover, not an in-place restore.
-
-6. **Next Action (Owner Authorization Gate)**:
-   - Awaiting explicit written authorization: `"Execute pre-launch test data cleanup"`. Zero live records will be modified until authorized.
+4. **Next Action (Owner Production Decisions)**:
+   - Configure custom production `ADMIN_AUTH_KEY` in Google Apps Script Script Properties if replacing temporary access key.
+   - Authorize Vercel frontend deployment and initiate Phase 11 production data onboarding.
