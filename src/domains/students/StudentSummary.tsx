@@ -24,7 +24,7 @@ export const StudentSummary: React.FC<StudentSummaryProps> = ({ student, credits
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-4)' }}>
         <div>
           <h2 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 700, margin: 0 }}>
-            {student.full_name}
+            {student.student_name || student.full_name}
           </h2>
           <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
             ID: {student.student_id} • Registered: {formatDate(student.created_at)}

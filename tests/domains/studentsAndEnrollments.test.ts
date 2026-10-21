@@ -20,7 +20,7 @@ import EnrollmentService from '../../02-backend/apps-script/enrollments/Enrollme
 // @ts-ignore
 import EnrollmentRepository from '../../02-backend/apps-script/enrollments/EnrollmentRepository.gs';
 
-import { adaptStudentInput, fetchStudents } from '../../src/domains/students/studentApi';
+import { adaptStudentInput } from '../../src/domains/students/studentApi';
 import { mapApiErrorsToFields } from '../../src/domains/students/studentValidation';
 
 describe('Phase 5 — Students and Enrollments Domain Services', () => {
@@ -32,37 +32,38 @@ describe('Phase 5 — Students and Enrollments Domain Services', () => {
     SpreadsheetBootstrap.bootstrapSpreadsheet(spreadsheet, SheetRegistry, '1.0.0');
   });
 
-  it('creates, updates, searches, archives, and reactivates students', () => {
+  it('creates, updates, searches, archives, and reactivates students with single student_name', () => {
     // 1. Create student
     const createRes = StudentService.Students_create(spreadsheet, {
-      first_name: 'Ananya',
-      last_name: 'Iyer',
-      preferred_name: 'Anu',
-      parent_guardian_name: 'Karthik Iyer',
-      primary_phone: '+919123456789',
+      student_name: 'Ananya Iyer',
+      parent_name: 'Karthik Iyer',
+      parent_phone: '+919123456789',
       parent_email: 'karthik@synthetic-test.local',
-      city: 'Chennai'
+      subject: 'Mathematics',
+      notes: 'Initial notes'
     }, actor);
 
     expect(createRes.success).toBe(true);
     const stuId = createRes.data.student_id;
     expect(stuId.startsWith('stu_')).toBe(true);
-    expect(createRes.data.student_status).toBe('ACTIVE');
+    expect(createRes.data.student_name).toBe('Ananya Iyer');
+    expect(createRes.data.subject).toBe('Mathematics');
+    expect(createRes.data.status).toBe('ACTIVE');
 
     // 2. Search student
-    const searchRes = StudentService.Students_list(spreadsheet, { status: 'ACTIVE', search: 'Anu' });
+    const searchRes = StudentService.Students_list(spreadsheet, { status: 'ACTIVE', search: 'Ananya' });
     expect(searchRes.data.length).toBe(1);
     expect(searchRes.data[0].student_id).toBe(stuId);
 
     // 3. Update student
-    const updateRes = StudentService.Students_update(spreadsheet, stuId, { city: 'Bengaluru' }, actor);
+    const updateRes = StudentService.Students_update(spreadsheet, stuId, { parent_phone: '+919999999999' }, actor);
     expect(updateRes.success).toBe(true);
-    expect(updateRes.data.city).toBe('Bengaluru');
+    expect(updateRes.data.parent_phone).toBe('+919999999999');
 
     // 4. Archive student
     const archiveRes = StudentService.Students_archive(spreadsheet, stuId, actor);
     expect(archiveRes.success).toBe(true);
-    expect(archiveRes.data.student_status).toBe('INACTIVE');
+    expect(archiveRes.data.status).toBe('INACTIVE');
     expect(Boolean(archiveRes.data.archived_at)).toBe(true);
 
     // 5. Active list excludes archived student
@@ -72,73 +73,76 @@ describe('Phase 5 — Students and Enrollments Domain Services', () => {
     // 6. Reactivate student
     const reactivateRes = StudentService.Students_reactivate(spreadsheet, stuId, actor);
     expect(reactivateRes.success).toBe(true);
-    expect(reactivateRes.data.student_status).toBe('ACTIVE');
+    expect(reactivateRes.data.status).toBe('ACTIVE');
   });
 
-  it('handles the exact user form submission payload safely', () => {
+  it('handles user form submission payload cleanly without obsolete fields', () => {
     const rawUserInput = {
-      full_name: 'test Student',
-      email: 'student@example.com',
-      phone: '9876543210',
+      student_name: 'test Student',
+      student_email: 'student@example.com',
+      student_phone: '9876543210',
       parent_name: 'test parent',
       parent_phone: '9876543210',
-      parent_email: '',
+      parent_email: 'parent@example.com',
+      subject: 'Science',
       notes: ''
     };
 
-    // 1. Frontend adapter maps to canonical backend columns
+    // 1. Frontend adapter maps to clean backend payload
     const adapted = adaptStudentInput(rawUserInput);
-    expect(adapted.first_name).toBe('test');
-    expect(adapted.last_name).toBe('Student');
-    expect(adapted.parent_guardian_name).toBe('test parent');
-    expect(adapted.primary_phone).toBe('9876543210');
-    expect(adapted.parent_email).toBe('student@example.com');
+    expect(adapted.student_name).toBe('test Student');
+    expect(adapted.parent_name).toBe('test parent');
+    expect(adapted.parent_phone).toBe('9876543210');
+    expect(adapted.parent_email).toBe('parent@example.com');
+    expect(adapted.student_email).toBe('student@example.com');
+    expect(adapted.subject).toBe('Science');
 
-    // 2. Backend validation validates both raw and adapted inputs
+    // Obsolete fields must not be injected
+    expect(adapted.first_name).toBeUndefined();
+    expect(adapted.last_name).toBeUndefined();
+    expect(adapted.dob).toBeUndefined();
+
+    // 2. Backend validation validates input
     const rawVal = StudentValidation.validateStudentInput(rawUserInput, false);
     expect(rawVal.valid).toBe(true);
 
-    const adaptedVal = StudentValidation.validateStudentInput(adapted, false);
-    expect(adaptedVal.valid).toBe(true);
-
-    // 3. Backend service successfully creates student from either format
+    // 3. Backend service successfully creates student
     const createRes = StudentService.Students_create(spreadsheet, adapted, actor);
     expect(createRes.success).toBe(true);
     expect(createRes.data.student_id.startsWith('stu_')).toBe(true);
-    expect(createRes.data.first_name).toBe('test');
-    expect(createRes.data.last_name).toBe('Student');
-    expect(createRes.data.full_name).toBe('test Student');
+    expect(createRes.data.student_name).toBe('test Student');
     expect(createRes.data.parent_name).toBe('test parent');
-    expect(createRes.data.email).toBe('student@example.com');
+    expect(createRes.data.parent_email).toBe('parent@example.com');
+    expect(createRes.data.student_email).toBe('student@example.com');
+    expect(createRes.data.subject).toBe('Science');
   });
 
   it('safely validates inputs and maps server error details back to UI form fields', () => {
     // Missing required fields
     const invalidInput = {
-      full_name: '',
-      email: 'not-an-email',
+      student_name: '',
+      student_email: 'not-an-email',
       parent_email: 'bad-email'
     };
 
     const val = StudentValidation.validateStudentInput(invalidInput, false);
     expect(val.valid).toBe(false);
-    expect(val.errors.first_name).toBeDefined();
-    expect(val.errors.parent_guardian_name).toBeDefined();
-    expect(val.errors.primary_phone).toBeDefined();
+    expect(val.errors.student_name).toBeDefined();
+    expect(val.errors.parent_name).toBeDefined();
+    expect(val.errors.parent_phone).toBeDefined();
 
     // Mapping to frontend field errors
     const uiErrors = mapApiErrorsToFields(val.errors);
-    expect(uiErrors.full_name).toBe('First name is required');
-    expect(uiErrors.parent_name).toBe('Parent or guardian name is required');
-    expect(uiErrors.parent_phone).toBe('Primary phone is required');
-    expect(uiErrors.phone).toBe('Primary phone is required');
+    expect(uiErrors.student_name).toBe('Student name is required');
+    expect(uiErrors.parent_name).toBe('Parent name is required');
+    expect(uiErrors.parent_phone).toBe('Parent phone is required');
   });
 
   it('creates and manages enrollments linked to a student', () => {
     const stuRes = StudentService.Students_create(spreadsheet, {
-      first_name: 'Rohan',
-      parent_guardian_name: 'Meera',
-      primary_phone: '+919988776655'
+      student_name: 'Rohan',
+      parent_name: 'Meera',
+      parent_phone: '+919988776655'
     }, actor);
     const stuId = stuRes.data.student_id;
 
@@ -172,25 +176,23 @@ describe('Phase 5 — Students and Enrollments Domain Services', () => {
 
   it('safely handles duplicate header rows and reads real records correctly', () => {
     const sheet = spreadsheet.getSheetByName(SheetRegistry.SHEET_NAMES.STUDENTS);
-    // Simulating sheet with duplicate header in Row 2, then actual data in Row 3
     const headers = SheetRegistry.getExpectedHeaders(SheetRegistry.SHEET_NAMES.STUDENTS);
     sheet!.rows = [
       [...headers], // Row 1: Header
       [...headers], // Row 2: Duplicate header
-      ['stu_test1', 'test', 'student', '', '', 'test parent', '', '9876543210', '', 'student@example.com', '', 'ACTIVE', '', '', '', '2026-10-20T00:00:00.000Z', '2026-10-20T00:00:00.000Z', '', '']
+      ['stu_test1', 'test student', 'test parent', '9876543210', '', 'parent@example.com', 'student@example.com', 'Math', 'ACTIVE', '', '2026-10-20T00:00:00.000Z', '2026-10-20T00:00:00.000Z', '']
     ];
 
     const records = RowReader.readAllRecords(sheet, HeaderMapper);
-    // Must ignore Row 2 and return only Row 3
     expect(records.length).toBe(1);
     expect(records[0].student_id).toBe('stu_test1');
-    expect(records[0].first_name).toBe('test');
+    expect(records[0].student_name).toBe('test student');
 
     // Students_list must return the enriched record
     const listRes = StudentService.Students_list(spreadsheet, { status: 'ALL' });
     expect(listRes.success).toBe(true);
     expect(listRes.data.length).toBe(1);
-    expect(listRes.data[0].full_name).toBe('test student');
+    expect(listRes.data[0].student_name).toBe('test student');
   });
 
   it('proves newly created student appears immediately in fresh Students_list with enrichments', () => {
@@ -200,11 +202,11 @@ describe('Phase 5 — Students and Enrollments Domain Services', () => {
 
     // Create student
     const created = StudentService.Students_create(spreadsheet, {
-      full_name: 'test student',
-      email: 'student@example.com',
-      phone: '9876543210',
+      student_name: 'test student',
       parent_name: 'test parent',
       parent_phone: '9876543210',
+      parent_email: 'parent@example.com',
+      student_email: 'student@example.com'
     }, actor);
     expect(created.success).toBe(true);
 
@@ -212,9 +214,9 @@ describe('Phase 5 — Students and Enrollments Domain Services', () => {
     const freshList = StudentService.Students_list(spreadsheet, { status: 'ALL' });
     expect(freshList.data.length).toBe(1);
     expect(freshList.data[0].student_id).toBe(created.data.student_id);
-    expect(freshList.data[0].full_name).toBe('test student');
-    expect(freshList.data[0].email).toBe('student@example.com');
-    expect(freshList.data[0].phone).toBe('9876543210');
+    expect(freshList.data[0].student_name).toBe('test student');
+    expect(freshList.data[0].parent_email).toBe('parent@example.com');
+    expect(freshList.data[0].student_email).toBe('student@example.com');
     expect(freshList.data[0].status).toBe('ACTIVE');
 
     // Search query matches

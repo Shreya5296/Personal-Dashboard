@@ -122,17 +122,14 @@ function Imports_execute(spreadsheet, rows, actor) {
       continue;
     }
 
-    var parts = r.fullName.trim().split(' ');
-    var firstName = parts[0];
-    var lastName = parts.slice(1).join(' ');
+    var studentName = r.fullName.trim();
 
     var createRes = (stuServ && stuServ.Students_create) ? stuServ.Students_create(spreadsheet, {
-      first_name: firstName,
-      last_name: lastName,
-      parent_guardian_name: firstName + ' Parent',
-      primary_phone: r.phone || '+910000000000',
+      student_name: studentName,
+      parent_name: studentName + ' Parent',
+      parent_phone: r.phone || '+910000000000',
       parent_email: r.email,
-      source_reference: 'import:' + batchId
+      status: 'ACTIVE'
     }, actor) : { success: false };
 
     if (createRes && createRes.success) {

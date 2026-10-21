@@ -56,8 +56,7 @@ describe('Backend Operation Adapters and Compatibility', () => {
 
     expect(res.success).toBe(true);
     expect(res.data.student_id).toBeDefined();
-    expect(res.data.first_name).toBe('Ananya');
-    expect(res.data.last_name).toBe('Roy');
+    expect(res.data.student_name).toBe('Ananya Roy');
     expect(res.data.full_name).toBe('Ananya Roy');
     expect(res.data.phone).toBe('9876543210');
     expect(res.data.parent_name).toBe('Sunita Roy');

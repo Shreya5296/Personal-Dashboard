@@ -47,16 +47,17 @@ export function calculateStudentCredits(
 
     const totalPaid = currPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
     const totalBilled = currFees.reduce((sum, f) => sum + (Number(f.amount_due) || 0), 0);
+    const totalCreditApplied = currFees.reduce((sum, f) => sum + (Number(f.credit_applied) || 0), 0);
 
-    // Track payment applied per fee obligation (capped at amount_due)
+    // Track payment applied per fee obligation (capped at net payable)
     const appliedPerFee: Record<string, number> = {};
     for (const p of currPayments) {
-      const fid = p.fee_id;
+      const fid = p.fee_id || p.fee_obligation_id;
       if (fid) {
         const fee = currFees.find((f) => (f.fee_id === fid || f.fee_obligation_id === fid));
         if (fee) {
           const prev = appliedPerFee[fid] || 0;
-          const maxApplicable = Number(fee.amount_due) || 0;
+          const maxApplicable = Math.max(0, (Number(fee.amount_due) || 0) - (Number(fee.credit_applied) || 0));
           const toApply = Math.min(Number(p.amount) || 0, Math.max(0, maxApplicable - prev));
           appliedPerFee[fid] = prev + toApply;
         }
@@ -64,8 +65,8 @@ export function calculateStudentCredits(
     }
 
     const totalApplied = Object.values(appliedPerFee).reduce((sum, a) => sum + a, 0);
-    const unappliedCredit = Math.max(0, totalPaid - totalApplied);
-    const outstandingBalance = Math.max(0, totalBilled - totalApplied);
+    const unappliedCredit = Math.max(0, totalPaid - (totalApplied + totalCreditApplied));
+    const outstandingBalance = Math.max(0, totalBilled - (totalApplied + totalCreditApplied));
 
     summaries.push({
       currency: curr,

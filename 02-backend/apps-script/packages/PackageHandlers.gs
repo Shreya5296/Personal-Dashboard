@@ -35,7 +35,7 @@ function registerPackageOperations(router) {
 
     for (var i = 0; i < raw.length; i++) {
       var enriched = _pkgSvcH.Packages_enrichWithBalance(ctx.spreadsheet, raw[i]);
-      totalPurchased += Number(raw[i].purchased_classes) || 0;
+      totalPurchased += Number(enriched.classes_purchased || raw[i].classes_purchased || raw[i].purchased_classes) || 0;
       totalConsumed += enriched.consumed_classes || 0;
       remainingClasses += enriched.remaining_classes || 0;
     }

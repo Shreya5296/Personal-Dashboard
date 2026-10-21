@@ -15,7 +15,7 @@ var _repPkgSvc = typeof Packages_enrichWithBalance === 'function' ? { Packages_e
 function Reports_getDashboardOverview(spreadsheet) {
   var stuSheet = spreadsheet.getSheetByName(_repReg.SHEET_NAMES.STUDENTS);
   var students = _repRowReader.readAllRecords(stuSheet, _repMap);
-  var activeStudents = students.filter(function(s) { return s.student_status === 'ACTIVE'; }).length;
+  var activeStudents = students.filter(function(s) { return (s.status || s.student_status || 'ACTIVE') === 'ACTIVE'; }).length;
 
   // Upcoming classes in next 7 days
   var clsSheet = spreadsheet.getSheetByName(_repReg.SHEET_NAMES.CLASS_SESSIONS);

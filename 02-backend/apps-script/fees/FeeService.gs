@@ -30,6 +30,8 @@ function FeeObligations_create(spreadsheet, data, actor) {
     return { success: false, code: 'RECORD_NOT_FOUND', message: 'Student not found: ' + data.student_id };
   }
 
+  var studentName = data.student_name || student.student_name || student.full_name || (student.first_name ? (student.first_name + ' ' + (student.last_name || '')).trim() : '');
+
   var lockFn = _feeLock && _feeLock.withLock ? _feeLock.withLock : function(timeout, fn) { return { success: true, result: fn() }; };
   var lockRes = lockFn(10000, function() {
     var desc = String(data.obligation_description || data.description).trim();
@@ -48,13 +50,18 @@ function FeeObligations_create(spreadsheet, data, actor) {
 
     var now = new Date().toISOString();
     var id = _feeIdGen.generateFeeObligationId();
+    var creditApplied = (data.credit_applied !== undefined && data.credit_applied !== null && data.credit_applied !== '')
+      ? Math.round(Number(data.credit_applied) * 100) / 100
+      : 0;
+
     var record = {
       fee_obligation_id: id,
       student_id: data.student_id,
-      enrollment_id: data.enrollment_id || '',
+      student_name: studentName,
       package_id: data.package_id || '',
       obligation_description: desc,
       amount_due: Math.round(Number(data.amount_due) * 100) / 100,
+      credit_applied: creditApplied,
       currency: 'INR',
       issue_date: data.issue_date || now.split('T')[0],
       due_date: data.due_date || '',
@@ -134,17 +141,19 @@ function FeeObligations_enrichWithBalances(spreadsheet, feeRecord) {
 
   rawPaid = Math.round(rawPaid * 100) / 100;
   var due = Number(feeRecord.amount_due) || 0;
-  var applied = Math.min(rawPaid, due);
-  var outstanding = feeRecord.obligation_status === 'VOID' ? 0 : Math.max(0, Math.round((due - applied) * 100) / 100);
+  var creditApplied = Number(feeRecord.credit_applied) || 0;
+  var netPayable = Math.max(0, Math.round((due - creditApplied) * 100) / 100);
+  var applied = Math.min(rawPaid, netPayable);
+  var outstanding = feeRecord.obligation_status === 'VOID' ? 0 : Math.max(0, Math.round((netPayable - applied) * 100) / 100);
 
   var todayStr = new Date().toISOString().split('T')[0];
   var isOverdue = Boolean(feeRecord.due_date && feeRecord.due_date < todayStr && outstanding > 0 && feeRecord.obligation_status !== 'VOID');
 
   var derivedStatus = feeRecord.obligation_status;
   if (derivedStatus !== 'VOID') {
-    if (applied >= due && due > 0) {
+    if ((applied + creditApplied) >= due && due > 0) {
       derivedStatus = 'PAID';
-    } else if (applied > 0) {
+    } else if ((applied + creditApplied) > 0) {
       derivedStatus = 'PARTIALLY_PAID';
     } else {
       derivedStatus = 'OPEN';
@@ -154,6 +163,8 @@ function FeeObligations_enrichWithBalances(spreadsheet, feeRecord) {
   var enriched = Object.assign({}, feeRecord);
   enriched.paid_amount = applied;
   enriched.raw_paid_amount = rawPaid;
+  enriched.credit_applied = creditApplied;
+  enriched.net_payable = netPayable;
   enriched.outstanding_amount = outstanding;
   enriched.is_overdue = isOverdue;
   enriched.obligation_status = derivedStatus;

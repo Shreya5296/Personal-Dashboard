@@ -58,12 +58,12 @@ describe('Phase 3 — Data Schema and Spreadsheet Validation', () => {
 
     const sheet = spreadsheet.getSheetByName('Students');
     if (sheet) {
-      sheet.rows[0].push('first_name'); // Duplicate header
+      sheet.rows[0].push('student_name'); // Duplicate header
     }
 
     const validation = SchemaValidator.validateSpreadsheetSchema(spreadsheet, SheetRegistry);
     expect(validation.valid).toBe(false);
-    expect(validation.errors.some((e: string) => e.includes('duplicate header: first_name'))).toBe(true);
+    expect(validation.errors.some((e: string) => e.includes('duplicate header: student_name'))).toBe(true);
   });
 
   it('maps records using HeaderMapper irrespective of column positions', () => {

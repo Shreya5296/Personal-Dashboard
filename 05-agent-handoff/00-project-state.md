@@ -20,6 +20,7 @@ The Git history and this file are the recovery sources of truth. Chat history an
 
 ## 3. Project Guardrails
 
+- **Mandatory Agent Rule:** Before adding any new business data field or sheet, verify that it is required by the approved Personal Dashboard requirements. Do not introduce generic CRM fields, duplicate name fields, redundant tables, or speculative columns.
 - Frontend: React, TypeScript, and Vite.
 - Backend: Google Apps Script Web App.
 - Canonical datastore: one private Google Spreadsheet with the documented tabs and schemas.
@@ -39,14 +40,14 @@ Update every field below as work proceeds.
 |---|---|
 | Project | Student Management Dashboard |
 | Execution mode | Autonomous, sequential implementation |
-| Current phase | Requirements-First Field & Schema Reconciliation |
-| Current phase status | AWAITING_OWNER_DECISION |
-| Last completed phase | Requirements-First Reconciliation Audit & Simplification Review |
+| Current phase | Antigravity Master Implementation — Full Field & Schema Cleanup Everywhere |
+| Current phase status | PASSED |
+| Last completed phase | Master Cleanup Implementation (Backend, Frontend, Tests, Docs) |
 | Current Git branch | main |
-| Last phase commit | baa1714 |
-| Last full regression run | 103 Vitest tests passed (21 test files) + line-limit check passing (117 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build (712ms) |
+| Last phase commit | TBD |
+| Last full regression run | 107 Vitest tests passed (22 test files) + line-limit check passing (117 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build |
 | Real-data use | Ready for Phase 11 live production data import (0 real student records imported to date) |
-| Last state update | Requirements-first field and schema reconciliation complete: full 8-column field mapping produced in docs/prelaunch/requirements-reconciliation-report.md; all 6 original requirement areas re-established; confirmed mismatches documented (subject missing physical column, student_email missing, per_class/in_INR/next_due_date missing from Packages, student_name missing from child tables, MeetingLinks over-engineered, first_name/last_name split); simplest practical data models evaluated; PaymentAllocations table rejected as unnecessary enterprise overhead; billing terminology defined unambiguously; forms and workflows streamlined; 103/103 tests passing; clean working tree |
+| Last state update | Implemented full field and schema cleanup across backend, frontend, tests, and documentation. Unified to single student_name, separated student_email from parent_email, dedicated physical subject column, eliminated obsolete CRM fields (first_name, last_name, preferred_name, dob, etc.), added credit_applied to FeeObligations for exact overpayment accounting without extra tables, deprecated redundant Enrollments tab, created SchemaMigration.gs runner, verified 107/107 tests passing. |
 
 ## 5. Phase Register
 

@@ -5,6 +5,7 @@
 var _clsIdGen = typeof generateClassSessionId === 'function' ? { generateClassSessionId: generateClassSessionId } : (typeof require !== 'undefined' ? require('../shared/IdGenerator.gs') : null);
 var _clsVal = typeof validateClassScheduleInput === 'function' ? { validateClassScheduleInput: validateClassScheduleInput, validateClassCompleteInput: validateClassCompleteInput } : (typeof require !== 'undefined' ? require('./ClassValidation.gs') : null);
 var _clsRepo = typeof Classes_getAll === 'function' ? { Classes_getAll: Classes_getAll, Classes_getById: Classes_getById, Classes_findByRestorationId: Classes_findByRestorationId, Classes_insert: Classes_insert, Classes_update: Classes_update } : (typeof require !== 'undefined' ? require('./ClassRepository.gs') : null);
+var _clsStuRepo = typeof Students_getById === 'function' ? { Students_getById: Students_getById } : (typeof require !== 'undefined' ? require('../students/StudentRepository.gs') : null);
 var _clsAudit = typeof recordAuditEvent === 'function' ? { recordAuditEvent: recordAuditEvent } : (typeof require !== 'undefined' ? require('../audit/AuditService.gs') : null);
 var _clsLock = typeof withLock === 'function' ? { withLock: withLock } : (typeof require !== 'undefined' ? require('../sheets/LockManager.gs') : null);
 var _clsReg = {
@@ -36,12 +37,20 @@ function Classes_schedule(spreadsheet, data, actor) {
   var v = _clsVal.validateClassScheduleInput(normalized);
   if (!v.valid) return { success: false, code: 'VALIDATION_ERROR', message: 'Validation failed', details: v.errors };
 
+  var studentName = data.student_name || '';
+  if (!studentName && _clsStuRepo && _clsStuRepo.Students_getById) {
+    var stu = _clsStuRepo.Students_getById(spreadsheet, normalized.student_id);
+    if (stu) {
+      studentName = stu.student_name || stu.full_name || (stu.first_name ? (stu.first_name + ' ' + (stu.last_name || '')).trim() : '');
+    }
+  }
+
   var now = new Date().toISOString();
   var id = _clsIdGen.generateClassSessionId();
   var record = {
     class_session_id: id,
     student_id: normalized.student_id,
-    enrollment_id: normalized.enrollment_id || '',
+    student_name: studentName,
     package_id: normalized.package_id || '',
     meeting_link_id: normalized.meeting_link_id || '',
     class_title: normalized.class_title,
@@ -199,7 +208,7 @@ function Classes_restoreCredit(spreadsheet, data, actor) {
   var restorationRecord = {
     class_session_id: id,
     student_id: original.student_id,
-    enrollment_id: original.enrollment_id,
+    student_name: original.student_name || '',
     package_id: original.package_id,
     meeting_link_id: '',
     class_title: 'Credit Restoration: ' + original.class_title,

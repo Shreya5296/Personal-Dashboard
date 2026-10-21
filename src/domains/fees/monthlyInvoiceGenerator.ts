@@ -38,7 +38,7 @@ export function generateInvoiceCandidates(
 
       return {
         studentId: s.student_id,
-        studentName: s.full_name,
+        studentName: s.student_name || s.full_name || 'Student',
         periodLabel,
         basis: 'Monthly Retainer',
         sessionCount: 0,

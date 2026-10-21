@@ -26,21 +26,36 @@ export function formatSubjectAndNotes(subject?: string | null, notes?: string | 
 }
 
 export function adaptStudentInput(input: Partial<StudentInput>): Record<string, unknown> {
-  const parts = (input.full_name || '').trim().split(/\s+/);
+  const name = (input.student_name || input.full_name || '').trim();
+  const parentName = (input.parent_name || '').trim();
+  const parentPhone = (input.parent_phone || input.phone || '').trim();
+  const studentPhone = (input.student_phone || '').trim();
+  const parentEmail = (input.parent_email || '').trim();
+  const studentEmail = (input.student_email || input.email || '').trim();
+  const subject = (input.subject || '').trim();
+  const notes = (input.notes || '').trim();
+  const status = input.status || 'ACTIVE';
+
   return {
-    ...input,
-    first_name: parts[0] || '',
-    last_name: parts.slice(1).join(' '),
-    parent_guardian_name: input.parent_name || '',
-    primary_phone: input.parent_phone || input.phone || '',
-    parent_email: input.parent_email || input.email || '',
-    internal_summary: formatSubjectAndNotes(input.subject, input.notes),
-    subject: input.subject?.trim() || '',
+    student_name: name,
+    parent_name: parentName,
+    parent_phone: parentPhone,
+    student_phone: studentPhone,
+    parent_email: parentEmail,
+    student_email: studentEmail,
+    subject,
+    status,
+    notes,
+    full_name: name,
+    phone: parentPhone,
+    email: parentEmail,
+    internal_summary: formatSubjectAndNotes(subject, notes),
   };
 }
 
 export function enrichStudentData(student: Student): Student {
   if (!student) return student;
+  const name = student.student_name || student.full_name || '';
   let subject = student.subject || '';
   let notes = student.notes || '';
   if (!subject && notes) {
@@ -50,7 +65,19 @@ export function enrichStudentData(student: Student): Student {
       notes = parsed.notes;
     }
   }
-  return { ...student, subject, notes };
+  return {
+    ...student,
+    student_name: name,
+    full_name: name,
+    parent_name: student.parent_name || '',
+    parent_phone: student.parent_phone || student.phone || '',
+    student_phone: student.student_phone || '',
+    parent_email: student.parent_email || student.email || '',
+    student_email: student.student_email || '',
+    subject,
+    status: student.status || 'ACTIVE',
+    notes,
+  };
 }
 
 export async function fetchStudents(filter: StudentFilter = {}, token?: string | null): Promise<Student[]> {

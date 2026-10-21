@@ -19,6 +19,15 @@ function validateFeeObligationInput(data) {
     errors.amount_due = 'Amount due must be a positive number';
   }
 
+  if (data.credit_applied !== undefined && data.credit_applied !== null && data.credit_applied !== '') {
+    var credit = Number(data.credit_applied);
+    if (isNaN(credit) || credit < 0) {
+      errors.credit_applied = 'Credit applied must be a non-negative number';
+    } else if (!isNaN(amount) && credit > amount) {
+      errors.credit_applied = 'Credit applied cannot exceed amount due';
+    }
+  }
+
   if (data.due_date && !/^\d{4}-\d{2}-\d{2}$/.test(data.due_date)) {
     errors.due_date = 'Due date must be in YYYY-MM-DD format';
   }

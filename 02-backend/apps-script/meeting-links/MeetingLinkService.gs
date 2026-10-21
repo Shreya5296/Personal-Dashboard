@@ -45,20 +45,18 @@ function MeetingLinks_create(spreadsheet, data, actor) {
 
   var now = new Date().toISOString();
   var id = _mlIdGen.generateMeetingLinkId();
+  var studentName = data.student_name || student.student_name || student.full_name || (student.first_name ? (student.first_name + ' ' + (student.last_name || '')).trim() : '');
   var record = {
     meeting_link_id: id,
     student_id: data.student_id,
-    provider: data.provider,
+    student_name: studentName,
     link_label: String(data.link_label).trim(),
     meeting_url: String(data.meeting_url).trim(),
+    provider: data.provider || 'Google Meet',
     is_preferred: isPreferred,
     link_status: 'ACTIVE',
-    valid_from: data.valid_from || '',
-    valid_until: data.valid_until || '',
-    notes: data.notes ? String(data.notes).trim() : '',
     created_at: now,
-    updated_at: now,
-    deactivated_at: ''
+    updated_at: now
   };
 
   _mlRepo.MeetingLinks_insert(spreadsheet, record);

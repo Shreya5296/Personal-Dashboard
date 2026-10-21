@@ -19,13 +19,14 @@ export const StudentForm: React.FC<StudentFormProps> = ({
   isLoading = false,
 }) => {
   const [formData, setFormData] = useState<StudentInput>({
-    full_name: initialStudent?.full_name || '',
+    student_name: initialStudent?.student_name || initialStudent?.full_name || '',
     subject: initialStudent?.subject || '',
-    email: initialStudent?.email || '',
-    phone: initialStudent?.phone || '',
     parent_name: initialStudent?.parent_name || '',
+    parent_phone: initialStudent?.parent_phone || initialStudent?.phone || '',
     parent_email: initialStudent?.parent_email || '',
-    parent_phone: initialStudent?.parent_phone || '',
+    student_phone: initialStudent?.student_phone || '',
+    student_email: initialStudent?.student_email || initialStudent?.email || '',
+    status: initialStudent?.status || 'ACTIVE',
     notes: initialStudent?.notes || '',
   });
 
@@ -34,10 +35,11 @@ export const StudentForm: React.FC<StudentFormProps> = ({
 
   const handleChange = (field: keyof StudentInput, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
+    if (errors[field] || errors[field === 'student_name' ? 'full_name' : '']) {
       setErrors((prev) => {
         const next = { ...prev };
         delete next[field];
+        delete next.full_name;
         return next;
       });
     }
@@ -71,8 +73,8 @@ export const StudentForm: React.FC<StudentFormProps> = ({
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
-        <FormField label="Full Name" required error={errors.full_name}>
-          <input type="text" value={formData.full_name} onChange={(e) => handleChange('full_name', e.target.value)} placeholder="Student full name" style={inputStyle} />
+        <FormField label="Student Name" required error={errors.student_name || errors.full_name}>
+          <input type="text" value={formData.student_name} onChange={(e) => handleChange('student_name', e.target.value)} placeholder="Student name" style={inputStyle} />
         </FormField>
         <FormField label="Subject" error={errors.subject}>
           <input type="text" value={formData.subject || ''} onChange={(e) => handleChange('subject', e.target.value)} placeholder="e.g. Mathematics, Physics" style={inputStyle} />
@@ -80,24 +82,40 @@ export const StudentForm: React.FC<StudentFormProps> = ({
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
-        <FormField label="Student Email" error={errors.email}>
-          <input type="email" value={formData.email} onChange={(e) => handleChange('email', e.target.value)} placeholder="student@example.com" style={inputStyle} />
-        </FormField>
-        <FormField label="Student Phone" error={errors.phone}>
-          <input type="tel" value={formData.phone} onChange={(e) => handleChange('phone', e.target.value)} placeholder="+91 98765 43210" style={inputStyle} />
-        </FormField>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
-        <FormField label="Parent Name" error={errors.parent_name}>
+        <FormField label="Parent Name" required error={errors.parent_name}>
           <input type="text" value={formData.parent_name} onChange={(e) => handleChange('parent_name', e.target.value)} placeholder="Parent name" style={inputStyle} />
         </FormField>
-        <FormField label="Parent Phone" error={errors.parent_phone}>
+        <FormField label="Parent Phone" required error={errors.parent_phone || errors.phone}>
           <input type="tel" value={formData.parent_phone} onChange={(e) => handleChange('parent_phone', e.target.value)} placeholder="Parent phone" style={inputStyle} />
         </FormField>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', marginTop: 'var(--space-4)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+        <FormField label="Parent Email" error={errors.parent_email}>
+          <input type="email" value={formData.parent_email || ''} onChange={(e) => handleChange('parent_email', e.target.value)} placeholder="parent@example.com" style={inputStyle} />
+        </FormField>
+        <FormField label="Student Email" error={errors.student_email}>
+          <input type="email" value={formData.student_email || ''} onChange={(e) => handleChange('student_email', e.target.value)} placeholder="student@example.com" style={inputStyle} />
+        </FormField>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+        <FormField label="Student Phone" error={errors.student_phone}>
+          <input type="tel" value={formData.student_phone || ''} onChange={(e) => handleChange('student_phone', e.target.value)} placeholder="Student phone (optional)" style={inputStyle} />
+        </FormField>
+        <FormField label="Status" error={errors.status}>
+          <select value={formData.status || 'ACTIVE'} onChange={(e) => handleChange('status', e.target.value)} style={inputStyle}>
+            <option value="ACTIVE">Active</option>
+            <option value="INACTIVE">Inactive</option>
+          </select>
+        </FormField>
+      </div>
+
+      <FormField label="Notes" error={errors.notes}>
+        <textarea value={formData.notes || ''} onChange={(e) => handleChange('notes', e.target.value)} rows={2} placeholder="Notes about student..." style={{ ...inputStyle, resize: 'vertical' }} />
+      </FormField>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', marginTop: 'var(--space-2)' }}>
         <Button variant="secondary" type="button" onClick={onCancel} disabled={isLoading}>Cancel</Button>
         <Button variant="primary" type="submit" isLoading={isLoading}>{initialStudent ? 'Save Changes' : 'Create Student'}</Button>
       </div>

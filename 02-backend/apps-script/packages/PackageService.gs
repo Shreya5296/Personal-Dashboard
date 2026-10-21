@@ -6,7 +6,6 @@ var _pkgIdGen = typeof generatePackageId === 'function' ? { generatePackageId: g
 var _pkgVal = typeof validatePackageInput === 'function' ? { validatePackageInput: validatePackageInput } : (typeof require !== 'undefined' ? require('./PackageValidation.gs') : null);
 var _pkgRepo = typeof Packages_getAll === 'function' ? { Packages_getAll: Packages_getAll, Packages_getById: Packages_getById, Packages_getByStudentId: Packages_getByStudentId, Packages_insert: Packages_insert, Packages_update: Packages_update } : (typeof require !== 'undefined' ? require('./PackageRepository.gs') : null);
 var _pkgStuRepo = typeof Students_getById === 'function' ? { Students_getById: Students_getById } : (typeof require !== 'undefined' ? require('../students/StudentRepository.gs') : null);
-var _pkgEnrRepo = typeof Enrollments_getById === 'function' ? { Enrollments_getById: Enrollments_getById } : (typeof require !== 'undefined' ? require('../enrollments/EnrollmentRepository.gs') : null);
 var _pkgAudit = typeof recordAuditEvent === 'function' ? { recordAuditEvent: recordAuditEvent } : (typeof require !== 'undefined' ? require('../audit/AuditService.gs') : null);
 var _pkgReg = {
   get SHEET_NAMES() {
@@ -30,36 +29,34 @@ function Packages_create(spreadsheet, data, actor) {
     return { success: false, code: 'RECORD_NOT_FOUND', message: 'Student not found: ' + data.student_id };
   }
 
-  if (data.enrollment_id) {
-    var enr = _pkgEnrRepo.Enrollments_getById(spreadsheet, data.enrollment_id);
-    if (!enr || enr.student_id !== data.student_id) {
-      return { success: false, code: 'VALIDATION_ERROR', message: 'Enrollment must belong to the same student' };
-    }
-  }
-
   var now = new Date().toISOString();
   var id = _pkgIdGen.generatePackageId();
-  var rawQty = data.purchased_classes !== undefined ? data.purchased_classes : data.total_classes;
+  var rawQty = data.classes_purchased !== undefined ? data.classes_purchased : (data.purchased_classes !== undefined ? data.purchased_classes : data.total_classes);
   var rawPrice = (data.package_price !== undefined && data.package_price !== null && data.package_price !== '')
     ? Number(data.package_price)
     : ((data.price !== undefined && data.price !== null && data.price !== '') ? Number(data.price) : '');
+  var rawPerClass = (data.per_class !== undefined && data.per_class !== null && data.per_class !== '') ? Number(data.per_class) : '';
+
+  var planName = String(data.plan_name || data.package_name || '').trim();
+  var studentName = data.student_name || student.student_name || student.full_name || (student.first_name ? (student.first_name + ' ' + (student.last_name || '')).trim() : '');
 
   var record = {
     package_id: id,
     student_id: data.student_id,
-    enrollment_id: data.enrollment_id || '',
-    package_name: String(data.package_name).trim(),
-    purchased_classes: Number(rawQty),
-    package_price: rawPrice,
+    student_name: studentName,
+    plan_name: planName,
+    plan_type: data.plan_type || 'PACKAGE',
     currency: 'INR',
-    purchase_date: data.purchase_date || '',
+    package_price: rawPrice,
+    per_class: rawPerClass,
+    classes_purchased: rawQty !== undefined && rawQty !== '' ? Number(rawQty) : 0,
     start_date: data.start_date || '',
     expiry_date: data.expiry_date || '',
+    next_due_date: data.next_due_date || '',
     package_status: data.package_status || data.status || 'ACTIVE',
     notes: data.notes ? String(data.notes).trim() : '',
     created_at: now,
-    updated_at: now,
-    closed_at: ''
+    updated_at: now
   };
 
   _pkgRepo.Packages_insert(spreadsheet, record);
@@ -70,11 +67,11 @@ function Packages_create(spreadsheet, data, actor) {
     entity_type: 'PACKAGE',
     entity_id: id,
     action: 'CREATE',
-    after_summary: { package_id: id, student_id: data.student_id, purchased: record.purchased_classes },
+    after_summary: { package_id: id, student_id: data.student_id, purchased: record.classes_purchased },
     request_id: actor.requestId
   });
 
-  return { success: true, data: record };
+  return { success: true, data: Packages_enrichWithBalance(spreadsheet, record) };
 }
 
 function Packages_enrichWithBalance(spreadsheet, pkgRecord) {
@@ -96,14 +93,17 @@ function Packages_enrichWithBalance(spreadsheet, pkgRecord) {
   }
 
   var netConsumed = Math.max(0, consumed - restored);
-  var purchased = Number(pkgRecord.purchased_classes) || 0;
+  var purchased = Number(pkgRecord.classes_purchased !== undefined ? pkgRecord.classes_purchased : pkgRecord.purchased_classes) || 0;
   var remaining = Math.max(0, purchased - netConsumed);
 
   var enriched = Object.assign({}, pkgRecord);
   enriched.consumed_classes = netConsumed;
   enriched.remaining_classes = remaining;
   enriched.is_exhausted = remaining <= 0;
-  enriched.total_classes = Number(pkgRecord.purchased_classes) || 0;
+  enriched.classes_purchased = purchased;
+  enriched.purchased_classes = purchased;
+  enriched.total_classes = purchased;
+  enriched.package_name = pkgRecord.plan_name || pkgRecord.package_name;
   enriched.price = (pkgRecord.package_price !== '' && pkgRecord.package_price !== undefined) ? Number(pkgRecord.package_price) : 0;
   enriched.status = pkgRecord.package_status || 'ACTIVE';
 

@@ -22,8 +22,8 @@ export const StudentList: React.FC<StudentListProps> = ({
 
   const columns: Column<Student>[] = [
     {
-      key: 'full_name',
-      header: 'Full Name',
+      key: 'student_name',
+      header: 'Student Name',
       render: (s) => (
         <button
           type="button"
@@ -38,7 +38,7 @@ export const StudentList: React.FC<StudentListProps> = ({
             padding: 0,
           }}
         >
-          {s.full_name}
+          {s.student_name || s.full_name}
         </button>
       ),
     },

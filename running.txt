@@ -30,6 +30,7 @@ WORKING RULES
 12. Commit each completed documentation file with a descriptive message. A local commit is not a GitHub push; never claim a push unless a remote is configured and the push succeeds.
 13. When writing Markdown that may be embedded in another interface, write the literal phrase TRIPLE BACKTICK instead of a triple-backtick fence.
 14. Keep this file updated when project stage, key decisions, blockers, or next actions change.
+15. Before adding any new business data field or sheet, verify that it is required by the approved Personal Dashboard requirements. Do not introduce generic CRM fields, duplicate name fields, redundant tables, or speculative columns.
 
 DOCUMENTATION WORKFLOW
 1. Check the repository status and existing files before editing.
@@ -204,4 +205,17 @@ NEXT ACTION
   * 5. Unambiguous Billing Terminology Formulated: Concrete mathematical definitions provided for Package price, Per-class rate, Currency, INR equivalent, Classes purchased, Classes consumed, Classes remaining, Fee amount due, Payment received, Amount applied, Unapplied credit, Outstanding balance, and Next payment due date.
   * 6. Owner-Facing Workflows & Forms Detailed: Short, practical forms designed for student entry, package setup, class scheduling, 1-click attendance, monthly invoicing preview, and payment recording.
   * 7. Invariants Preserved: Zero live rows, columns, headers, or tabs modified; zero code regressions; 103/103 tests passing; clean production build.
-  * Status: AWAITING OWNER APPROVAL OF RECOMMENDED SCHEMA CHANGES.
+- Antigravity Master Implementation — Clean Up The Personal Dashboard Everywhere completed:
+  * 1. Authoritative Target Schemas Implemented:
+    - Students: student_id, student_name, parent_name, parent_phone, student_phone, parent_email, student_email, subject, status, notes, created_at, updated_at, archived_at. Single student_name replaces first_name/last_name. Strictly separate student_email. Physical subject column. Dropped all CRM fluff (preferred_name, dob, etc.).
+    - Packages: package_id, student_id, student_name, plan_name, plan_type, currency, package_price, per_class, classes_purchased, start_date, expiry_date, next_due_date, package_status, notes, created_at, updated_at. Dropped enrollment_id and in_INR. Classes consumed/remaining derived dynamically.
+    - FeeObligations: fee_obligation_id, student_id, student_name, package_id, obligation_description, amount_due, credit_applied, currency, issue_date, due_date, obligation_status, notes, created_at, updated_at, voided_at, void_reason. credit_applied allows forward credits with exact ledger reconciliation and zero double counting.
+    - ClassSessions: class_session_id, student_id, student_name, package_id, meeting_link_id, class_title, scheduled_start, scheduled_end, actual_start, actual_end, session_status, attendance_status, class_credit_effect, cancellation_reason, credit_restoration_for_session_id, notes, created_at, updated_at, completed_at. Dropped enrollment_id.
+    - Payments: payment_id, student_id, student_name, fee_obligation_id, payment_date, amount, currency, payment_method, transaction_reference, idempotency_key, payment_status, notes, created_at, updated_at, voided_at, void_reason.
+    - MeetingLinks: meeting_link_id, student_id, student_name, link_label, meeting_url, provider, is_preferred, link_status, created_at, updated_at.
+    - Enrollments Tab: Deprecated throughout code, tests, and navigation.
+  * 2. Pre-Migration Master Backup: Created and verified (Backup ID: 1kIFYmI81DfNIAqb-ZHsTifiKE6JxhfQrXqpfphrw9eU).
+  * 3. Standalone Schema Migration Runner: Created 02-backend/apps-script/setup/SchemaMigration.gs (runApprovedSchemaMigration) for owner execution in Apps Script editor.
+  * 4. Frontend Forms & Models Updated: StudentForm, StudentList, StudentSummary, StudentProfilePage, studentValidation, studentApi, creditCalculator aligned.
+  * 5. Quality Gates Verified: 107/107 Vitest tests passing across 22 test files (including 4 new regression tests proving single student_name, strict email separation, dedicated subject column, and overpayment ledger reconciliation). Line limit verified (117 files in src/ and public/ <= 149 lines). Strict TypeScript check passing with 0 errors. Clean Vite production build.
+  * Status: IMPLEMENTED AND VERIFIED LOCALLY. READY FOR OWNER ACCEPTANCE.

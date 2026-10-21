@@ -236,13 +236,13 @@ describe('Isolated Schema Redesign — Multi-Model Billing, Attendance & Safegua
     const archRes = StudentService.Students_archive(spreadsheet, studentId, actor);
     expect(archRes.success).toBe(true);
     let stu = StudentRepository.Students_getById(spreadsheet, studentId);
-    expect(stu.student_status).toBe('INACTIVE');
+    expect(stu.status || stu.student_status).toBe('INACTIVE');
     expect(stu.archived_at).toBeTruthy();
 
     const reactRes = StudentService.Students_reactivate(spreadsheet, studentId, actor);
     expect(reactRes.success).toBe(true);
     stu = StudentRepository.Students_getById(spreadsheet, studentId);
-    expect(stu.student_status).toBe('ACTIVE');
+    expect(stu.status || stu.student_status).toBe('ACTIVE');
 
     // 7. Financial & Attendance Report Reconciliation
     const report = ReportService.Reports_getFinancialSummary(spreadsheet, {

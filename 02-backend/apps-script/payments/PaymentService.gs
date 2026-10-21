@@ -7,6 +7,7 @@ var _payVal = typeof validatePaymentRecordInput === 'function' ? { validatePayme
 var _payRepo = typeof Payments_getAll === 'function' ? { Payments_getAll: Payments_getAll, Payments_getById: Payments_getById, Payments_findByIdempotencyKey: Payments_findByIdempotencyKey, Payments_insert: Payments_insert, Payments_update: Payments_update } : (typeof require !== 'undefined' ? require('./PaymentRepository.gs') : null);
 var _payFeeRepo = typeof FeeObligations_getById === 'function' ? { FeeObligations_getById: FeeObligations_getById } : (typeof require !== 'undefined' ? require('../fees/FeeRepository.gs') : null);
 var _payFeeSvc = typeof FeeObligations_enrichWithBalances === 'function' ? { FeeObligations_enrichWithBalances: FeeObligations_enrichWithBalances } : (typeof require !== 'undefined' ? require('../fees/FeeService.gs') : null);
+var _payStuRepo = typeof Students_getById === 'function' ? { Students_getById: Students_getById } : (typeof require !== 'undefined' ? require('../students/StudentRepository.gs') : null);
 var _payLock = typeof withLock === 'function' ? { withLock: withLock } : (typeof require !== 'undefined' ? require('../sheets/LockManager.gs') : null);
 var _payAudit = typeof recordAuditEvent === 'function' ? { recordAuditEvent: recordAuditEvent } : (typeof require !== 'undefined' ? require('../audit/AuditService.gs') : null);
 var _payReg = {
@@ -59,15 +60,23 @@ function Payments_record(spreadsheet, data, actor) {
       return { success: false, code: 'CONFLICT', message: 'Cannot allocate payment to a void fee obligation' };
     }
 
-    // 3. Check remaining balance (no-overpayment rule)
+    // 3. Check remaining balance (no accidental overpayment rule)
     var enrichedObligation = _payFeeSvc.FeeObligations_enrichWithBalances(spreadsheet, obligation);
     var payAmount = Math.round(Number(data.amount) * 100) / 100;
-    if (payAmount > enrichedObligation.outstanding_amount) {
+    if (!data.allow_overpayment && payAmount > enrichedObligation.outstanding_amount) {
       return {
         success: false,
         code: 'VALIDATION_ERROR',
         message: 'Payment amount (' + payAmount + ') exceeds outstanding obligation balance (' + enrichedObligation.outstanding_amount + ')'
       };
+    }
+
+    var studentName = data.student_name || obligation.student_name || '';
+    if (!studentName && _payStuRepo && _payStuRepo.Students_getById) {
+      var stu = _payStuRepo.Students_getById(spreadsheet, data.student_id);
+      if (stu) {
+        studentName = stu.student_name || stu.full_name || (stu.first_name ? (stu.first_name + ' ' + (stu.last_name || '')).trim() : '');
+      }
     }
 
     // 4. Insert payment
@@ -76,6 +85,7 @@ function Payments_record(spreadsheet, data, actor) {
     var record = {
       payment_id: paymentId,
       student_id: data.student_id,
+      student_name: studentName,
       fee_obligation_id: feeObId,
       payment_date: data.payment_date || now.split('T')[0],
       amount: payAmount,
@@ -100,7 +110,7 @@ function Payments_record(spreadsheet, data, actor) {
       entity_type: 'PAYMENT',
       entity_id: paymentId,
       action: 'RECORD',
-      after_summary: { payment_id: paymentId, amount: payAmount, fee_obligation_id: data.fee_obligation_id },
+      after_summary: { payment_id: paymentId, amount: payAmount, fee_obligation_id: feeObId },
       request_id: actor.requestId
     });
 

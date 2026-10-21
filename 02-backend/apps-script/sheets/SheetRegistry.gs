@@ -21,11 +21,9 @@ var SHEET_NAMES = {
 var SHEET_SCHEMAS = {};
 
 SHEET_SCHEMAS[SHEET_NAMES.STUDENTS] = [
-  'student_id', 'first_name', 'last_name', 'preferred_name', 'date_of_birth',
-  'parent_guardian_name', 'parent_guardian_relationship', 'primary_phone',
-  'secondary_phone', 'parent_email', 'city', 'student_status',
-  'first_enrollment_date', 'last_active_date', 'internal_summary',
-  'created_at', 'updated_at', 'archived_at', 'source_reference'
+  'student_id', 'student_name', 'parent_name', 'parent_phone', 'student_phone',
+  'parent_email', 'student_email', 'subject', 'status', 'notes',
+  'created_at', 'updated_at', 'archived_at'
 ];
 
 SHEET_SCHEMAS[SHEET_NAMES.ENROLLMENTS] = [
@@ -35,39 +33,39 @@ SHEET_SCHEMAS[SHEET_NAMES.ENROLLMENTS] = [
 ];
 
 SHEET_SCHEMAS[SHEET_NAMES.PACKAGES] = [
-  'package_id', 'student_id', 'enrollment_id', 'package_name',
-  'purchased_classes', 'package_price', 'currency', 'purchase_date',
-  'start_date', 'expiry_date', 'package_status', 'notes',
-  'created_at', 'updated_at', 'closed_at'
+  'package_id', 'student_id', 'student_name', 'plan_name', 'plan_type',
+  'currency', 'package_price', 'per_class', 'classes_purchased',
+  'start_date', 'expiry_date', 'next_due_date', 'package_status', 'notes',
+  'created_at', 'updated_at'
 ];
 
 SHEET_SCHEMAS[SHEET_NAMES.FEE_OBLIGATIONS] = [
-  'fee_obligation_id', 'student_id', 'enrollment_id', 'package_id',
-  'obligation_description', 'amount_due', 'currency', 'issue_date',
-  'due_date', 'obligation_status', 'notes', 'created_at', 'updated_at',
-  'voided_at', 'void_reason'
+  'fee_obligation_id', 'student_id', 'student_name', 'package_id',
+  'obligation_description', 'amount_due', 'credit_applied', 'currency',
+  'issue_date', 'due_date', 'obligation_status', 'notes',
+  'created_at', 'updated_at', 'voided_at', 'void_reason'
 ];
 
 SHEET_SCHEMAS[SHEET_NAMES.PAYMENTS] = [
-  'payment_id', 'student_id', 'fee_obligation_id', 'payment_date',
-  'amount', 'currency', 'payment_method', 'transaction_reference',
-  'idempotency_key', 'payment_status', 'notes', 'created_at', 'updated_at',
-  'voided_at', 'void_reason'
+  'payment_id', 'student_id', 'student_name', 'fee_obligation_id',
+  'payment_date', 'amount', 'currency', 'payment_method',
+  'transaction_reference', 'idempotency_key', 'payment_status', 'notes',
+  'created_at', 'updated_at', 'voided_at', 'void_reason'
 ];
 
 SHEET_SCHEMAS[SHEET_NAMES.CLASS_SESSIONS] = [
-  'class_session_id', 'student_id', 'enrollment_id', 'package_id',
+  'class_session_id', 'student_id', 'student_name', 'package_id',
   'meeting_link_id', 'class_title', 'scheduled_start', 'scheduled_end',
   'actual_start', 'actual_end', 'session_status', 'attendance_status',
   'class_credit_effect', 'cancellation_reason',
-  'credit_restoration_for_session_id', 'notes', 'created_at', 'updated_at',
-  'completed_at'
+  'credit_restoration_for_session_id', 'notes',
+  'created_at', 'updated_at', 'completed_at'
 ];
 
 SHEET_SCHEMAS[SHEET_NAMES.MEETING_LINKS] = [
-  'meeting_link_id', 'student_id', 'provider', 'link_label', 'meeting_url',
-  'is_preferred', 'link_status', 'valid_from', 'valid_until', 'notes',
-  'created_at', 'updated_at', 'deactivated_at'
+  'meeting_link_id', 'student_id', 'student_name', 'link_label',
+  'meeting_url', 'provider', 'is_preferred', 'link_status',
+  'created_at', 'updated_at'
 ];
 
 SHEET_SCHEMAS[SHEET_NAMES.STUDENT_NOTES] = [

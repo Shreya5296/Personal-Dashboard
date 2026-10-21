@@ -128,6 +128,14 @@ function registerSystemOperations(router) {
       }
     };
   });
+
+  reg('system.migrateSchema', function(ctx) {
+    var ss = ctx.spreadsheet;
+    if (!ss) return { success: false, code: 'UNAVAILABLE', message: 'Spreadsheet unavailable' };
+    var fn = typeof runApprovedSchemaMigration === 'function' ? runApprovedSchemaMigration : (typeof require !== 'undefined' ? require('./SchemaMigration.gs').runApprovedSchemaMigration : null);
+    if (!fn) return { success: false, code: 'NOT_FOUND', message: 'Migration function not found' };
+    return fn(ss);
+  });
 }
 
 if (typeof registerOperation === 'function') {

@@ -71,11 +71,10 @@ describe('Phase 4 — Backend Foundation', () => {
 
     RowWriter.appendRecord(sheet, HeaderMapper, headers, {
       student_id: 'stu_001',
-      first_name: 'Dev',
-      last_name: 'Patel',
-      student_status: 'ACTIVE',
-      primary_phone: '+919999999999',
-      parent_guardian_name: 'Sunita Patel',
+      student_name: 'Dev Patel',
+      status: 'ACTIVE',
+      parent_phone: '+919999999999',
+      parent_name: 'Sunita Patel',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     });
@@ -83,14 +82,14 @@ describe('Phase 4 — Backend Foundation', () => {
     const records = RowReader.readAllRecords(sheet, HeaderMapper);
     expect(records.length).toBe(1);
     expect(records[0].student_id).toBe('stu_001');
-    expect(records[0].first_name).toBe('Dev');
+    expect(records[0].student_name).toBe('Dev Patel');
 
     RowWriter.updateRecordById(sheet, HeaderMapper, headers, 'student_id', 'stu_001', {
-      first_name: 'Deven'
+      student_name: 'Deven Patel'
     });
 
     const updated = RowReader.findRecordById(sheet, HeaderMapper, 'student_id', 'stu_001');
-    expect(updated.first_name).toBe('Deven');
+    expect(updated.student_name).toBe('Deven Patel');
   });
 
   it('executes atomic operations within LockManager with guaranteed release', () => {

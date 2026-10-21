@@ -5,7 +5,6 @@ import { archiveStudent, reactivateStudent } from './studentApi';
 import { StudentSummary } from './StudentSummary';
 import { Button } from '../../components/buttons/Button';
 import { StudentNotes } from '../notes/StudentNotes';
-import { EnrollmentList } from '../enrollments/EnrollmentList';
 import { PackageList } from '../packages/PackageList';
 import { FeeObligationList } from '../fees/FeeObligationList';
 import { ClassSchedule } from '../classes/ClassSchedule';
@@ -21,7 +20,7 @@ export interface StudentProfilePageProps {
   onUpdate?: (updated: Student) => void;
 }
 
-type TabType = 'enrollments' | 'packages' | 'fees' | 'classes' | 'meeting-links' | 'notes';
+type TabType = 'packages' | 'fees' | 'classes' | 'meeting-links' | 'notes';
 
 export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
   student,
@@ -30,7 +29,7 @@ export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
   onUpdate,
 }) => {
   const { token } = useAuth();
-  const [activeTab, setActiveTab] = useState<TabType>('enrollments');
+  const [activeTab, setActiveTab] = useState<TabType>('packages');
   const [isArchiving, setIsArchiving] = useState(false);
   const [credits, setCredits] = useState<CurrencyCreditSummary[]>([]);
 
@@ -42,7 +41,6 @@ export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
   }, [student.student_id, token]);
 
   const tabs: { id: TabType; label: string }[] = [
-    { id: 'enrollments', label: 'Enrollments' },
     { id: 'packages', label: 'Packages & Balances' },
     { id: 'fees', label: 'Fee Obligations' },
     { id: 'classes', label: 'Classes & Attendance' },
@@ -107,7 +105,6 @@ export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
       </div>
 
       <div>
-        {activeTab === 'enrollments' && <EnrollmentList studentId={student.student_id} />}
         {activeTab === 'packages' && <PackageList studentId={student.student_id} />}
         {activeTab === 'fees' && <FeeObligationList studentId={student.student_id} />}
         {activeTab === 'classes' && <ClassSchedule studentId={student.student_id} />}
