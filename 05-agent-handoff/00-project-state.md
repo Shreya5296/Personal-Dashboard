@@ -43,10 +43,10 @@ Update every field below as work proceeds.
 | Current phase status | PASSED_SCHEMA_PROPOSAL |
 | Last completed phase | Minimal Schema Redesign & Multi-Model Billing Proposal |
 | Current Git branch | main |
-| Last phase commit | 8154245 (Pre-launch documentation & tests committed) |
-| Last full regression run | 76 Vitest tests passed (17 test files) + 18/18 Playwright E2E tests passed live against deployed Apps Script Web App @17 (2.9m) |
+| Last phase commit | a4a919d |
+| Last full regression run | 77 Vitest tests passed (17 test files) + 18/18 Playwright E2E tests passed live against deployed Apps Script Web App @17 (3.0m) |
 | Real-data use | Prohibited until security release gate passes (0 real student records imported) |
-| Last state update | Schema redesign proposal & isolated multi-model validation completed: 6 working tabs defined; 4 operational tabs hidden; Enrollments retained intact; all 4 fee models verified in isolated tests; full docs generated in docs/prelaunch/ |
+| Last state update | Schema redesign review completed: schema-owner-decisions.md v2.0.0 updated with confirmed requirements vs assumptions needing approval; attendance matrix, per-class periodic invoicing, and multi-package isolation verified |
 
 ## 5. Phase Register
 

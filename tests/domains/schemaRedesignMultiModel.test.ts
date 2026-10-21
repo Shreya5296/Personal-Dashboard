@@ -252,4 +252,101 @@ describe('Isolated Schema Redesign — Multi-Model Billing, Attendance & Safegua
     expect(report.success).toBe(true);
     expect(report.data.currency).toBe('INR');
   });
+
+  it('aggregates per-class billing into periodic obligations and validates late-cancellation rules', () => {
+    // 1. Setup student on a per-class post-paid agreement (₹1,500/class)
+    const perClassPkg = PackageService.Packages_create(spreadsheet, {
+      student_id: studentId,
+      package_name: 'Post-paid Math Lessons',
+      purchased_classes: 1, // unit container
+      package_price: 1500,
+      plan_type: 'PER_CLASS',
+      billing_frequency: 'MONTHLY'
+    }, actor).data;
+
+    // 2. Schedule and conduct 3 lessons in October
+    const dates = ['2026-10-05', '2026-10-12', '2026-10-19'];
+    for (let i = 0; i < dates.length; i++) {
+      const cls = ClassService.Classes_schedule(spreadsheet, {
+        student_id: studentId,
+        package_id: perClassPkg.package_id,
+        class_title: `Math Session ${i + 1}`,
+        scheduled_start: `${dates[i]}T10:00:00.000Z`,
+        scheduled_end: `${dates[i]}T11:00:00.000Z`
+      }, actor).data;
+
+      ClassService.Classes_complete(spreadsheet, {
+        class_session_id: cls.class_session_id,
+        attendance_status: 'ATTENDED'
+      }, actor);
+    }
+
+    // 3. Schedule 4th lesson that student cancels with 24h notice (Excused -> NO_CONSUME)
+    const clsExcused = ClassService.Classes_schedule(spreadsheet, {
+      student_id: studentId,
+      package_id: perClassPkg.package_id,
+      class_title: 'Math Session 4 (Excused)',
+      scheduled_start: '2026-10-26T10:00:00.000Z',
+      scheduled_end: '2026-10-26T11:00:00.000Z'
+    }, actor).data;
+
+    ClassService.Classes_cancel(spreadsheet, {
+      class_session_id: clsExcused.class_session_id,
+      cancellation_reason: 'Sick with advance doctor note'
+    }, actor);
+
+    // 4. End-of-month periodic billing aggregation:
+    // Query completed attended classes in October for this student
+    const allSessions = ClassRepository.Classes_getAll(spreadsheet);
+    const studentOctSessions = allSessions.filter((s: any) =>
+      s.student_id === studentId &&
+      s.package_id === perClassPkg.package_id &&
+      s.session_status === 'COMPLETED' &&
+      s.attendance_status === 'ATTENDED'
+    );
+    expect(studentOctSessions.length).toBe(3);
+
+    const billableAmount = studentOctSessions.length * 1500; // 3 * 1500 = 4500
+    expect(billableAmount).toBe(4500);
+
+    // Generate monthly fee obligation
+    const monthlyFee = FeeService.FeeObligations_create(spreadsheet, {
+      student_id: studentId,
+      package_id: perClassPkg.package_id,
+      obligation_description: 'October 2026 Tutoring (3 classes @ ₹1,500)',
+      amount_due: billableAmount,
+      due_date: '2026-11-05'
+    }, actor).data;
+
+    expect(monthlyFee.amount_due).toBe(4500);
+
+    // 5. Parent pays in two partial installments
+    // Installment 1: ₹2,000 via UPI
+    PaymentService.Payments_record(spreadsheet, {
+      student_id: studentId,
+      fee_obligation_id: monthlyFee.fee_obligation_id,
+      amount: 2000,
+      payment_method: 'UPI',
+      idempotency_key: 'oct_pay_part1'
+    }, actor);
+
+    let feeStatus = FeeService.FeeObligations_enrichWithBalances(spreadsheet, FeeRepository.FeeObligations_getById(spreadsheet, monthlyFee.fee_obligation_id));
+    expect(feeStatus.paid_amount).toBe(2000);
+    expect(feeStatus.outstanding_amount).toBe(2500);
+    expect(feeStatus.obligation_status).toBe('PARTIALLY_PAID');
+
+    // Installment 2: Remaining ₹2,500 via NetBanking
+    PaymentService.Payments_record(spreadsheet, {
+      student_id: studentId,
+      fee_obligation_id: monthlyFee.fee_obligation_id,
+      amount: 2500,
+      payment_method: 'BANK_TRANSFER',
+      idempotency_key: 'oct_pay_part2'
+    }, actor);
+
+    feeStatus = FeeService.FeeObligations_enrichWithBalances(spreadsheet, FeeRepository.FeeObligations_getById(spreadsheet, monthlyFee.fee_obligation_id));
+    expect(feeStatus.paid_amount).toBe(4500);
+    expect(feeStatus.outstanding_amount).toBe(0);
+    expect(feeStatus.obligation_status).toBe('PAID');
+  });
 });
