@@ -5,14 +5,36 @@
 export class MockSheet {
   name: string;
   rows: any[][];
+  spreadsheet?: MockSpreadsheet;
 
-  constructor(name: string, initialRows: any[][] = []) {
+  constructor(name: string, initialRows: any[][] = [], spreadsheet?: MockSpreadsheet) {
     this.name = name;
     this.rows = initialRows.map((r) => [...r]);
+    this.spreadsheet = spreadsheet;
   }
 
   getName(): string {
     return this.name;
+  }
+
+  setName(newName: string): void {
+    const oldName = this.name;
+    this.name = newName;
+    if (this.spreadsheet) {
+      this.spreadsheet.sheets.delete(oldName);
+      this.spreadsheet.sheets.set(newName, this);
+    }
+  }
+
+  clear(): void {
+    this.rows = [];
+  }
+
+  copyTo(ss: MockSpreadsheet): MockSheet {
+    const copyName = 'Copy of ' + this.name;
+    const copied = ss.insertSheet(copyName);
+    copied.rows = this.rows.map((r) => [...r]);
+    return copied;
   }
 
   getHeaders(): string[] {
@@ -65,6 +87,7 @@ export class MockSheet {
           }
         }
       },
+      setFontWeight: () => {},
     };
   }
 
@@ -82,9 +105,11 @@ export class MockSheet {
     }
   }
 
-  deleteRow(index: number): void {
-    if (index >= 0 && index < this.rows.length) {
-      this.rows.splice(index, 1);
+  deleteRow(rowPosition: number): void {
+    // In Google Apps Script, rowPosition is 1-based: row 1 is header (index 0).
+    // Safety guard: rowPosition must be > 1 to avoid deleting the header.
+    if (rowPosition > 1 && rowPosition <= this.rows.length) {
+      this.rows.splice(rowPosition - 1, 1);
     }
   }
 
@@ -140,7 +165,7 @@ export class MockSpreadsheet {
     if (this.sheets.has(name)) {
       throw new Error(`Sheet already exists: ${name}`);
     }
-    const sheet = new MockSheet(name);
+    const sheet = new MockSheet(name, [], this);
     this.sheets.set(name, sheet);
     return sheet;
   }

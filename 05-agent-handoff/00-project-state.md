@@ -38,16 +38,16 @@ The Git history and this file are the recovery sources of truth. Chat history an
 |---|---|
 | Project | Student Management Dashboard / Personal Dashboard |
 | Execution mode | Autonomous, sequential implementation |
-| Current phase | Align All Six Finalized Tables (Backend, Schemas, Tests, Docs) |
+| Current phase | Pre-Migration Audit Findings Fixes & Backend Hardening |
 | Current phase status | PASSED |
-| Last completed phase | Schema Reconciliation & 6-Table Final Alignment |
+| Last completed phase | Audit Findings Fixes (Migration Safety, Payment Ops, Notes & Deductions) |
 | Current Git branch | main |
-| Last full regression run | 108 Vitest tests passed (23 test files) + line-limit check passing (117 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build (1.71s) |
+| Last full regression run | 118 Vitest tests passed (24 test files) + line-limit check passing (117 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build (920ms) |
 | Canonical Spreadsheet | `Private Class Dashboard` (ID: `1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8`, Owner: `ashreya0502@gmail.com`) — Unmodified, ready for owner-executed migration |
 | Backup Spreadsheet | `Master Backup (Pre-Launch 2026-10-21T12-13-40-537Z)` (ID: `1kIFYmI81DfNIAqb-ZHsTifiKE6JxhfQrXqpfphrw9eU`) — Verified accessible and preserved intact |
 | Apps Script Project | `1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL` — All files aligned to 6 finalized schemas |
 | Web App Deployment | Active at version `@22` (frozen, untouched per instructions) |
-| Last state update | Aligned all six finalized business tables across SheetRegistry.gs, SchemaMigration.gs, domain services (Payments, Classes, MeetingLinks, Notes), repositories, validators, handlers, tests, and documentation. Verified all 108 tests pass. |
+| Last state update | Resolved all audit findings: pre-mutation archival in SchemaMigration.gs, fixed off-by-one void deletion, safe rejection of ambiguous payment and note updates, verified attendance deduction rules and FIFO balance logic, 118/118 tests passing. |
 
 ## 5. Phase Register
 

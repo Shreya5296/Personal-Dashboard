@@ -34,6 +34,61 @@ var _paymentMemoryCache = (typeof globalThis !== 'undefined' && globalThis.__pay
   : ((typeof globalThis !== 'undefined') ? (globalThis.__paymentMemoryCache = {}) : {});
 var _paymentIdMap = _paymentMemoryCache;
 
+function _checkIdempotencyAcrossExecutions(spreadsheet, key, studentId, amount) {
+  if (!key) return null;
+  if (_idempotencyCache[key]) return _idempotencyCache[key];
+
+  // Check ScriptCache
+  if (typeof CacheService !== 'undefined' && CacheService.getScriptCache) {
+    try {
+      var cachedStr = CacheService.getScriptCache().get('idemp_' + key);
+      if (cachedStr) {
+        var parsed = JSON.parse(cachedStr);
+        _idempotencyCache[key] = parsed;
+        return parsed;
+      }
+    } catch (e) {}
+  }
+
+  // Check AuditLog sheet for prior request_id
+  if (spreadsheet && typeof spreadsheet.getSheetByName === 'function') {
+    try {
+      var auditSheet = spreadsheet.getSheetByName('AuditLog');
+      if (auditSheet && auditSheet.getLastRow() > 1) {
+        var rows = auditSheet.getDataRange ? auditSheet.getDataRange().getValues() : [];
+        for (var r = rows.length - 1; r >= 1; r--) {
+          var reqId = rows[r][9]; // col 10: request_id
+          if (reqId === key) {
+            var afterSummary = rows[r][8];
+            var sumObj = typeof afterSummary === 'string' ? JSON.parse(afterSummary) : afterSummary;
+            var reconstructed = {
+              student_id: sumObj.student_id,
+              amount: Number(sumObj.amount),
+              currency: sumObj.currency,
+              in_inr: Number(sumObj.in_inr),
+              payment_id: rows[r][5], // entity_id
+              status: 'RECORDED'
+            };
+            _idempotencyCache[key] = reconstructed;
+            return reconstructed;
+          }
+        }
+      }
+    } catch (e) {}
+  }
+  return null;
+}
+
+function _saveIdempotencyAcrossExecutions(key, record) {
+  if (!key) return;
+  _idempotencyCache[key] = record;
+  if (typeof CacheService !== 'undefined' && CacheService.getScriptCache) {
+    try {
+      CacheService.getScriptCache().put('idemp_' + key, JSON.stringify(record), 21600);
+    } catch (e) {}
+  }
+}
+
 function Payments_isVoid(paymentId) {
   return Boolean(_voidedPaymentIds[paymentId]);
 }
@@ -50,9 +105,9 @@ function Payments_record(spreadsheet, data, actor) {
 
   var payAmount = Math.round(Number(data.amount) * 100) / 100;
 
-  // 1. Idempotency check
+  // 1. Idempotency check (in-memory, ScriptCache, and AuditLog)
   if (data.idempotency_key) {
-    var cached = _idempotencyCache[data.idempotency_key];
+    var cached = _checkIdempotencyAcrossExecutions(spreadsheet, data.idempotency_key, data.student_id, payAmount);
     if (cached) {
       if (cached.student_id === data.student_id && Number(cached.amount) === payAmount) {
         return { success: true, data: cached, meta: { idempotentRetry: true } };
@@ -148,7 +203,7 @@ function Payments_record(spreadsheet, data, actor) {
   }
 
   if (data.idempotency_key) {
-    _idempotencyCache[data.idempotency_key] = returnRecord;
+    _saveIdempotencyAcrossExecutions(data.idempotency_key, returnRecord);
   }
 
   return { success: true, data: returnRecord };
@@ -161,22 +216,71 @@ function Payments_void(spreadsheet, data, actor) {
   }
 
   var payId = data.payment_id || data.paymentId;
-  _voidedPaymentIds[payId] = true;
-
   var payRecord = _paymentIdMap[payId];
-  var sheet = spreadsheet.getSheetByName(_payReg.SHEET_NAMES.PAYMENTS);
-  if (sheet) {
-    var allRows = sheet.getData ? sheet.getData() : (sheet.getDataRange ? sheet.getDataRange().getValues() : []);
-    for (var r = 1; r < allRows.length; r++) {
-      var row = allRows[r];
-      if (payRecord && row[0] === payRecord.student_id && Number(row[3]) === Number(payRecord.amount)) {
-        if (typeof sheet.deleteRow === 'function') {
-          sheet.deleteRow(r);
-        }
-        break;
-      }
+
+  var targetStudentId = data.student_id || (payRecord ? payRecord.student_id : '');
+  var targetAmount = (data.amount !== undefined && data.amount !== null) ? Number(data.amount) : (payRecord ? Number(payRecord.amount) : null);
+  var targetDate = data.payment_date || (payRecord ? payRecord.payment_date : '');
+
+  // If payId has format stuId_date_amount:
+  if ((!targetStudentId || targetAmount === null) && payId && typeof payId === 'string' && payId.indexOf('_') !== -1) {
+    var parts = payId.split('_');
+    if (parts.length >= 3) {
+      targetStudentId = targetStudentId || parts[0];
+      targetDate = targetDate || parts[1];
+      targetAmount = targetAmount !== null ? targetAmount : Number(parts[2]);
     }
   }
+
+  var sheet = spreadsheet.getSheetByName(_payReg.SHEET_NAMES.PAYMENTS);
+  if (!sheet) {
+    return { success: false, code: 'SHEET_NOT_FOUND', message: 'Payments sheet not found' };
+  }
+
+  var allRows = sheet.getDataRange ? sheet.getDataRange().getValues() : (sheet.getData ? sheet.getData() : []);
+  var matchingIndices = [];
+
+  // Search data rows only (r >= 1; row 0 is header row 1)
+  for (var r = 1; r < allRows.length; r++) {
+    var row = allRows[r];
+    var rowStu = String(row[0] || '').trim();
+    var rowDate = String(row[2] || '').trim().split('T')[0];
+    var rowAmt = Number(row[3]);
+
+    var stuMatch = (!targetStudentId || rowStu === targetStudentId);
+    var amtMatch = (targetAmount === null || isNaN(targetAmount) || rowAmt === targetAmount);
+    var dateMatch = (!targetDate || rowDate === targetDate || rowDate.indexOf(targetDate) === 0);
+
+    if (stuMatch && amtMatch && dateMatch) {
+      // In Google Apps Script, deleteRow is 1-based: row index r in 0-based array is sheet row r + 1
+      matchingIndices.push(r + 1);
+    }
+  }
+
+  if (matchingIndices.length === 0) {
+    return { success: false, code: 'RECORD_NOT_FOUND', message: 'No matching payment record found to void' };
+  }
+
+  if (matchingIndices.length > 1) {
+    return {
+      success: false,
+      code: 'AMBIGUOUS_RECORD',
+      message: 'Cannot safely void payment: multiple identical payment records exist without a unique identifier in the 6-column schema. Operation rejected to prevent deleting the wrong payment.'
+    };
+  }
+
+  var targetSheetRow = matchingIndices[0];
+  // Absolute safety check: Never delete header row (row 1)
+  if (targetSheetRow <= 1) {
+    throw new Error('Critical safety guard: attempted to delete header row (row 1)');
+  }
+
+  if (typeof sheet.deleteRow === 'function') {
+    sheet.deleteRow(targetSheetRow);
+  }
+
+  _voidedPaymentIds[payId] = true;
+  delete _paymentIdMap[payId];
 
   if (_payAudit && _payAudit.recordAuditEvent) {
     _payAudit.recordAuditEvent(spreadsheet, _payReg, _payMap, {

@@ -82,9 +82,97 @@ function runApprovedSchemaMigration(spreadsheet) {
 
   var migrationResults = [];
   var verificationErrors = [];
+  var enrollmentsStatus = 'NOT_PRESENT';
+  var feeStatus = 'NOT_PRESENT';
+  var paymentsArchiveStatus = 'NOT_REQUIRED';
 
   try {
-    // 1. Migrate each of the 6 working sheets
+    // 0. Preflight: Verify operational tabs exist before any changes
+    var operationalTabs = ['AuditLog', 'ImportBatches', 'ImportRowResults', 'AppConfig'];
+    for (var op = 0; op < operationalTabs.length; op++) {
+      var opPreSheet = ss.getSheetByName(operationalTabs[op]);
+      if (!opPreSheet) {
+        throw new Error('Preflight check failed: Required operational tab missing: ' + operationalTabs[op] + '. Migration aborted before making changes.');
+      }
+    }
+
+    // 1. Archival Phase: Preserve legacy data before modifying any working sheet
+    // Archive non-empty Enrollments tab
+    var enrSheet = ss.getSheetByName('Enrollments');
+    if (enrSheet) {
+      var enrRows = enrSheet.getLastRow();
+      if (enrRows > 1) {
+        var enrArchive = 'Enrollments_Archive';
+        if (ss.getSheetByName(enrArchive)) {
+          enrArchive = 'Enrollments_Archive_' + Date.now();
+        }
+        enrSheet.setName(enrArchive);
+        var verifiedEnr = ss.getSheetByName(enrArchive);
+        if (!verifiedEnr || verifiedEnr.getLastRow() !== enrRows) {
+          throw new Error('Archival validation failed for Enrollments: archive tab not verified');
+        }
+        enrollmentsStatus = 'ARCHIVED_TO_' + enrArchive;
+      }
+    }
+
+    // Archive non-empty FeeObligations tab
+    var feeSheet = ss.getSheetByName('FeeObligations');
+    if (feeSheet) {
+      var feeRows = feeSheet.getLastRow();
+      if (feeRows > 1) {
+        var feeArchive = 'FeeObligations_Archive';
+        if (ss.getSheetByName(feeArchive)) {
+          feeArchive = 'FeeObligations_Archive_' + Date.now();
+        }
+        feeSheet.setName(feeArchive);
+        var verifiedFee = ss.getSheetByName(feeArchive);
+        if (!verifiedFee || verifiedFee.getLastRow() !== feeRows) {
+          throw new Error('Archival validation failed for FeeObligations: archive tab not verified');
+        }
+        feeStatus = 'ARCHIVED_TO_' + feeArchive;
+      }
+    }
+
+    // Archive non-empty Payments tab if it contains legacy data columns
+    var paySheet = ss.getSheetByName('Payments');
+    if (paySheet) {
+      var payRows = paySheet.getLastRow();
+      var payCols = paySheet.getLastColumn();
+      if (payRows > 1 && payCols > TARGET_SCHEMAS['Payments'].length) {
+        var payArchive = 'Payments_Archive';
+        if (ss.getSheetByName(payArchive)) {
+          payArchive = 'Payments_Archive_' + Date.now();
+        }
+        var payCopy = null;
+        if (typeof paySheet.copyTo === 'function') {
+          payCopy = paySheet.copyTo(ss);
+          payCopy.setName(payArchive);
+        } else {
+          payCopy = ss.insertSheet(payArchive);
+          var oldPayVals = paySheet.getDataRange().getValues();
+          payCopy.getRange(1, 1, oldPayVals.length, oldPayVals[0].length).setValues(oldPayVals);
+        }
+        var verifiedPay = ss.getSheetByName(payArchive);
+        if (!verifiedPay || verifiedPay.getLastRow() !== payRows) {
+          throw new Error('Archival validation failed for Payments: archive tab not verified');
+        }
+        paymentsArchiveStatus = 'ARCHIVED_TO_' + payArchive;
+      }
+    }
+
+    // Safely remove empty header-only Enrollments or FeeObligations tabs
+    var cleanEnr = ss.getSheetByName('Enrollments');
+    if (cleanEnr && cleanEnr.getLastRow() <= 1) {
+      ss.deleteSheet(cleanEnr);
+      enrollmentsStatus = 'PHYSICALLY_DELETED_EMPTY';
+    }
+    var cleanFee = ss.getSheetByName('FeeObligations');
+    if (cleanFee && cleanFee.getLastRow() <= 1) {
+      ss.deleteSheet(cleanFee);
+      feeStatus = 'PHYSICALLY_DELETED_EMPTY';
+    }
+
+    // 2. Working Sheets Migration Phase: Remap columns safely
     for (var tabName in TARGET_SCHEMAS) {
       var sheet = ss.getSheetByName(tabName);
       if (!sheet) {
@@ -94,29 +182,58 @@ function runApprovedSchemaMigration(spreadsheet) {
       var expectedHeaders = TARGET_SCHEMAS[tabName];
       var targetColCount = expectedHeaders.length;
       var currentMaxCols = sheet.getMaxColumns();
+      var currentRowCount = sheet.getLastRow();
 
-      // Adjust grid width: insert missing columns if too narrow
-      if (currentMaxCols < targetColCount) {
-        sheet.insertColumnsAfter(currentMaxCols, targetColCount - currentMaxCols);
+      if (currentRowCount > 1) {
+        // Sheet has data rows: remap data by column name to prevent misalignment
+        var currentHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+        var allVals = sheet.getDataRange().getValues();
+        var colIndices = [];
+        for (var h = 0; h < targetColCount; h++) {
+          colIndices.push(currentHeaders.indexOf(expectedHeaders[h]));
+        }
+
+        var remapped = [expectedHeaders];
+        for (var r = 1; r < allVals.length; r++) {
+          var mappedRow = [];
+          for (var c = 0; c < targetColCount; c++) {
+            var srcCol = colIndices[c];
+            mappedRow.push(srcCol !== -1 && allVals[r][srcCol] !== undefined ? allVals[r][srcCol] : '');
+          }
+          remapped.push(mappedRow);
+        }
+
+        if (typeof sheet.clear === 'function') {
+          sheet.clear();
+        }
+        sheet.getRange(1, 1, remapped.length, targetColCount).setValues(remapped);
+        var postRemapCols = sheet.getMaxColumns();
+        var deletedCount = 0;
+        if (postRemapCols > targetColCount) {
+          deletedCount = postRemapCols - targetColCount;
+          sheet.deleteColumns(targetColCount + 1, deletedCount);
+        }
+      } else {
+        // Sheet is header-only or empty
+        if (currentMaxCols < targetColCount) {
+          sheet.insertColumnsAfter(currentMaxCols, targetColCount - currentMaxCols);
+        }
+        sheet.getRange(1, 1, 1, targetColCount).setValues([expectedHeaders]);
+        var updatedMaxCols = sheet.getMaxColumns();
+        var deletedCount = 0;
+        if (updatedMaxCols > targetColCount) {
+          deletedCount = updatedMaxCols - targetColCount;
+          sheet.deleteColumns(targetColCount + 1, deletedCount);
+        }
       }
 
-      // Set new headers in row 1
-      sheet.getRange(1, 1, 1, targetColCount).setValues([expectedHeaders]);
       if (typeof sheet.getRange(1, 1, 1, targetColCount).setFontWeight === 'function') {
         try {
           sheet.getRange(1, 1, 1, targetColCount).setFontWeight('bold');
         } catch (e) {}
       }
 
-      // Physically delete any obsolete columns beyond targetColCount
-      var updatedMaxCols = sheet.getMaxColumns();
-      var deletedCount = 0;
-      if (updatedMaxCols > targetColCount) {
-        deletedCount = updatedMaxCols - targetColCount;
-        sheet.deleteColumns(targetColCount + 1, deletedCount);
-      }
-
-      // Verify row 1 exactly matches
+      // Verify row 1 exactly matches target
       var actualCols = sheet.getLastColumn();
       var readHeaders = sheet.getRange(1, 1, 1, actualCols).getValues()[0];
       var matched = (actualCols === targetColCount);
@@ -150,43 +267,7 @@ function runApprovedSchemaMigration(spreadsheet) {
       });
     }
 
-    // 2. Safely remove Enrollments tab if empty, or rename to Enrollments_Archive if non-empty
-    var enrSheet = ss.getSheetByName('Enrollments');
-    var enrollmentsStatus = 'NOT_PRESENT';
-    if (enrSheet) {
-      var enrRows = enrSheet.getLastRow();
-      if (enrRows <= 1) {
-        ss.deleteSheet(enrSheet);
-        enrollmentsStatus = 'PHYSICALLY_DELETED_EMPTY';
-      } else {
-        var enrArchive = 'Enrollments_Archive';
-        if (ss.getSheetByName(enrArchive)) {
-          enrArchive = 'Enrollments_Archive_' + Date.now();
-        }
-        enrSheet.setName(enrArchive);
-        enrollmentsStatus = 'RENAMED_TO_' + enrArchive;
-      }
-    }
-
-    // Safely remove FeeObligations tab if empty, or rename to FeeObligations_Archive if non-empty
-    var feeSheet = ss.getSheetByName('FeeObligations');
-    var feeStatus = 'NOT_PRESENT';
-    if (feeSheet) {
-      var feeRows = feeSheet.getLastRow();
-      if (feeRows <= 1) {
-        ss.deleteSheet(feeSheet);
-        feeStatus = 'PHYSICALLY_DELETED_EMPTY';
-      } else {
-        var feeArchive = 'FeeObligations_Archive';
-        if (ss.getSheetByName(feeArchive)) {
-          feeArchive = 'FeeObligations_Archive_' + Date.now();
-        }
-        feeSheet.setName(feeArchive);
-        feeStatus = 'RENAMED_TO_' + feeArchive;
-      }
-    }
-
-    // Verify neither Enrollments nor FeeObligations active tab exists
+    // 3. Post-migration checks: Verify neither Enrollments nor FeeObligations active tab exists
     if (ss.getSheetByName('Enrollments') !== null) {
       verificationErrors.push('Enrollments tab still exists after migration');
     }
@@ -194,11 +275,10 @@ function runApprovedSchemaMigration(spreadsheet) {
       verificationErrors.push('FeeObligations tab still exists after migration');
     }
 
-    // 3. Verify operational tabs are preserved
-    var operationalTabs = ['AuditLog', 'ImportBatches', 'ImportRowResults', 'AppConfig'];
+    // Verify operational tabs are preserved and intact
     var operationalStatus = {};
-    for (var op = 0; op < operationalTabs.length; op++) {
-      var opName = operationalTabs[op];
+    for (var opIdx = 0; opIdx < operationalTabs.length; opIdx++) {
+      var opName = operationalTabs[opIdx];
       var opSheet = ss.getSheetByName(opName);
       operationalStatus[opName] = {
         present: opSheet !== null,
@@ -246,6 +326,7 @@ function runApprovedSchemaMigration(spreadsheet) {
       executedAt: new Date().toISOString(),
       enrollmentsTab: enrollmentsStatus,
       feeObligationsTab: feeStatus,
+      paymentsArchiveTab: paymentsArchiveStatus,
       operationalTabs: operationalStatus,
       results: migrationResults,
       verificationErrors: verificationErrors

@@ -72,10 +72,61 @@ function Payments_insert(spreadsheet, record) {
   return _payRowWriter.appendRecord(sheet, _payMapper, headers, record);
 }
 
-function Payments_update(spreadsheet, paymentId, updates) {
+function Payments_update(spreadsheet, target, updates) {
   var sheet = spreadsheet.getSheetByName(_payRegistry.SHEET_NAMES.PAYMENTS);
+  if (!sheet) return null;
   var headers = _payRegistry.getExpectedHeaders(_payRegistry.SHEET_NAMES.PAYMENTS);
-  return _payRowWriter.updateRecordById(sheet, _payMapper, headers, 'student_id', paymentId, updates);
+  var allRows = sheet.getDataRange ? sheet.getDataRange().getValues() : (sheet.getData ? sheet.getData() : []);
+
+  var targetStuId = (typeof target === 'object' && target) ? target.student_id : target;
+  var targetAmt = (typeof target === 'object' && target && target.amount !== undefined) ? Number(target.amount) : null;
+  var targetDate = (typeof target === 'object' && target && target.payment_date) ? target.payment_date : null;
+
+  // Support synthetic ID string: studentId_date_amount only if date pattern exists
+  if (typeof target === 'string' && /\d{4}-\d{2}-\d{2}/.test(target)) {
+    var parts = target.split('_');
+    if (parts.length >= 3) {
+      targetStuId = parts[0];
+      targetDate = parts[1];
+      targetAmt = Number(parts[2]);
+    }
+  }
+
+  var matches = [];
+  for (var r = 1; r < allRows.length; r++) {
+    var row = allRows[r];
+    var sMatch = (row[0] === targetStuId);
+    var aMatch = (targetAmt === null || isNaN(targetAmt) || Number(row[3]) === targetAmt);
+    var dMatch = (!targetDate || String(row[2]).slice(0, 10) === String(targetDate).slice(0, 10));
+    if (sMatch && aMatch && dMatch) {
+      matches.push(r + 1);
+    }
+  }
+
+  if (matches.length === 0) {
+    return null;
+  }
+
+  if (matches.length > 1) {
+    throw new Error('Ambiguous payment update rejected: multiple payments match criteria without a unique identifier in the 6-column schema.');
+  }
+
+  var targetRow = matches[0];
+  if (targetRow <= 1) {
+    throw new Error('Safety guard: attempted to update header row');
+  }
+
+  var headerRow = allRows[0];
+  var map = _payMapper.createHeaderMap(headerRow);
+  var currentRow = allRows[targetRow - 1];
+  var record = _payMapper.rowToRecord(map, currentRow);
+  var updatedRecord = Object.assign({}, record, updates);
+  var newRowVals = _payMapper.recordToRow(map, headers, updatedRecord);
+  sheet.getRange(targetRow, 1, 1, headers.length).setValues([newRowVals]);
+  if (typeof sheet.setRow === 'function') {
+    sheet.setRow(targetRow - 1, newRowVals);
+  }
+  return updatedRecord;
 }
 
 if (typeof module !== 'undefined' && module.exports) {

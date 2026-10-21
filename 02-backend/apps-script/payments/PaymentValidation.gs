@@ -23,7 +23,10 @@ function validatePaymentRecordInput(data) {
 function validatePaymentVoidInput(data) {
   var errors = {};
   var payId = data ? (data.payment_id || data.paymentId || data.id) : null;
-  if (!payId) errors.payment_id = 'Payment ID or reference is required';
+  var hasStudentAndAmount = data && data.student_id && (data.amount !== undefined && data.amount !== null);
+  if (!payId && !hasStudentAndAmount) {
+    errors.payment_id = 'Payment ID or (student_id and amount) is required';
+  }
   return {
     valid: Object.keys(errors).length === 0,
     errors: errors
