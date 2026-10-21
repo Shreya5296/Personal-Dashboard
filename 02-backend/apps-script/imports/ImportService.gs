@@ -2,14 +2,40 @@
  * ImportService: Implements safe spreadsheet import preview, execution, and reconciliation.
  */
 
-var _stuRepoImp = typeof Students_getAll === 'function' ? { Students_getAll: Students_getAll } : (typeof require !== 'undefined' ? require('../students/StudentRepository.gs') : null);
-var _stuServImp = typeof Students_create === 'function' ? { Students_create: Students_create } : (typeof require !== 'undefined' ? require('../students/StudentService.gs') : null);
-var _impRepo = typeof ImportBatches_insert === 'function' ? { ImportBatches_insert: ImportBatches_insert, ImportBatches_update: ImportBatches_update, ImportRowResults_insert: ImportRowResults_insert } : (typeof require !== 'undefined' ? require('./ImportRepository.gs') : null);
-var _impVal = typeof validateImportRow === 'function' ? { validateImportRow: validateImportRow } : (typeof require !== 'undefined' ? require('./ImportValidation.gs') : null);
-var _idGenImp = typeof generateImportBatchId === 'function' ? { generateImportBatchId: generateImportBatchId, generateImportRowResultId: generateImportRowResultId, generateId: generateId } : (typeof require !== 'undefined' ? require('../shared/IdGenerator.gs') : null);
+function _resolveStuRepoImp() {
+  if (typeof Students_getAll === 'function') return { Students_getAll: Students_getAll };
+  if (typeof require !== 'undefined') return require('../students/StudentRepository.gs');
+  return null;
+}
+
+function _resolveStuServImp() {
+  if (typeof Students_create === 'function') return { Students_create: Students_create };
+  if (typeof require !== 'undefined') return require('../students/StudentService.gs');
+  return null;
+}
+
+function _resolveImpRepo() {
+  if (typeof ImportBatches_insert === 'function') return { ImportBatches_insert: ImportBatches_insert, ImportBatches_update: ImportBatches_update, ImportRowResults_insert: ImportRowResults_insert };
+  if (typeof require !== 'undefined') return require('./ImportRepository.gs');
+  return null;
+}
+
+function _resolveImpVal() {
+  if (typeof validateImportRow === 'function') return { validateImportRow: validateImportRow };
+  if (typeof require !== 'undefined') return require('./ImportValidation.gs');
+  return null;
+}
+
+function _resolveIdGenImp() {
+  if (typeof generateImportBatchId === 'function') return { generateImportBatchId: generateImportBatchId, generateImportRowResultId: generateImportRowResultId, generateId: generateId };
+  if (typeof require !== 'undefined') return require('../shared/IdGenerator.gs');
+  return null;
+}
 
 function Imports_preview(spreadsheet, rows) {
-  var existing = _stuRepoImp.Students_getAll(spreadsheet);
+  var stuRepo = _resolveStuRepoImp();
+  var impVal = _resolveImpVal();
+  var existing = (stuRepo && stuRepo.Students_getAll) ? stuRepo.Students_getAll(spreadsheet) : [];
   var validatedRows = [];
   var validCount = 0;
   var dupCount = 0;
@@ -17,7 +43,7 @@ function Imports_preview(spreadsheet, rows) {
 
   for (var i = 0; i < (rows || []).length; i++) {
     var raw = rows[i];
-    var val = _impVal.validateImportRow(raw, existing);
+    var val = (impVal && impVal.validateImportRow) ? impVal.validateImportRow(raw, existing) : { isValid: true, isDuplicate: false, error: null };
 
     if (!val.isValid) {
       errCount++;
@@ -48,7 +74,10 @@ function Imports_preview(spreadsheet, rows) {
 }
 
 function Imports_execute(spreadsheet, rows, actor) {
-  var batchId = _idGenImp.generateImportBatchId();
+  var idGen = _resolveIdGenImp();
+  var impRepo = _resolveImpRepo();
+  var stuServ = _resolveStuServImp();
+  var batchId = (idGen && idGen.generateImportBatchId) ? idGen.generateImportBatchId() : ('imp_' + Date.now());
   var now = new Date().toISOString();
   var preview = Imports_preview(spreadsheet, rows);
 
@@ -68,23 +97,28 @@ function Imports_execute(spreadsheet, rows, actor) {
     initiated_by: actor.email || actor.actorId || 'admin',
     notes: 'Import batch started'
   };
-  _impRepo.ImportBatches_insert(spreadsheet, batchRecord);
+  if (impRepo && impRepo.ImportBatches_insert) {
+    impRepo.ImportBatches_insert(spreadsheet, batchRecord);
+  }
 
   var importedCount = 0;
   for (var i = 0; i < preview.rows.length; i++) {
     var r = preview.rows[i];
     if (r.validationError || r.isDuplicate) {
-      _impRepo.ImportRowResults_insert(spreadsheet, {
-        import_row_result_id: _idGenImp.generateImportRowResultId(),
-        import_batch_id: batchId,
-        source_row_reference: 'row_' + r.rowNumber,
-        target_entity_type: '',
-        target_record_id: '',
-        row_status: r.isDuplicate ? 'SKIPPED_DUPLICATE' : 'FAILED_VALIDATION',
-        source_fingerprint: '',
-        message: r.validationError || 'Duplicate student candidate detected',
-        processed_at: new Date().toISOString()
-      });
+      if (impRepo && impRepo.ImportRowResults_insert) {
+        var rowId = (idGen && idGen.generateImportRowResultId) ? idGen.generateImportRowResultId() : ('irr_' + i + '_' + Date.now());
+        impRepo.ImportRowResults_insert(spreadsheet, {
+          import_row_result_id: rowId,
+          import_batch_id: batchId,
+          source_row_reference: 'row_' + r.rowNumber,
+          target_entity_type: '',
+          target_record_id: '',
+          row_status: r.isDuplicate ? 'SKIPPED_DUPLICATE' : 'FAILED_VALIDATION',
+          source_fingerprint: '',
+          message: r.validationError || 'Duplicate student candidate detected',
+          processed_at: new Date().toISOString()
+        });
+      }
       continue;
     }
 
@@ -92,37 +126,42 @@ function Imports_execute(spreadsheet, rows, actor) {
     var firstName = parts[0];
     var lastName = parts.slice(1).join(' ');
 
-    var createRes = _stuServImp.Students_create(spreadsheet, {
+    var createRes = (stuServ && stuServ.Students_create) ? stuServ.Students_create(spreadsheet, {
       first_name: firstName,
       last_name: lastName,
       parent_guardian_name: firstName + ' Parent',
       primary_phone: r.phone || '+910000000000',
       parent_email: r.email,
       source_reference: 'import:' + batchId
-    }, actor);
+    }, actor) : { success: false };
 
-    if (createRes.success) {
+    if (createRes && createRes.success) {
       importedCount++;
-      _impRepo.ImportRowResults_insert(spreadsheet, {
-        import_row_result_id: _idGenImp.generateImportRowResultId(),
-        import_batch_id: batchId,
-        source_row_reference: 'row_' + r.rowNumber,
-        target_entity_type: 'STUDENT',
-        target_record_id: createRes.data.student_id,
-        row_status: 'IMPORTED',
-        source_fingerprint: '',
-        message: 'Imported successfully',
-        processed_at: new Date().toISOString()
-      });
+      if (impRepo && impRepo.ImportRowResults_insert) {
+        var resId = (idGen && idGen.generateImportRowResultId) ? idGen.generateImportRowResultId() : ('irr_' + i + '_' + Date.now());
+        impRepo.ImportRowResults_insert(spreadsheet, {
+          import_row_result_id: resId,
+          import_batch_id: batchId,
+          source_row_reference: 'row_' + r.rowNumber,
+          target_entity_type: 'STUDENT',
+          target_record_id: createRes.data.student_id,
+          row_status: 'IMPORTED',
+          source_fingerprint: '',
+          message: 'Imported successfully',
+          processed_at: new Date().toISOString()
+        });
+      }
     }
   }
 
-  _impRepo.ImportBatches_update(spreadsheet, batchId, {
-    import_status: 'COMPLETED',
-    completed_at: new Date().toISOString(),
-    imported_rows: importedCount,
-    notes: 'Import batch completed successfully'
-  });
+  if (impRepo && impRepo.ImportBatches_update) {
+    impRepo.ImportBatches_update(spreadsheet, batchId, {
+      import_status: 'COMPLETED',
+      completed_at: new Date().toISOString(),
+      imported_rows: importedCount,
+      notes: 'Import batch completed successfully'
+    });
+  }
 
   return {
     batchId: batchId,

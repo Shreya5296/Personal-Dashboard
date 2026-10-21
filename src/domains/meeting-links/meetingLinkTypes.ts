@@ -4,8 +4,10 @@ export interface MeetingLink {
   provider: 'GOOGLE_MEET' | 'ZOOM' | 'MS_TEAMS' | 'OTHER' | string;
   meeting_url: string;
   label?: string;
+  link_label?: string;
   is_preferred: boolean;
-  status: 'ACTIVE' | 'INACTIVE' | string;
+  status?: 'ACTIVE' | 'INACTIVE' | string;
+  link_status?: 'ACTIVE' | 'INACTIVE' | string;
   created_at?: string;
 }
 
@@ -14,5 +16,6 @@ export interface MeetingLinkInput {
   provider: string;
   meeting_url: string;
   label?: string;
+  link_label?: string;
   is_preferred?: boolean;
 }

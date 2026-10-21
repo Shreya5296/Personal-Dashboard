@@ -20,9 +20,13 @@ export async function createMeetingLink(
   input: MeetingLinkInput,
   token?: string | null
 ): Promise<MeetingLink> {
+  const payload = {
+    ...input,
+    link_label: input.link_label || input.label || 'Standard Class Link',
+  };
   const response = await sendApiRequest<MeetingLink>(
     'meetingLinks.create',
-    input as unknown as Record<string, unknown>,
+    payload as unknown as Record<string, unknown>,
     { token }
   );
   return response.data!;

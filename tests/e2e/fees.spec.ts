@@ -68,5 +68,45 @@ test.describe('E2E — Fees and Payments Workflow', () => {
     await expect(updatedFeeRow.locator('text=₹1,000')).toBeVisible();
     await expect(updatedFeeRow.locator('text=₹4,000')).toBeVisible();
     await expect(updatedFeeRow.locator('text=/PARTIALLY/')).toBeVisible();
+
+    // 7. Navigate to main Fees & Payments -> Payment Ledger
+    await navigateTo(page, 'Fees & Payments');
+    await page.locator('button:has-text("Payment Ledger")').click();
+    await expect(page.locator('text=Loading payment transactions…')).toBeHidden({ timeout: 35000 });
+
+    // 8. Void the recorded payment (target the active RECORDED payment row)
+    const paymentRow = page.locator('tr:has-text("RECORDED"):has-text("₹1,000")').first();
+    await expect(paymentRow).toBeVisible({ timeout: 25000 });
+    page.once('dialog', (dialog) => dialog.accept());
+    await paymentRow.locator('button:has-text("Void")').click();
+    await expect(page.locator('text=Loading payment transactions…')).toBeHidden({ timeout: 35000 });
+
+    // 9. Void an unpaid fee obligation
+    await page.locator('button:has-text("Fee Invoices & Obligations")').click();
+    // Return to student profile to create a fresh unpaid fee
+    await navigateTo(page, 'Students');
+    await page.locator(`text=${student.full_name}`).click();
+    await page.locator('button:has-text("Fee Obligations")').click();
+
+    await page.locator('button:has-text("New Fee Obligation")').click();
+    const cancelFeeDesc = `Registration Fee ${testId}`;
+    await page.getByLabel('Fee Description').fill(cancelFeeDesc);
+    await page.getByLabel('Amount Due (₹ INR)').fill('2000');
+    await page.locator('button:has-text("Create Fee Obligation")').click();
+    await expect(page.locator('text=Fee obligation of ₹2,000 created successfully')).toBeVisible({ timeout: 35000 });
+
+    const freshFeeRow = page.locator(`tr:has-text("${cancelFeeDesc}")`);
+    await expect(freshFeeRow).toBeVisible();
+    page.once('dialog', (dialog) => dialog.accept());
+    await freshFeeRow.locator('button:has-text("Void")').click();
+    await expect(freshFeeRow.locator('span:has-text("VOID")')).toBeVisible({ timeout: 35000 });
+
+    // Verify fee status changes to VOID and verify refresh persistence
+    await page.reload();
+    await navigateTo(page, 'Students');
+    await page.locator(`text=${student.full_name}`).click();
+    await page.locator('button:has-text("Fee Obligations")').click();
+    const voidedRow = page.locator(`tr:has-text("${cancelFeeDesc}")`);
+    await expect(voidedRow.locator('span:has-text("VOID")')).toBeVisible({ timeout: 35000 });
   });
 });

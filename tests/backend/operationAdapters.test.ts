@@ -13,6 +13,9 @@ const { registerFeeOperations } = require('../../02-backend/apps-script/fees/Fee
 const { registerPaymentOperations } = require('../../02-backend/apps-script/payments/PaymentHandlers.gs');
 const { registerClassOperations } = require('../../02-backend/apps-script/classes/ClassHandlers.gs');
 const { registerReportOperations } = require('../../02-backend/apps-script/reports/ReportHandlers.gs');
+const { registerImportOperations } = require('../../02-backend/apps-script/imports/ImportHandlers.gs');
+const { registerNoteOperations } = require('../../02-backend/apps-script/notes/NoteHandlers.gs');
+const { registerMeetingLinkOperations } = require('../../02-backend/apps-script/meeting-links/MeetingLinkHandlers.gs');
 
 describe('Backend Operation Adapters and Compatibility', () => {
   let spreadsheet: any;
@@ -32,6 +35,9 @@ describe('Backend Operation Adapters and Compatibility', () => {
     registerPaymentOperations(mockRouter);
     registerClassOperations(mockRouter);
     registerReportOperations(mockRouter);
+    registerImportOperations(mockRouter);
+    registerNoteOperations(mockRouter);
+    registerMeetingLinkOperations(mockRouter);
   });
 
   it('adapts student creation with full_name, phone, parent_name and enriches output', () => {
@@ -220,5 +226,90 @@ describe('Backend Operation Adapters and Compatibility', () => {
     expect(fin.data.totalBilled).toBeDefined();
     expect(fin.data.totalCollected).toBeDefined();
     expect(fin.data.totalReceived).toBeDefined();
+  });
+
+  it('adapts imports.preview and imports.execute operations safely', () => {
+    const rawRows = [
+      { rowNumber: 1, fullName: 'Import Test Student', email: 'imp@example.com', phone: '+919999911111' },
+      { rowNumber: 2, fullName: '', email: 'invalid@example.com' },
+    ];
+
+    const prevRes = registry['imports.preview']({
+      spreadsheet,
+      payload: { rows: rawRows },
+    });
+    expect(prevRes.success).toBe(true);
+    expect(prevRes.data.totalRows).toBe(2);
+    expect(prevRes.data.validRows).toBe(1);
+    expect(prevRes.data.errorRows).toBe(1);
+
+    const execRes = registry['imports.execute']({
+      spreadsheet,
+      payload: { rows: rawRows },
+      actorId: 'usr_test',
+      verifiedEmail: 'ashreya0502@gmail.com',
+      requestId: 'req_imp_exec',
+    });
+    expect(execRes.success).toBe(true);
+    expect(execRes.data.batchId).toMatch(/^imp_/);
+    expect(execRes.data.importedCount).toBe(1);
+    expect(execRes.data.errorCount).toBe(1);
+  });
+
+  it('adapts notes and meeting links operations correctly', () => {
+    // 1. Create a student first
+    const stuRes = registry['students.create']({
+      spreadsheet,
+      payload: { full_name: 'Note Student', phone: '9876543210', parent_name: 'Note Parent' },
+      actorId: 'usr_test',
+      verifiedEmail: 'ashreya0502@gmail.com',
+      requestId: 'req_stu_note',
+    });
+    const studentId = stuRes.data.student_id;
+
+    // 2. Create note
+    const noteRes = registry['notes.create']({
+      spreadsheet,
+      payload: { student_id: studentId, note_type: 'GENERAL', content: 'Progress note' },
+      actorId: 'usr_test',
+      verifiedEmail: 'ashreya0502@gmail.com',
+      requestId: 'req_note_create',
+    });
+    expect(noteRes.success).toBe(true);
+    expect(noteRes.data.note_id).toBeDefined();
+
+    // 3. List notes
+    const noteList = registry['notes.list']({
+      spreadsheet,
+      payload: { student_id: studentId },
+    });
+    expect(noteList.success).toBe(true);
+    expect(noteList.data).toHaveLength(1);
+    expect(noteList.data[0].content).toBe('Progress note');
+
+    // 4. Create meeting link
+    const linkRes = registry['meetingLinks.create']({
+      spreadsheet,
+      payload: {
+        student_id: studentId,
+        provider: 'GOOGLE_MEET',
+        link_label: 'Weekly Class',
+        meeting_url: 'https://meet.google.com/test-link',
+      },
+      actorId: 'usr_test',
+      verifiedEmail: 'ashreya0502@gmail.com',
+      requestId: 'req_ml_create',
+    });
+    expect(linkRes.success).toBe(true);
+    expect(linkRes.data.meeting_link_id).toBeDefined();
+
+    // 5. List meeting links
+    const linkList = registry['meetingLinks.list']({
+      spreadsheet,
+      payload: { student_id: studentId },
+    });
+    expect(linkList.success).toBe(true);
+    expect(linkList.data).toHaveLength(1);
+    expect(linkList.data[0].meeting_url).toBe('https://meet.google.com/test-link');
   });
 });

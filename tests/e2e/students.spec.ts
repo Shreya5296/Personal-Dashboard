@@ -68,5 +68,24 @@ test.describe('E2E — Students Domain Workflow', () => {
     // Wait for update
     await expect(page.locator('button:has-text("Processing…")')).toBeHidden({ timeout: 45000 });
     await expect(page.locator(`text=${student.parent_name} Updated`)).toBeVisible({ timeout: 45000 });
+
+    // 6. Archive student via UI
+    page.once('dialog', (dialog) => dialog.accept());
+    await page.locator('button:has-text("Archive Student")').click();
+    await expect(page.locator('button:has-text("Reactivate Student")')).toBeVisible({ timeout: 45000 });
+    await expect(page.getByText('INACTIVE', { exact: true })).toBeVisible({ timeout: 15000 });
+
+    // 7. Reactivate student via UI
+    page.once('dialog', (dialog) => dialog.accept());
+    await page.locator('button:has-text("Reactivate Student")').click();
+    await expect(page.locator('button:has-text("Archive Student")')).toBeVisible({ timeout: 45000 });
+    await expect(page.getByText('ACTIVE', { exact: true })).toBeVisible({ timeout: 15000 });
+
+    // 8. Refresh persistence
+    await page.reload();
+    await navigateTo(page, 'Students');
+    await expect(page.locator(`text=${student.full_name}`)).toBeVisible({ timeout: 45000 });
+    await page.locator(`text=${student.full_name}`).click();
+    await expect(page.getByText('ACTIVE', { exact: true })).toBeVisible();
   });
 });

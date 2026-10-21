@@ -124,3 +124,18 @@ NEXT ACTION
   * Verified zero secrets in tracked files or production bundles.
   * Identified untested workflows and confirmed automated test reproducibility.
   * Updated 05-agent-handoff/00-project-state.md with release-readiness assessment. Ready for owner acceptance.
+- Pre-Launch Completion, Field Review & Sheet Simplification completed:
+  * Apps Script redeployed in-place to Version @17: resolved ImportHandlers/ImportService globals, note category validation, meeting link aliases.
+  * 18/18 Playwright E2E browser tests passed 100% against live backend in 3.4m:
+    - Student registration, validation, directory search, profile editing, archive, reactivate, refresh persistence.
+    - Fee obligation creation, amount validation, payment recording, payment voiding, fee voiding, refresh persistence.
+    - Package creation, class balance allocation, class session scheduling, attendance marking, credit decrement.
+    - Meeting link creation, HTTPS validation, preferred link toggle, student notes logging, refresh persistence.
+    - Spreadsheet CSV import preview with invalid row filtering, duplicate detection, and batch execution.
+    - Duplicate submission prevention (async button disabling), required field guards, responsive desktop/tablet/mobile layouts.
+    - Security gateway, invalid administrator key rejection, and absence of client bundle secrets.
+  * Quality Gates: 73/73 Vitest unit/integration tests passing; 113/113 files <= 149 lines; TypeScript type check passing; production build clean (499ms).
+  * Documentation Deliverables Finalized:
+    - docs/prelaunch/field-inventory.md: complete catalog across all screens/forms/tables with recommendations.
+    - docs/prelaunch/sheet-simplification-proposal.md: structural analysis proposing reduction from 12 tabs to 7 visible tabs.
+    - docs/prelaunch/owner-decisions.md: 6 concise numbered decisions for owner approval before Vercel deploy or data migration.

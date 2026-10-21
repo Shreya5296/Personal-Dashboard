@@ -100,3 +100,15 @@ export async function archiveStudent(
   );
   return response.data!;
 }
+
+export async function reactivateStudent(
+  studentId: string,
+  token?: string | null
+): Promise<Student> {
+  const response = await sendApiRequest<Student>(
+    'students.reactivate',
+    { student_id: studentId },
+    { token }
+  );
+  return response.data!;
+}

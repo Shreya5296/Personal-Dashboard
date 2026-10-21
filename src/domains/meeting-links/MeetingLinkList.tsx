@@ -48,7 +48,7 @@ export const MeetingLinkList: React.FC<{ studentId?: string }> = ({ studentId })
 
   const columns: Column<MeetingLink>[] = [
     { key: 'provider', header: 'Provider', render: (l) => <MeetingProviderLabel provider={l.provider} /> },
-    { key: 'label', header: 'Label', render: (l) => l.label || 'Standard Link' },
+    { key: 'label', header: 'Label', render: (l) => l.link_label || l.label || 'Standard Link' },
     {
       key: 'url',
       header: 'URL',

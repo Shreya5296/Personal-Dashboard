@@ -17,7 +17,7 @@ export const StudentNoteForm: React.FC<StudentNoteFormProps> = ({
   isLoading = false,
 }) => {
   const [content, setContent] = useState('');
-  const [noteType, setNoteType] = useState('ACADEMIC');
+  const [noteType, setNoteType] = useState('GENERAL');
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -41,10 +41,11 @@ export const StudentNoteForm: React.FC<StudentNoteFormProps> = ({
           onChange={(e) => setNoteType(e.target.value)}
           style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)', backgroundColor: 'var(--color-bg-surface)' }}
         >
-          <option value="ACADEMIC">Academic Progress</option>
-          <option value="BEHAVIORAL">Behavior & Engagement</option>
+          <option value="GENERAL">General Observation</option>
+          <option value="CLASS">Class & Homework</option>
+          <option value="FEE">Fee & Billing Discussion</option>
           <option value="FOLLOW_UP">Follow-Up Item</option>
-          <option value="PARENT_COMMUNICATION">Parent Communication</option>
+          <option value="OTHER">Other Note</option>
         </select>
       </FormField>
 

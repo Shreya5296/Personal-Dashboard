@@ -74,6 +74,7 @@ export const StudentsPage: React.FC = () => {
           loadStudents();
         }}
         onEdit={() => setEditingStudent(selectedStudent)}
+        onUpdate={(updated) => setSelectedStudent(updated)}
       />
     );
   }

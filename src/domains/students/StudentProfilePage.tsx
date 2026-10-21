@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+import { useAuth } from '../../auth/AuthProvider';
 import { Student } from './studentTypes';
+import { archiveStudent, reactivateStudent } from './studentApi';
 import { StudentSummary } from './StudentSummary';
 import { Button } from '../../components/buttons/Button';
 import { StudentNotes } from '../notes/StudentNotes';
@@ -13,6 +15,7 @@ export interface StudentProfilePageProps {
   student: Student;
   onBack: () => void;
   onEdit: () => void;
+  onUpdate?: (updated: Student) => void;
 }
 
 type TabType = 'enrollments' | 'packages' | 'fees' | 'classes' | 'meeting-links' | 'notes';
@@ -21,8 +24,11 @@ export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
   student,
   onBack,
   onEdit,
+  onUpdate,
 }) => {
+  const { token } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('enrollments');
+  const [isArchiving, setIsArchiving] = useState(false);
 
   const tabs: { id: TabType; label: string }[] = [
     { id: 'enrollments', label: 'Enrollments' },
@@ -33,15 +39,37 @@ export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
     { id: 'notes', label: 'Student Notes' },
   ];
 
+  const handleToggleArchive = async () => {
+    const isInactive = student.status === 'INACTIVE';
+    const actionWord = isInactive ? 'reactivate' : 'archive';
+    if (!confirm(`Are you sure you want to ${actionWord} this student?`)) return;
+
+    setIsArchiving(true);
+    try {
+      const res = isInactive
+        ? await reactivateStudent(student.student_id, token)
+        : await archiveStudent(student.student_id, token);
+      const updated = { ...student, ...res, status: isInactive ? 'ACTIVE' : 'INACTIVE' };
+      if (onUpdate) onUpdate(updated);
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
         <Button variant="outline" onClick={onBack}>
           ← Back to Students
         </Button>
-        <Button variant="primary" onClick={onEdit}>
-          Edit Profile
-        </Button>
+        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+          <Button variant="outline" onClick={handleToggleArchive} isLoading={isArchiving}>
+            {student.status === 'INACTIVE' ? 'Reactivate Student' : 'Archive Student'}
+          </Button>
+          <Button variant="primary" onClick={onEdit}>
+            Edit Profile
+          </Button>
+        </div>
       </div>
 
       <StudentSummary student={student} />
