@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import styles from './confirmDialog.module.css';
 import { Button } from '../buttons/Button';
 
@@ -25,10 +25,29 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   onConfirm,
   onCancel,
 }) => {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isLoading) {
+        onCancel();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, isLoading, onCancel]);
+
   if (!isOpen) return null;
 
   return (
-    <div className={styles.backdrop} role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+    <div
+      className={styles.backdrop}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="dialog-title"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !isLoading) onCancel();
+      }}
+    >
       <div className={styles.dialog}>
         <h2 id="dialog-title" className={styles.title}>
           {title}

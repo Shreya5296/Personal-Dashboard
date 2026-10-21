@@ -5,15 +5,30 @@
   gap: var(--space-1);
 }
 
+.labelWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
 .label {
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-text-main);
+  line-height: 1.25rem;
 }
 
 .requiredAsterisk {
   color: var(--color-danger);
-  margin-left: 2px;
+  margin-left: 3px;
+  font-weight: 600;
+}
+
+.optionalBadge {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-subtle);
+  font-weight: 400;
 }
 
 .input,
@@ -21,20 +36,30 @@
 .textarea {
   font-family: var(--font-sans);
   font-size: var(--font-size-sm);
+  line-height: 1.25rem;
   padding: 0.5rem 0.75rem;
-  border: 1px solid var(--color-border-strong);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background-color: var(--color-bg-surface);
   color: var(--color-text-main);
   outline: none;
-  transition: border-color 150ms ease, box-shadow 150ms ease;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+  width: 100%;
 }
 
 .input:focus,
 .select:focus,
 .textarea:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.input:disabled,
+.select:disabled,
+.textarea:disabled {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
 }
 
 .inputError {
@@ -42,16 +67,20 @@
 }
 
 .inputError:focus {
-  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2) !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15) !important;
 }
 
 .errorText {
   font-size: var(--font-size-xs);
   color: var(--color-danger);
-  margin-top: 2px;
+  margin-top: 3px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .helpText {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
+  margin-top: 2px;
 }

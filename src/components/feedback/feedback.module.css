@@ -3,9 +3,25 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--space-8);
+  padding: var(--space-8) var(--space-6);
   text-align: center;
   color: var(--color-text-muted);
+  background-color: var(--color-bg-surface);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  margin: var(--space-2) 0;
+}
+
+.emptyIconCircle {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-bg-subtle);
+  color: var(--color-text-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-3);
 }
 
 .spinner {
@@ -30,8 +46,10 @@
   font-size: var(--font-size-sm);
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-3);
   margin-bottom: var(--space-4);
+  box-shadow: var(--shadow-xs);
 }
 
 .noticeInfo {
