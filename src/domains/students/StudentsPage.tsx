@@ -11,6 +11,7 @@ import { StudentProfilePage } from './StudentProfilePage';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { Button } from '../../components/buttons/Button';
+import { PageHeader } from '../../layout/PageHeader';
 
 export const StudentsPage: React.FC = () => {
   usePageTitle('Students Directory');
@@ -51,9 +52,7 @@ export const StudentsPage: React.FC = () => {
     try {
       if (editingStudent) {
         const updated = await updateStudent(editingStudent.student_id, input, token);
-        if (selectedStudent) {
-          setSelectedStudent(updated);
-        }
+        if (selectedStudent) setSelectedStudent(updated);
       } else {
         await createStudent(input, token);
       }
@@ -69,10 +68,7 @@ export const StudentsPage: React.FC = () => {
     return (
       <StudentProfilePage
         student={selectedStudent}
-        onBack={() => {
-          setSelectedStudent(null);
-          loadStudents();
-        }}
+        onBack={() => { setSelectedStudent(null); loadStudents(); }}
         onEdit={() => setEditingStudent(selectedStudent)}
         onUpdate={(updated) => setSelectedStudent(updated)}
       />
@@ -81,21 +77,33 @@ export const StudentsPage: React.FC = () => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+      <PageHeader
+        title="Students Directory"
+        subtitle="Manage registered learners, curriculum details, parent contacts, and fee profiles."
+        actions={
+          <Button variant="primary" onClick={() => setIsCreating(true)}>
+            + Add Student
+          </Button>
+        }
+      />
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
         <StudentSearch
           query={searchQuery}
           statusFilter={statusFilter}
           onQueryChange={setSearchQuery}
           onStatusFilterChange={setStatusFilter}
         />
-        <Button variant="primary" onClick={() => setIsCreating(true)}>
-          + Add Student
-        </Button>
+        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+          {students.length} student{students.length === 1 ? '' : 's'} found
+        </span>
       </div>
 
       {(isCreating || editingStudent) && (
-        <div style={{ backgroundColor: 'var(--color-bg-surface)', padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-subtle)', marginBottom: 'var(--space-6)' }}>
-          <h3 style={{ margin: '0 0 var(--space-4)' }}>{editingStudent ? 'Edit Student' : 'New Student Registration'}</h3>
+        <div style={{ backgroundColor: 'var(--color-bg-surface)', padding: '1.5rem', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-subtle)', marginBottom: 'var(--space-6)', boxShadow: 'var(--shadow-sm)' }}>
+          <h3 style={{ margin: '0 0 var(--space-4)', fontSize: 'var(--font-size-base)', fontWeight: 600 }}>
+            {editingStudent ? 'Edit Student Details' : 'New Student Registration'}
+          </h3>
           <StudentForm
             initialStudent={editingStudent}
             onSubmit={handleFormSubmit}

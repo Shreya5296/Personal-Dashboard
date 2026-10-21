@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { StudentNoteInput } from './noteTypes';
 import { FormField } from '../../components/forms/FormField';
 import { Button } from '../../components/buttons/Button';
+import formStyles from '../../components/forms/forms.module.css';
 
 export interface StudentNoteFormProps {
   studentId: string;
@@ -37,9 +38,9 @@ export const StudentNoteForm: React.FC<StudentNoteFormProps> = ({
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
       <FormField label="Note Category">
         <select
+          className={formStyles.select}
           value={noteType}
           onChange={(e) => setNoteType(e.target.value)}
-          style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)', backgroundColor: 'var(--color-bg-surface)' }}
         >
           <option value="GENERAL">General Observation</option>
           <option value="CLASS">Class & Homework</option>
@@ -51,11 +52,11 @@ export const StudentNoteForm: React.FC<StudentNoteFormProps> = ({
 
       <FormField label="Note Details" required error={error}>
         <textarea
+          className={formStyles.textarea}
           rows={3}
           value={content}
           onChange={(e) => { setContent(e.target.value); setError(null); }}
           placeholder="Record notes on student progress, homework status, or parent discussions…"
-          style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)', fontFamily: 'var(--font-sans)' }}
         />
       </FormField>
 

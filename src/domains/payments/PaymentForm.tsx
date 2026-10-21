@@ -3,6 +3,7 @@ import { PaymentInput } from './paymentTypes';
 import { FormField } from '../../components/forms/FormField';
 import { Button } from '../../components/buttons/Button';
 import { toInputDateFormat } from '../../lib/dateFormat';
+import formStyles from '../../components/forms/forms.module.css';
 
 export interface PaymentFormProps {
   studentId: string;
@@ -42,52 +43,52 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
 
   return (
     <form noValidate onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-3)' }}>
         <FormField label="Amount Paid (₹ INR)" required>
           <input
+            className={formStyles.input}
             type="number"
             min="1"
             step="any"
             value={amount}
             onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
-            style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)' }}
           />
         </FormField>
         <FormField label="Payment Date" required>
           <input
+            className={formStyles.input}
             type="date"
             value={paymentDate}
             onChange={(e) => setPaymentDate(e.target.value)}
-            style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)' }}
           />
         </FormField>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-3)' }}>
         <FormField label="Payment Method" required>
           <select
+            className={formStyles.select}
             value={paymentMethod}
             onChange={(e) => setPaymentMethod(e.target.value)}
-            style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)', backgroundColor: 'var(--color-bg-surface)' }}
           >
             <option value="UPI">UPI (GPay / PhonePe / Paytm)</option>
-            <option value="BANK_TRANSFER">Bank Transfer (NEFT/IMPS)</option>
+            <option value="BANK_TRANSFER">Bank Transfer (NEFT / IMPS)</option>
             <option value="CASH">Cash</option>
             <option value="CHEQUE">Cheque</option>
           </select>
         </FormField>
         <FormField label="Transaction / Reference #">
           <input
+            className={formStyles.input}
             type="text"
             value={referenceNumber}
             onChange={(e) => setReferenceNumber(e.target.value)}
             placeholder="e.g. UPI Ref / UTR / Cheque #"
-            style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)' }}
           />
         </FormField>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', marginTop: 'var(--space-4)' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', marginTop: 'var(--space-3)' }}>
         <Button variant="secondary" type="button" onClick={onCancel} disabled={isLoading}>
           Cancel
         </Button>

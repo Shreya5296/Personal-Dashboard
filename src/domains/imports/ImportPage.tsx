@@ -7,6 +7,13 @@ import { ImportPreview } from './ImportPreview';
 import { ImportResults } from './ImportResults';
 import { Button } from '../../components/buttons/Button';
 import { InlineNotice } from '../../components/feedback/InlineNotice';
+import { PageHeader } from '../../layout/PageHeader';
+import formStyles from '../../components/forms/forms.module.css';
+
+const SAMPLE_CSV = `Full Name,Email,Phone,Course Name
+Aarav Sharma,aarav@example.com,+91 9876543210,AP Calculus BC
+Diya Patel,diya@example.com,+91 9876543211,IB Physics HL
+Kabir Mehta,kabir@example.com,+91 9876543212,Grade 10 Mathematics`;
 
 export const ImportPage: React.FC = () => {
   usePageTitle('Spreadsheet Import & Reconciliation');
@@ -57,26 +64,55 @@ export const ImportPage: React.FC = () => {
     }
   };
 
+  const activeStep = result ? 3 : preview ? 2 : 1;
+
   return (
     <div>
+      <PageHeader
+        title="Spreadsheet Import & Reconciliation"
+        subtitle="Batch import student rosters with preview validation, duplicate protection, and row-level feedback."
+      />
+
+      <div style={{ display: 'flex', gap: 'var(--space-4)', marginBottom: 'var(--space-6)', borderBottom: '1px solid var(--color-border-subtle)', paddingBottom: 'var(--space-3)' }}>
+        <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: activeStep === 1 ? 700 : 500, color: activeStep === 1 ? 'var(--color-primary)' : 'var(--color-text-muted)' }}>
+          1. Paste CSV Data
+        </span>
+        <span style={{ color: 'var(--color-text-subtle)' }}>→</span>
+        <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: activeStep === 2 ? 700 : 500, color: activeStep === 2 ? 'var(--color-primary)' : 'var(--color-text-muted)' }}>
+          2. Preview & Reconciliation
+        </span>
+        <span style={{ color: 'var(--color-text-subtle)' }}>→</span>
+        <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: activeStep === 3 ? 700 : 500, color: activeStep === 3 ? 'var(--color-primary)' : 'var(--color-text-muted)' }}>
+          3. Summary Results
+        </span>
+      </div>
+
       {errorMessage && <InlineNotice type="danger" message={errorMessage} onDismiss={() => setErrorMessage(null)} />}
 
       {!preview && !result && (
-        <div style={{ backgroundColor: 'var(--color-bg-surface)', padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-subtle)' }}>
-          <h3 style={{ margin: '0 0 var(--space-2)' }}>Paste CSV or Spreadsheet Data</h3>
-          <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)', marginBottom: 'var(--space-4)' }}>
-            Header row required: <code>Full Name, Email, Phone, Course Name</code>
+        <div style={{ backgroundColor: 'var(--color-bg-surface)', padding: '1.5rem', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-subtle)', boxShadow: 'var(--shadow-xs)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)' }}>
+            <h3 style={{ margin: 0, fontSize: 'var(--font-size-base)', fontWeight: 600 }}>Paste CSV or Spreadsheet Data</h3>
+            <Button variant="outline" size="sm" onClick={() => setCsvText(SAMPLE_CSV)}>
+              Load Synthetic Sample
+            </Button>
+          </div>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)', margin: '0 0 var(--space-4)' }}>
+            Required header columns: <code>Full Name, Email, Phone, Course Name</code>
           </p>
           <textarea
+            className={formStyles.textarea}
             rows={8}
             value={csvText}
             onChange={(e) => setCsvText(e.target.value)}
-            placeholder="Full Name, Email, Phone, Course Name&#10;Aarav Sharma, aarav@example.com, +91 9876543210, Grade 10 Math&#10;Diya Patel, diya@example.com, +91 9876543211, Grade 9 Science"
-            style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)', fontFamily: 'monospace', fontSize: 'var(--font-size-xs)', marginBottom: 'var(--space-4)' }}
+            placeholder="Full Name, Email, Phone, Course Name&#10;Aarav Sharma, aarav@example.com, +91 9876543210, AP Calculus BC"
+            style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--font-size-xs)', marginBottom: 'var(--space-4)' }}
           />
-          <Button variant="primary" onClick={handleParseAndPreview} isLoading={isLoading} disabled={!csvText.trim()}>
-            Preview & Validate Import
-          </Button>
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Button variant="primary" onClick={handleParseAndPreview} isLoading={isLoading} disabled={!csvText.trim()}>
+              Preview & Validate Import
+            </Button>
+          </div>
         </div>
       )}
 

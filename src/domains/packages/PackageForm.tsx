@@ -3,6 +3,7 @@ import { PackageInput } from './packageTypes';
 import { FormField } from '../../components/forms/FormField';
 import { Button } from '../../components/buttons/Button';
 import { toInputDateFormat } from '../../lib/dateFormat';
+import formStyles from '../../components/forms/forms.module.css';
 
 export interface PackageFormProps {
   studentId: string;
@@ -37,47 +38,47 @@ export const PackageForm: React.FC<PackageFormProps> = ({
     <form noValidate onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
       <FormField label="Package Name" required>
         <input
+          className={formStyles.input}
           type="text"
           value={packageName}
           onChange={(e) => setPackageName(e.target.value)}
           placeholder="e.g. 10-Class Mathematics Pack"
-          style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)' }}
         />
       </FormField>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-3)' }}>
         <FormField label="Total Classes" required>
           <input
+            className={formStyles.input}
             type="number"
             min={1}
             max={500}
             value={totalClasses}
             onChange={(e) => setTotalClasses(parseInt(e.target.value, 10) || 1)}
-            style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)' }}
           />
         </FormField>
         <FormField label="Price (₹ INR)">
           <input
+            className={formStyles.input}
             type="number"
             min="0"
             step="any"
             value={price}
             onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
-            style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)' }}
           />
         </FormField>
       </div>
 
       <FormField label="Start Date" required>
         <input
+          className={formStyles.input}
           type="date"
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
-          style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)' }}
         />
       </FormField>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', marginTop: 'var(--space-4)' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', marginTop: 'var(--space-3)' }}>
         <Button variant="secondary" type="button" onClick={onCancel} disabled={isLoading}>
           Cancel
         </Button>

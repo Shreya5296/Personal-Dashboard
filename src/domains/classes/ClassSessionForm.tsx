@@ -5,6 +5,7 @@ import { Button } from '../../components/buttons/Button';
 import { fetchStudents } from '../students/studentApi';
 import { Student } from '../students/studentTypes';
 import { useAuth } from '../../auth/AuthProvider';
+import formStyles from '../../components/forms/forms.module.css';
 
 export interface ClassSessionFormProps {
   studentId?: string;
@@ -65,14 +66,14 @@ export const ClassSessionForm: React.FC<ClassSessionFormProps> = ({
       {showStudentPicker && (
         <FormField label="Select Student" required>
           <select
+            className={formStyles.select}
             value={selectedStudentId}
             onChange={(e) => setSelectedStudentId(e.target.value)}
-            style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)', backgroundColor: 'var(--color-bg-surface)' }}
           >
             {students.length === 0 && <option value="">No students available</option>}
             {students.map((s) => (
               <option key={s.student_id} value={s.student_id}>
-                {s.full_name || s.student_id}
+                {s.student_name || s.full_name || s.student_id}
               </option>
             ))}
           </select>
@@ -81,37 +82,37 @@ export const ClassSessionForm: React.FC<ClassSessionFormProps> = ({
 
       <FormField label="Topic / Session Name" required>
         <input
+          className={formStyles.input}
           type="text"
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
-          placeholder="e.g. Linear Algebra Chapter 3"
-          style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)' }}
+          placeholder="e.g. Calculus: Derivatives Review"
         />
       </FormField>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-3)' }}>
         <FormField label="Start Date & Time" required>
           <input
+            className={formStyles.input}
             type="datetime-local"
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
-            style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)' }}
           />
         </FormField>
         <FormField label="Duration (Minutes)" required>
           <input
+            className={formStyles.input}
             type="number"
             min={15}
             max={360}
             step={15}
             value={durationMinutes}
             onChange={(e) => setDurationMinutes(parseInt(e.target.value, 10) || 60)}
-            style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)' }}
           />
         </FormField>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', marginTop: 'var(--space-4)' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', marginTop: 'var(--space-3)' }}>
         <Button variant="secondary" type="button" onClick={onCancel} disabled={isLoading}>
           Cancel
         </Button>

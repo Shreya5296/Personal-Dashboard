@@ -1,6 +1,7 @@
 export interface MeetingLink {
   meeting_link_id: string;
   student_id?: string;
+  student_name?: string;
   provider: 'GOOGLE_MEET' | 'ZOOM' | 'MS_TEAMS' | 'OTHER' | string;
   meeting_url: string;
   label?: string;
@@ -13,6 +14,7 @@ export interface MeetingLink {
 
 export interface MeetingLinkInput {
   student_id?: string;
+  student_name?: string;
   provider: string;
   meeting_url: string;
   label?: string;

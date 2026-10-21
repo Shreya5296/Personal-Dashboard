@@ -33,9 +33,7 @@ export const PackageList: React.FC<{ studentId: string }> = ({ studentId }) => {
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, [studentId, token]);
+  useEffect(() => { loadData(); }, [studentId, token]);
 
   const handleCreate = async (input: PackageInput) => {
     setFormLoading(true);
@@ -49,11 +47,19 @@ export const PackageList: React.FC<{ studentId: string }> = ({ studentId }) => {
   };
 
   const columns: Column<Package>[] = [
-    { key: 'package_name', header: 'Package Name' },
-    { key: 'total_classes', header: 'Total Classes' },
-    { key: 'price', header: 'Price', render: (p) => formatCurrency(p.price) },
+    { key: 'package_name', header: 'Package Name', render: (p) => <span style={{ fontWeight: 600 }}>{p.package_name}</span> },
+    { key: 'total_classes', header: 'Total Classes', render: (p) => <span style={{ fontVariantNumeric: 'tabular-nums' }}>{p.total_classes} classes</span> },
+    { key: 'price', header: 'Package Price', render: (p) => <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{formatCurrency(p.price)}</span> },
     { key: 'start_date', header: 'Start Date', render: (p) => formatDate(p.start_date) },
-    { key: 'status', header: 'Status', render: (p) => p.status },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (p) => (
+        <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, padding: '2px 8px', borderRadius: 'var(--radius-full)', backgroundColor: p.status === 'ACTIVE' ? 'var(--color-success-bg)' : 'var(--color-bg-subtle)', color: p.status === 'ACTIVE' ? 'var(--color-success-text)' : 'var(--color-text-muted)', border: `1px solid ${p.status === 'ACTIVE' ? 'var(--color-success-border)' : 'var(--color-border)'}` }}>
+          {p.status}
+        </span>
+      ),
+    },
   ];
 
   return (
@@ -61,14 +67,14 @@ export const PackageList: React.FC<{ studentId: string }> = ({ studentId }) => {
       {balance && <PackageBalance balance={balance} />}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
-        <h4 style={{ margin: 0 }}>Class Packages</h4>
-        <Button variant="secondary" onClick={() => setIsAdding(!isAdding)}>
+        <h4 style={{ margin: 0, fontSize: 'var(--font-size-base)', fontWeight: 600 }}>Class Packages</h4>
+        <Button variant="secondary" size="sm" onClick={() => setIsAdding(!isAdding)}>
           {isAdding ? 'Cancel' : '+ Allocate Package'}
         </Button>
       </div>
 
       {isAdding && (
-        <div style={{ padding: 'var(--space-4)', backgroundColor: 'var(--color-bg-subtle)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)' }}>
+        <div style={{ padding: '1.25rem', backgroundColor: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', marginBottom: 'var(--space-5)', boxShadow: 'var(--shadow-sm)' }}>
           <PackageForm studentId={studentId} onSubmit={handleCreate} onCancel={() => setIsAdding(false)} isLoading={formLoading} />
         </div>
       )}

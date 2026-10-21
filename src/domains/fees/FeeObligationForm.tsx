@@ -5,6 +5,7 @@ import { FormField } from '../../components/forms/FormField';
 import { Button } from '../../components/buttons/Button';
 import { toInputDateFormat } from '../../lib/dateFormat';
 import { ApiClientError } from '../../api/apiErrors';
+import formStyles from '../../components/forms/forms.module.css';
 
 export interface FeeObligationFormProps {
   studentId: string;
@@ -61,22 +62,16 @@ export const FeeObligationForm: React.FC<FeeObligationFormProps> = ({
   };
 
   return (
-    <form noValidate onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+    <form noValidate onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
       {serverError && (
-        <div style={{
-          padding: '0.75rem 1rem',
-          backgroundColor: '#fee2e2',
-          border: '1px solid #ef4444',
-          borderRadius: 'var(--radius-md)',
-          color: '#b91c1c',
-          fontSize: '0.875rem',
-        }}>
+        <div style={{ padding: '0.75rem 1rem', backgroundColor: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)', borderRadius: 'var(--radius-md)', color: 'var(--color-danger-text)', fontSize: 'var(--font-size-sm)' }}>
           ⚠️ {serverError}
         </div>
       )}
 
       <FormField label="Fee Description" required error={errors.description}>
         <input
+          className={formStyles.input}
           type="text"
           value={description}
           onChange={(e) => {
@@ -84,13 +79,13 @@ export const FeeObligationForm: React.FC<FeeObligationFormProps> = ({
             if (errors.description) setErrors((prev) => ({ ...prev, description: '' }));
           }}
           placeholder="e.g. March 2026 Tuition"
-          style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)' }}
         />
       </FormField>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-3)' }}>
         <FormField label="Amount Due (₹ INR)" required error={errors.amount_due}>
           <input
+            className={formStyles.input}
             type="number"
             min="1"
             step="any"
@@ -100,23 +95,22 @@ export const FeeObligationForm: React.FC<FeeObligationFormProps> = ({
               if (errors.amount_due) setErrors((prev) => ({ ...prev, amount_due: '' }));
             }}
             placeholder="5000"
-            style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)' }}
           />
         </FormField>
         <FormField label="Due Date" required error={errors.due_date}>
           <input
+            className={formStyles.input}
             type="date"
             value={dueDate}
             onChange={(e) => {
               setDueDate(e.target.value);
               if (errors.due_date) setErrors((prev) => ({ ...prev, due_date: '' }));
             }}
-            style={{ width: '100%', padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)' }}
           />
         </FormField>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', marginTop: 'var(--space-4)' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', marginTop: 'var(--space-3)' }}>
         <Button variant="secondary" type="button" onClick={onCancel} disabled={isLoading}>
           Cancel
         </Button>

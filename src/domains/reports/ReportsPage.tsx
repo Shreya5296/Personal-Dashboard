@@ -7,6 +7,7 @@ import { ReportFilters } from './ReportFilters';
 import { ExportAction } from './ExportAction';
 import { formatCurrency } from '../../lib/currencyFormat';
 import { LoadingState } from '../../components/feedback/LoadingState';
+import { PageHeader } from '../../layout/PageHeader';
 
 export const ReportsPage: React.FC = () => {
   usePageTitle('Financial Reports');
@@ -38,36 +39,59 @@ export const ReportsPage: React.FC = () => {
 
   if (loading) return <LoadingState message="Generating financial reports…" />;
 
+  const invoiced = summary?.totalInvoiced || 0;
+  const collected = summary?.totalCollected || 0;
+  const outstanding = summary?.totalOutstanding || 0;
+  const collectionRate = invoiced > 0 ? Math.round((collected / invoiced) * 100) : 100;
+
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+      <PageHeader
+        title="Financial Reports"
+        subtitle="Ledger summary of invoiced fees, verified collections, and pending balances."
+        actions={<ExportAction onExport={handleExport} label="Export Summary CSV" />}
+      />
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
         <ReportFilters filter={filter} onChange={setFilter} />
-        <ExportAction onExport={handleExport} label="Export Summary CSV" />
+        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
+          Collection Rate: <strong style={{ color: 'var(--color-primary)' }}>{collectionRate}%</strong>
+        </span>
       </div>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-        gap: 'var(--space-4)',
-        marginBottom: 'var(--space-6)',
-      }}>
-        <div style={{ padding: 'var(--space-5)', backgroundColor: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)' }}>
-          <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)' }}>Total Invoiced</span>
-          <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, margin: 'var(--space-2) 0' }}>
-            {formatCurrency(summary?.totalInvoiced)}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
+        <div style={{ padding: '1.25rem 1.5rem', backgroundColor: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-xs)' }}>
+          <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', fontWeight: 500 }}>Total Invoiced</span>
+          <div style={{ fontSize: '1.75rem', fontWeight: 700, margin: '6px 0 4px', color: 'var(--color-text-main)', fontVariantNumeric: 'tabular-nums' }}>
+            {formatCurrency(invoiced)}
           </div>
+          <p style={{ margin: 0, fontSize: 'var(--font-size-xs)', color: 'var(--color-text-subtle)' }}>Total cumulative billed tuition</p>
         </div>
-        <div style={{ padding: 'var(--space-5)', backgroundColor: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)' }}>
-          <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)' }}>Total Collected</span>
-          <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, margin: 'var(--space-2) 0', color: 'var(--color-primary)' }}>
-            {formatCurrency(summary?.totalCollected)}
+
+        <div style={{ padding: '1.25rem 1.5rem', backgroundColor: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-xs)' }}>
+          <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', fontWeight: 500 }}>Total Collected</span>
+          <div style={{ fontSize: '1.75rem', fontWeight: 700, margin: '6px 0 4px', color: '#059669', fontVariantNumeric: 'tabular-nums' }}>
+            {formatCurrency(collected)}
           </div>
+          <p style={{ margin: 0, fontSize: 'var(--font-size-xs)', color: 'var(--color-text-subtle)' }}>Actual received bank and UPI credits</p>
         </div>
-        <div style={{ padding: 'var(--space-5)', backgroundColor: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-lg)' }}>
-          <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)' }}>Total Outstanding</span>
-          <div style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, margin: 'var(--space-2) 0', color: 'var(--color-danger)' }}>
-            {formatCurrency(summary?.totalOutstanding)}
+
+        <div style={{ padding: '1.25rem 1.5rem', backgroundColor: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-xs)' }}>
+          <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', fontWeight: 500 }}>Total Outstanding</span>
+          <div style={{ fontSize: '1.75rem', fontWeight: 700, margin: '6px 0 4px', color: outstanding > 0 ? '#dc2626' : 'var(--color-text-main)', fontVariantNumeric: 'tabular-nums' }}>
+            {formatCurrency(outstanding)}
           </div>
+          <p style={{ margin: 0, fontSize: 'var(--font-size-xs)', color: 'var(--color-text-subtle)' }}>Unpaid receivables due for settlement</p>
+        </div>
+      </div>
+
+      <div style={{ backgroundColor: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', padding: '1.25rem 1.5rem', boxShadow: 'var(--shadow-xs)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: 'var(--font-size-xs)', fontWeight: 600 }}>
+          <span>Collection Performance</span>
+          <span>{collectionRate}% Collected</span>
+        </div>
+        <div style={{ height: '8px', width: '100%', backgroundColor: 'var(--color-bg-subtle)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${Math.min(100, collectionRate)}%`, backgroundColor: '#059669', borderRadius: 'var(--radius-full)', transition: 'width 300ms ease' }} />
         </div>
       </div>
     </div>
