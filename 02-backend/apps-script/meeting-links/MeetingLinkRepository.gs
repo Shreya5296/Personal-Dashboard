@@ -1,9 +1,10 @@
 /**
- * MeetingLinkRepository: CRUD persistence for the MeetingLinks sheet.
+ * MeetingLinkRepository: CRUD persistence for the MeetingLinks sheet (Flat 4 columns: student_id, student_name, meeting_link_1, meeting_link_2).
  */
 
 var _mlRowReader = typeof readAllRecords === 'function' ? { readAllRecords: readAllRecords, findRecordById: findRecordById } : (typeof require !== 'undefined' ? require('../sheets/RowReader.gs') : null);
 var _mlRowWriter = typeof appendRecord === 'function' ? { appendRecord: appendRecord, updateRecordById: updateRecordById } : (typeof require !== 'undefined' ? require('../sheets/RowWriter.gs') : null);
+
 function _resolveMlRepoSheetNames() {
   if (typeof SHEET_NAMES !== 'undefined' && SHEET_NAMES) return SHEET_NAMES;
   if (typeof require !== 'undefined') return require('../sheets/SheetRegistry.gs').SHEET_NAMES;
@@ -27,14 +28,18 @@ function MeetingLinks_getAll(spreadsheet) {
   return _mlRowReader.readAllRecords(sheet, _mlMapper);
 }
 
-function MeetingLinks_getById(spreadsheet, id) {
-  var sheet = spreadsheet.getSheetByName(_mlRegistry.SHEET_NAMES.MEETING_LINKS);
-  return _mlRowReader.findRecordById(sheet, _mlMapper, 'meeting_link_id', id);
-}
-
 function MeetingLinks_getByStudentId(spreadsheet, studentId) {
   var all = MeetingLinks_getAll(spreadsheet);
-  return all.filter(function(m) { return m.student_id === studentId; });
+  for (var i = 0; i < all.length; i++) {
+    if (all[i].student_id === studentId) {
+      return all[i];
+    }
+  }
+  return null;
+}
+
+function MeetingLinks_getById(spreadsheet, id) {
+  return MeetingLinks_getByStudentId(spreadsheet, id);
 }
 
 function MeetingLinks_insert(spreadsheet, record) {
@@ -43,10 +48,10 @@ function MeetingLinks_insert(spreadsheet, record) {
   return _mlRowWriter.appendRecord(sheet, _mlMapper, headers, record);
 }
 
-function MeetingLinks_update(spreadsheet, id, updates) {
+function MeetingLinks_update(spreadsheet, studentId, updates) {
   var sheet = spreadsheet.getSheetByName(_mlRegistry.SHEET_NAMES.MEETING_LINKS);
   var headers = _mlRegistry.getExpectedHeaders(_mlRegistry.SHEET_NAMES.MEETING_LINKS);
-  return _mlRowWriter.updateRecordById(sheet, _mlMapper, headers, 'meeting_link_id', id, updates);
+  return _mlRowWriter.updateRecordById(sheet, _mlMapper, headers, 'student_id', studentId, updates);
 }
 
 if (typeof module !== 'undefined' && module.exports) {

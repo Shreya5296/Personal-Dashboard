@@ -38,6 +38,7 @@ SHEET_SCHEMAS[SHEET_NAMES.PACKAGES] = [
   'start_date', 'end_date', 'next_due_date'
 ];
 
+// Preserved for legacy transition fallback; superseded by Payment Details
 SHEET_SCHEMAS[SHEET_NAMES.FEE_OBLIGATIONS] = [
   'fee_obligation_id', 'student_id', 'student_name', 'package_id',
   'obligation_description', 'amount_due', 'credit_applied', 'currency',
@@ -45,31 +46,25 @@ SHEET_SCHEMAS[SHEET_NAMES.FEE_OBLIGATIONS] = [
   'created_at', 'updated_at', 'voided_at', 'void_reason'
 ];
 
+// Table 3: Payment Details (6 columns)
 SHEET_SCHEMAS[SHEET_NAMES.PAYMENTS] = [
-  'payment_id', 'student_id', 'student_name', 'fee_obligation_id',
-  'payment_date', 'amount', 'currency', 'payment_method',
-  'transaction_reference', 'idempotency_key', 'payment_status', 'notes',
-  'created_at', 'updated_at', 'voided_at', 'void_reason'
+  'student_id', 'student_name', 'payment_date', 'amount', 'currency', 'in_inr'
 ];
 
+// Table 4: Class Sessions (8 columns)
 SHEET_SCHEMAS[SHEET_NAMES.CLASS_SESSIONS] = [
-  'class_session_id', 'student_id', 'student_name', 'package_id',
-  'meeting_link_id', 'class_title', 'scheduled_start', 'scheduled_end',
-  'actual_start', 'actual_end', 'session_status', 'attendance_status',
-  'class_credit_effect', 'cancellation_reason',
-  'credit_restoration_for_session_id', 'notes',
-  'created_at', 'updated_at', 'completed_at'
+  'class_session_id', 'student_id', 'scheduled_start', 'scheduled_end',
+  'attendance_status', 'session_status', 'cancellation_reason', 'deduct_class'
 ];
 
+// Table 5: Meeting Links (4 columns)
 SHEET_SCHEMAS[SHEET_NAMES.MEETING_LINKS] = [
-  'meeting_link_id', 'student_id', 'student_name', 'link_label',
-  'meeting_url', 'provider', 'is_preferred', 'link_status',
-  'created_at', 'updated_at'
+  'student_id', 'student_name', 'meeting_link_1', 'meeting_link_2'
 ];
 
+// Table 6: Student Notes (5 columns)
 SHEET_SCHEMAS[SHEET_NAMES.STUDENT_NOTES] = [
-  'note_id', 'student_id', 'note_type', 'note_text', 'follow_up_date',
-  'follow_up_status', 'created_at', 'updated_at', 'created_by'
+  'student_id', 'student_name', 'note_date', 'note_text', 'follow_up_date'
 ];
 
 SHEET_SCHEMAS[SHEET_NAMES.AUDIT_LOG] = [

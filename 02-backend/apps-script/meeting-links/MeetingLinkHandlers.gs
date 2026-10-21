@@ -3,7 +3,7 @@
  */
 
 var _mlSvcH = typeof MeetingLinks_create === 'function' ? { MeetingLinks_create: MeetingLinks_create, MeetingLinks_deactivate: MeetingLinks_deactivate } : (typeof require !== 'undefined' ? require('./MeetingLinkService.gs') : null);
-var _mlRepoH = typeof MeetingLinks_getByStudentId === 'function' ? { MeetingLinks_getByStudentId: MeetingLinks_getByStudentId, MeetingLinks_getAll: MeetingLinks_getAll } : (typeof require !== 'undefined' ? require('./MeetingLinkRepository.gs') : null);
+var _mlRepoH = typeof MeetingLinks_getAll === 'function' ? { MeetingLinks_getAll: MeetingLinks_getAll, MeetingLinks_getByStudentId: MeetingLinks_getByStudentId } : (typeof require !== 'undefined' ? require('./MeetingLinkRepository.gs') : null);
 
 function registerMeetingLinkOperations(router) {
   var reg = router && router.registerOperation ? router.registerOperation : (typeof registerOperation === 'function' ? registerOperation : null);
@@ -11,29 +11,41 @@ function registerMeetingLinkOperations(router) {
 
   reg('meetingLinks.list', function(ctx) {
     var studentId = ctx.payload && (ctx.payload.studentId || ctx.payload.student_id);
-    var data = studentId
-      ? _mlRepoH.MeetingLinks_getByStudentId(ctx.spreadsheet, studentId)
-      : _mlRepoH.MeetingLinks_getAll(ctx.spreadsheet);
-    return { success: true, data: data };
+    var all = _mlRepoH.MeetingLinks_getAll(ctx.spreadsheet);
+
+    var filtered = all.filter(function(m) {
+      if (studentId && m.student_id !== studentId) return false;
+      return true;
+    }).map(function(m) {
+      var copy = Object.assign({}, m);
+      copy.meeting_link_id = 'ml_' + m.student_id;
+      copy.meeting_url = m.meeting_link_1 || m.meeting_link_2 || '';
+      copy.link_label = 'Primary Link';
+      copy.provider = 'Google Meet';
+      copy.is_preferred = true;
+      copy.link_status = 'ACTIVE';
+      return copy;
+    });
+
+    return { success: true, data: filtered };
   });
 
   reg('meetingLinks.create', function(ctx) {
     return _mlSvcH.MeetingLinks_create(ctx.spreadsheet, ctx.payload, {
-      actorId: ctx.actorId,
-      email: ctx.verifiedEmail,
-      requestId: ctx.requestId
+      actorId: ctx.actorId, email: ctx.verifiedEmail, requestId: ctx.requestId
+    });
+  });
+
+  reg('meetingLinks.update', function(ctx) {
+    return _mlSvcH.MeetingLinks_create(ctx.spreadsheet, ctx.payload, {
+      actorId: ctx.actorId, email: ctx.verifiedEmail, requestId: ctx.requestId
     });
   });
 
   reg('meetingLinks.deactivate', function(ctx) {
-    var mid = ctx.payload && (ctx.payload.meetingLinkId || ctx.payload.meeting_link_id);
-    if (!mid) {
-      return { success: false, code: 'VALIDATION_ERROR', message: 'Missing meetingLinkId' };
-    }
-    return _mlSvcH.MeetingLinks_deactivate(ctx.spreadsheet, mid, {
-      actorId: ctx.actorId,
-      email: ctx.verifiedEmail,
-      requestId: ctx.requestId
+    var id = ctx.payload && (ctx.payload.meetingLinkId || ctx.payload.meeting_link_id || ctx.payload.id || ctx.payload.student_id);
+    return _mlSvcH.MeetingLinks_deactivate(ctx.spreadsheet, id, {
+      actorId: ctx.actorId, email: ctx.verifiedEmail, requestId: ctx.requestId
     });
   });
 }

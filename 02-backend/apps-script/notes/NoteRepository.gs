@@ -1,9 +1,10 @@
 /**
- * NoteRepository: CRUD persistence for the StudentNotes sheet.
+ * NoteRepository: CRUD persistence for the StudentNotes sheet (5 columns: student_id, student_name, note_date, note_text, follow_up_date).
  */
 
 var _noteRowReader = typeof readAllRecords === 'function' ? { readAllRecords: readAllRecords, findRecordById: findRecordById } : (typeof require !== 'undefined' ? require('../sheets/RowReader.gs') : null);
 var _noteRowWriter = typeof appendRecord === 'function' ? { appendRecord: appendRecord, updateRecordById: updateRecordById } : (typeof require !== 'undefined' ? require('../sheets/RowWriter.gs') : null);
+
 function _resolveNoteRepoSheetNames() {
   if (typeof SHEET_NAMES !== 'undefined' && SHEET_NAMES) return SHEET_NAMES;
   if (typeof require !== 'undefined') return require('../sheets/SheetRegistry.gs').SHEET_NAMES;
@@ -27,14 +28,21 @@ function Notes_getAll(spreadsheet) {
   return _noteRowReader.readAllRecords(sheet, _noteMapper);
 }
 
-function Notes_getById(spreadsheet, id) {
-  var sheet = spreadsheet.getSheetByName(_noteRegistry.SHEET_NAMES.STUDENT_NOTES);
-  return _noteRowReader.findRecordById(sheet, _noteMapper, 'note_id', id);
-}
-
 function Notes_getByStudentId(spreadsheet, studentId) {
   var all = Notes_getAll(spreadsheet);
   return all.filter(function(n) { return n.student_id === studentId; });
+}
+
+function Notes_getById(spreadsheet, id) {
+  var all = Notes_getAll(spreadsheet);
+  for (var i = 0; i < all.length; i++) {
+    var n = all[i];
+    var synId = n.note_id || (n.student_id + '_' + (n.note_date || ''));
+    if (synId === id || n.note_id === id) {
+      return n;
+    }
+  }
+  return null;
 }
 
 function Notes_insert(spreadsheet, record) {
@@ -46,7 +54,7 @@ function Notes_insert(spreadsheet, record) {
 function Notes_update(spreadsheet, id, updates) {
   var sheet = spreadsheet.getSheetByName(_noteRegistry.SHEET_NAMES.STUDENT_NOTES);
   var headers = _noteRegistry.getExpectedHeaders(_noteRegistry.SHEET_NAMES.STUDENT_NOTES);
-  return _noteRowWriter.updateRecordById(sheet, _noteMapper, headers, 'note_id', id, updates);
+  return _noteRowWriter.updateRecordById(sheet, _noteMapper, headers, 'student_id', id, updates);
 }
 
 if (typeof module !== 'undefined' && module.exports) {

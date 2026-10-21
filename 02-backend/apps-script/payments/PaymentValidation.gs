@@ -1,31 +1,17 @@
 /**
- * PaymentValidation: Validates payment recording, idempotency keys, and voiding.
+ * PaymentValidation: Validates payment recording for Payment Details (6-column schema).
  */
 
 function validatePaymentRecordInput(data) {
   var errors = {};
 
-  if (!data.student_id || !String(data.student_id).trim()) {
+  if (!data || !data.student_id || !String(data.student_id).trim()) {
     errors.student_id = 'Student ID is required';
   }
 
-  var feeId = data.fee_obligation_id || data.fee_id || data.feeId;
-  if (!feeId || !String(feeId).trim()) {
-    errors.fee_obligation_id = 'Fee obligation ID is required for every payment in V1';
-  }
-
-  var amount = Number(data.amount);
+  var amount = Number(data ? data.amount : NaN);
   if (isNaN(amount) || amount <= 0) {
     errors.amount = 'Payment amount must be greater than zero';
-  }
-
-  var allowedMethods = ['UPI', 'BANK_TRANSFER', 'CASH', 'CARD', 'OTHER'];
-  if (!data.payment_method || allowedMethods.indexOf(data.payment_method) === -1) {
-    errors.payment_method = 'Payment method must be one of: ' + allowedMethods.join(', ');
-  }
-
-  if (!data.idempotency_key || !String(data.idempotency_key).trim()) {
-    errors.idempotency_key = 'Idempotency key is required to record a payment';
   }
 
   return {
@@ -36,11 +22,8 @@ function validatePaymentRecordInput(data) {
 
 function validatePaymentVoidInput(data) {
   var errors = {};
-  var payId = data.payment_id || data.paymentId;
-  if (!payId) errors.payment_id = 'Payment ID is required';
-  if (!data.void_reason || !String(data.void_reason).trim()) {
-    errors.void_reason = 'A valid void reason is required';
-  }
+  var payId = data ? (data.payment_id || data.paymentId || data.id) : null;
+  if (!payId) errors.payment_id = 'Payment ID or reference is required';
   return {
     valid: Object.keys(errors).length === 0,
     errors: errors

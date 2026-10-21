@@ -1,30 +1,19 @@
 /**
- * MeetingLinkValidation: Validates URL schemes, providers, and labels.
+ * MeetingLinkValidation: Validates meeting links for flat 4-column schema.
  */
 
 function validateMeetingLinkInput(data) {
   var errors = {};
 
-  if (!data.student_id || !String(data.student_id).trim()) {
+  if (!data || !data.student_id || !String(data.student_id).trim()) {
     errors.student_id = 'Student ID is required';
   }
 
-  var allowedProviders = ['ZOOM', 'GOOGLE_MEET', 'OTHER'];
-  if (!data.provider || allowedProviders.indexOf(data.provider) === -1) {
-    errors.provider = 'Provider must be ZOOM, GOOGLE_MEET, or OTHER';
-  }
+  var l1 = data ? (data.meeting_link_1 || data.meeting_url || data.link1) : null;
+  var l2 = data ? (data.meeting_link_2 || data.link2) : null;
 
-  if (!data.link_label || !String(data.link_label).trim()) {
-    errors.link_label = 'Link label is required';
-  }
-
-  if (!data.meeting_url || typeof data.meeting_url !== 'string') {
-    errors.meeting_url = 'Meeting URL is required';
-  } else {
-    var trimmedUrl = data.meeting_url.trim();
-    if (trimmedUrl.indexOf('https://') !== 0) {
-      errors.meeting_url = 'Meeting URL must use HTTPS protocol';
-    }
+  if (!l1 && !l2) {
+    errors.meeting_link = 'At least one meeting link is required';
   }
 
   return {
@@ -34,5 +23,7 @@ function validateMeetingLinkInput(data) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { validateMeetingLinkInput: validateMeetingLinkInput };
+  module.exports = {
+    validateMeetingLinkInput: validateMeetingLinkInput
+  };
 }

@@ -159,7 +159,7 @@ describe('Backend Operation Adapters and Compatibility', () => {
     expect(payRes.data.amount).toBe(2000);
 
     const payList = registry['payments.list']({ spreadsheet, payload: { studentId } });
-    expect(payList.data[0].reference_number).toBe('UPI_REF_999');
+    expect(payList.data[0].amount).toBe(2000);
     expect(payList.data[0].status).toBe('RECORDED');
   });
 
@@ -191,7 +191,6 @@ describe('Backend Operation Adapters and Compatibility', () => {
     expect(schedRes.data.scheduled_end).toBe('2026-10-25T11:00:00.000Z');
 
     const listRes = registry['classes.list']({ spreadsheet, payload: { studentId } });
-    expect(listRes.data[0].topic).toBe('Algebra Session 1');
     expect(listRes.data[0].session_id).toBe(schedRes.data.class_session_id);
     expect(listRes.data[0].duration_minutes).toBe(60);
 

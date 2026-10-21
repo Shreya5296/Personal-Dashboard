@@ -1,5 +1,5 @@
 /**
- * NoteService: Business logic and audit integration for student notes.
+ * NoteService: Business logic and audit integration for student notes (5 columns: student_id, student_name, note_date, note_text, follow_up_date).
  */
 
 var _noteIdGen = typeof generateNoteId === 'function' ? { generateNoteId: generateNoteId } : (typeof require !== 'undefined' ? require('../shared/IdGenerator.gs') : null);
@@ -24,37 +24,40 @@ function Notes_create(spreadsheet, data, actor) {
   }
 
   var student = _noteStuRepo.Students_getById(spreadsheet, data.student_id);
-  if (!student) {
-    return { success: false, code: 'RECORD_NOT_FOUND', message: 'Student not found: ' + data.student_id };
-  }
-
+  var studentName = data.student_name || (student ? (student.student_name || student.full_name || '') : '');
   var now = new Date().toISOString();
-  var id = _noteIdGen.generateNoteId();
+
   var record = {
-    note_id: id,
-    student_id: data.student_id,
-    note_type: data.note_type || 'GENERAL',
+    student_id: String(data.student_id).trim(),
+    student_name: studentName,
+    note_date: data.note_date || now.split('T')[0],
     note_text: String(data.note_text || data.content).trim(),
-    follow_up_date: data.follow_up_date || '',
-    follow_up_status: data.follow_up_status || 'NOT_REQUIRED',
-    created_at: now,
-    updated_at: now,
-    created_by: actor.actorId || 'admin'
+    follow_up_date: data.follow_up_date || ''
   };
 
   _noteRepo.Notes_insert(spreadsheet, record);
 
-  _noteAudit.recordAuditEvent(spreadsheet, _noteReg, _noteMap, {
-    actor_id: actor.actorId,
-    actor_email: actor.email,
-    entity_type: 'STUDENT_NOTE',
-    entity_id: id,
-    action: 'CREATE',
-    after_summary: { note_id: id, student_id: data.student_id, note_type: record.note_type },
-    request_id: actor.requestId
+  var noteId = _noteIdGen ? _noteIdGen.generateNoteId() : ('note_' + Date.now());
+
+  if (_noteAudit && _noteAudit.recordAuditEvent) {
+    _noteAudit.recordAuditEvent(spreadsheet, _noteReg, _noteMap, {
+      actor_id: actor ? actor.actorId : 'SYSTEM',
+      actor_email: actor ? actor.email : '',
+      entity_type: 'STUDENT_NOTE',
+      entity_id: noteId,
+      action: 'CREATE',
+      after_summary: { student_id: data.student_id, note_date: record.note_date },
+      request_id: actor ? actor.requestId : ''
+    });
+  }
+
+  var returnData = Object.assign({}, record, {
+    note_id: noteId,
+    content: record.note_text,
+    note_type: data.note_type || 'GENERAL'
   });
 
-  return { success: true, data: record };
+  return { success: true, data: returnData };
 }
 
 if (typeof module !== 'undefined' && module.exports) {

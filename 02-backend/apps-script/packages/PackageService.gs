@@ -78,27 +78,64 @@ function Packages_create(spreadsheet, data, actor) {
 function Packages_enrichWithBalance(spreadsheet, pkgRecord) {
   var sessionSheet = spreadsheet.getSheetByName(_pkgReg.SHEET_NAMES.CLASS_SESSIONS);
   var sessions = _pkgSvcRowReader.readAllRecords(sessionSheet, _pkgMap);
+  var metaMap = (typeof globalThis !== 'undefined' && globalThis.__sessionMetaMap) ? globalThis.__sessionMetaMap : {};
 
   var consumed = 0;
-  var restored = 0;
+  var hasExplicitPkg = false;
 
   for (var i = 0; i < sessions.length; i++) {
     var s = sessions[i];
-    if (s.package_id === pkgRecord.package_id) {
-      if (s.class_credit_effect === 'CONSUME') {
-        consumed++;
-      } else if (s.class_credit_effect === 'CREDIT_BACK') {
-        restored++;
+    var pkgId = s.package_id || (metaMap[s.class_session_id] ? metaMap[s.class_session_id].package_id : '');
+    if (pkgId) {
+      hasExplicitPkg = true;
+      if (pkgId === pkgRecord.package_id) {
+        if (s.deduct_class === true || s.deduct_class === 'TRUE' || s.deduct_class === 'true' || s.class_credit_effect === 'CONSUME') {
+          consumed++;
+        }
       }
     }
   }
 
-  var netConsumed = Math.max(0, consumed - restored);
+  if (!hasExplicitPkg) {
+    var pkgSheet = spreadsheet.getSheetByName(_pkgReg.SHEET_NAMES.PACKAGES);
+    var allPackages = pkgSheet ? _pkgSvcRowReader.readAllRecords(pkgSheet, _pkgMap) : [pkgRecord];
+    var studentPackages = allPackages.filter(function(p) { return p.student_id === pkgRecord.student_id; });
+
+    studentPackages.sort(function(a, b) {
+      var da = a.start_date || a.package_id;
+      var db = b.start_date || b.package_id;
+      return da < db ? -1 : (da > db ? 1 : 0);
+    });
+
+    var totalStudentConsumed = 0;
+    for (var j = 0; j < sessions.length; j++) {
+      var sj = sessions[j];
+      if (sj.student_id === pkgRecord.student_id) {
+        if (sj.deduct_class === true || sj.deduct_class === 'TRUE' || sj.deduct_class === 'true' || sj.class_credit_effect === 'CONSUME') {
+          totalStudentConsumed++;
+        }
+      }
+    }
+
+    var remainingToDeduct = totalStudentConsumed;
+    for (var k = 0; k < studentPackages.length; k++) {
+      var sp = studentPackages[k];
+      var spPurchased = Number(sp.classes_purchased !== undefined ? sp.classes_purchased : sp.purchased_classes) || 0;
+      var allocated = Math.min(remainingToDeduct, spPurchased);
+      if (sp.package_id === pkgRecord.package_id) {
+        consumed = allocated;
+        break;
+      }
+      remainingToDeduct = Math.max(0, remainingToDeduct - allocated);
+    }
+  }
+
   var purchased = Number(pkgRecord.classes_purchased !== undefined ? pkgRecord.classes_purchased : pkgRecord.purchased_classes) || 0;
-  var remaining = Math.max(0, purchased - netConsumed);
+  var remaining = Math.max(0, purchased - consumed);
 
   var enriched = Object.assign({}, pkgRecord);
-  enriched.consumed_classes = netConsumed;
+  enriched.consumed_classes = consumed;
+  enriched.classes_consumed = consumed;
   enriched.remaining_classes = remaining;
   enriched.is_exhausted = remaining <= 0;
   enriched.classes_purchased = purchased;

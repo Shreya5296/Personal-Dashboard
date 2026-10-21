@@ -16,6 +16,7 @@ function registerNoteOperations(router) {
       : _noteRepoH.Notes_getAll(ctx.spreadsheet);
     var enriched = data.map(function(n) {
       var copy = Object.assign({}, n);
+      copy.note_id = n.note_id || (n.student_id + '_' + (n.note_date || ''));
       copy.content = n.note_text;
       return copy;
     });

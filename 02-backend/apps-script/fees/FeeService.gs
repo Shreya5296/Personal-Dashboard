@@ -8,6 +8,7 @@ var _feeRepo = typeof FeeObligations_getAll === 'function' ? { FeeObligations_ge
 var _feeStuRepo = typeof Students_getById === 'function' ? { Students_getById: Students_getById } : (typeof require !== 'undefined' ? require('../students/StudentRepository.gs') : null);
 var _feeAudit = typeof recordAuditEvent === 'function' ? { recordAuditEvent: recordAuditEvent } : (typeof require !== 'undefined' ? require('../audit/AuditService.gs') : null);
 var _feeLock = typeof withLock === 'function' ? { withLock: withLock } : (typeof require !== 'undefined' ? require('../sheets/LockManager.gs') : null);
+var _feePaySvc = typeof Payments_isVoid === 'function' ? { Payments_isVoid: Payments_isVoid } : (typeof require !== 'undefined' ? require('../payments/PaymentService.gs') : null);
 var _feeReg = {
   get SHEET_NAMES() {
     return (typeof SHEET_NAMES !== 'undefined' && SHEET_NAMES) || (typeof require !== 'undefined' ? require('../sheets/SheetRegistry.gs').SHEET_NAMES : {});
@@ -130,12 +131,49 @@ function FeeObligations_void(spreadsheet, data, actor) {
 function FeeObligations_enrichWithBalances(spreadsheet, feeRecord) {
   var paySheet = spreadsheet.getSheetByName(_feeReg.SHEET_NAMES.PAYMENTS);
   var payments = _feeSvcRowReader.readAllRecords(paySheet, _feeMap);
+  var memCache = (typeof globalThis !== 'undefined' && globalThis.__paymentMemoryCache) ? globalThis.__paymentMemoryCache : {};
 
   var rawPaid = 0;
+  var hasExplicitFeeMatching = false;
   for (var i = 0; i < payments.length; i++) {
     var p = payments[i];
-    if (p.fee_obligation_id === feeRecord.fee_obligation_id && p.payment_status !== 'VOID') {
-      rawPaid += Number(p.amount) || 0;
+    var synId = p.payment_id || (p.student_id + '_' + (p.payment_date || '') + '_' + (p.amount || ''));
+    var cached = memCache[synId] || (p.payment_id ? memCache[p.payment_id] : null);
+    var feeId = (p.fee_obligation_id || (cached ? cached.fee_obligation_id : ''));
+    if (feeId) {
+      hasExplicitFeeMatching = true;
+      if (feeId === feeRecord.fee_obligation_id) {
+        var isVoid = (p.payment_status === 'VOID' || p.status === 'VOID' || (_feePaySvc && _feePaySvc.Payments_isVoid && (_feePaySvc.Payments_isVoid(synId) || _feePaySvc.Payments_isVoid(p.payment_id))));
+        if (!isVoid) rawPaid += Number(p.amount) || 0;
+      }
+    }
+  }
+
+  if (!hasExplicitFeeMatching) {
+    var allFeesSheet = spreadsheet.getSheetByName('FeeObligations');
+    var allFees = allFeesSheet ? _feeSvcRowReader.readAllRecords(allFeesSheet, _feeMap) : [feeRecord];
+    var studentFees = allFees.filter(function(f) { return f.student_id === feeRecord.student_id && f.obligation_status !== 'VOID'; });
+
+    var totalStudentPaid = 0;
+    for (var j = 0; j < payments.length; j++) {
+      var pj = payments[j];
+      var pjId = pj.payment_id || (pj.student_id + '_' + (pj.payment_date || '') + '_' + (pj.amount || ''));
+      var isVoidPj = (pj.payment_status === 'VOID' || pj.status === 'VOID' || (_feePaySvc && _feePaySvc.Payments_isVoid && (_feePaySvc.Payments_isVoid(pjId) || _feePaySvc.Payments_isVoid(pj.payment_id))));
+      if (pj.student_id === feeRecord.student_id && !isVoidPj) {
+        totalStudentPaid += Number(pj.amount) || 0;
+      }
+    }
+
+    var remainingPaid = totalStudentPaid;
+    for (var k = 0; k < studentFees.length; k++) {
+      var sf = studentFees[k];
+      var sfNet = Math.max(0, (Number(sf.amount_due) || 0) - (Number(sf.credit_applied) || 0));
+      var alloc = Math.min(remainingPaid, sfNet);
+      if (sf.fee_obligation_id === feeRecord.fee_obligation_id) {
+        rawPaid = alloc;
+        break;
+      }
+      remainingPaid = Math.max(0, remainingPaid - alloc);
     }
   }
 

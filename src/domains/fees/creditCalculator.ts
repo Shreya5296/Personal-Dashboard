@@ -16,12 +16,14 @@ export function calculateStudentCredits(
 ): CurrencyCreditSummary[] {
   const activeFees = fees.filter(
     (f) =>
+      Boolean(f) &&
       (!studentId || f.student_id === studentId) &&
       f.status !== 'VOID' &&
       (f as unknown as { obligation_status?: string }).obligation_status !== 'VOID'
   );
   const activePayments = payments.filter(
     (p) =>
+      Boolean(p) &&
       (!studentId || p.student_id === studentId) &&
       p.status !== 'VOID' &&
       (p as unknown as { payment_status?: string }).payment_status !== 'VOID'

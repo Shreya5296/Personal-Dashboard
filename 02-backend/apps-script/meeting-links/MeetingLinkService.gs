@@ -1,5 +1,5 @@
 /**
- * MeetingLinkService: Enforces preferred link uniqueness, safe URLs, and lifecycle.
+ * MeetingLinkService: Business rules for Meeting Links (Flat 4-column schema: student_id, student_name, meeting_link_1, meeting_link_2).
  */
 
 var _mlIdGen = typeof generateMeetingLinkId === 'function' ? { generateMeetingLinkId: generateMeetingLinkId } : (typeof require !== 'undefined' ? require('../shared/IdGenerator.gs') : null);
@@ -24,54 +24,50 @@ function MeetingLinks_create(spreadsheet, data, actor) {
   }
 
   var student = _mlStuRepo.Students_getById(spreadsheet, data.student_id);
-  if (!student) {
-    return { success: false, code: 'RECORD_NOT_FOUND', message: 'Student not found: ' + data.student_id };
-  }
+  var studentName = data.student_name || (student ? (student.student_name || student.full_name || '') : '');
 
-  var isPreferred = Boolean(data.is_preferred);
+  var l1 = data.meeting_link_1 !== undefined ? String(data.meeting_link_1).trim() : (data.meeting_url ? String(data.meeting_url).trim() : '');
+  var l2 = data.meeting_link_2 !== undefined ? String(data.meeting_link_2).trim() : '';
 
-  // If marked preferred, unmark previous preferred links for this student
-  if (isPreferred) {
-    var studentLinks = _mlRepo.MeetingLinks_getByStudentId(spreadsheet, data.student_id);
-    for (var i = 0; i < studentLinks.length; i++) {
-      if (studentLinks[i].is_preferred && studentLinks[i].link_status === 'ACTIVE') {
-        _mlRepo.MeetingLinks_update(spreadsheet, studentLinks[i].meeting_link_id, {
-          is_preferred: false,
-          updated_at: new Date().toISOString()
-        });
-      }
-    }
-  }
+  var existing = _mlRepo.MeetingLinks_getByStudentId(spreadsheet, data.student_id);
 
-  var now = new Date().toISOString();
-  var id = _mlIdGen.generateMeetingLinkId();
-  var studentName = data.student_name || student.student_name || student.full_name || (student.first_name ? (student.first_name + ' ' + (student.last_name || '')).trim() : '');
   var record = {
-    meeting_link_id: id,
     student_id: data.student_id,
     student_name: studentName,
-    link_label: String(data.link_label).trim(),
-    meeting_url: String(data.meeting_url).trim(),
-    provider: data.provider || 'Google Meet',
-    is_preferred: isPreferred,
-    link_status: 'ACTIVE',
-    created_at: now,
-    updated_at: now
+    meeting_link_1: l1 || (existing ? existing.meeting_link_1 : ''),
+    meeting_link_2: l2 || (existing ? existing.meeting_link_2 : '')
   };
 
-  _mlRepo.MeetingLinks_insert(spreadsheet, record);
+  if (existing) {
+    _mlRepo.MeetingLinks_update(spreadsheet, data.student_id, record);
+  } else {
+    _mlRepo.MeetingLinks_insert(spreadsheet, record);
+  }
 
-  _mlAudit.recordAuditEvent(spreadsheet, _mlReg, _mlMap, {
-    actor_id: actor.actorId,
-    actor_email: actor.email,
-    entity_type: 'MEETING_LINK',
-    entity_id: id,
-    action: 'CREATE',
-    after_summary: { meeting_link_id: id, student_id: data.student_id, provider: data.provider },
-    request_id: actor.requestId
+  var linkId = _mlIdGen ? _mlIdGen.generateMeetingLinkId() : ('ml_' + data.student_id);
+
+  if (_mlAudit && _mlAudit.recordAuditEvent) {
+    _mlAudit.recordAuditEvent(spreadsheet, _mlReg, _mlMap, {
+      actor_id: actor ? actor.actorId : 'SYSTEM',
+      actor_email: actor ? actor.email : '',
+      entity_type: 'MEETING_LINK',
+      entity_id: data.student_id,
+      action: existing ? 'UPDATE' : 'CREATE',
+      after_summary: { student_id: data.student_id, link1: record.meeting_link_1, link2: record.meeting_link_2 },
+      request_id: actor ? actor.requestId : ''
+    });
+  }
+
+  var returnData = Object.assign({}, record, {
+    meeting_link_id: linkId,
+    meeting_url: record.meeting_link_1,
+    link_label: 'Primary Link',
+    provider: 'Google Meet',
+    is_preferred: true,
+    link_status: 'ACTIVE'
   });
 
-  return { success: true, data: record };
+  return { success: true, data: returnData };
 }
 
 function MeetingLinks_deactivate(spreadsheet, linkId, actor) {
@@ -79,23 +75,10 @@ function MeetingLinks_deactivate(spreadsheet, linkId, actor) {
   if (!existing) {
     return { success: false, code: 'RECORD_NOT_FOUND', message: 'Meeting link not found: ' + linkId };
   }
-  var now = new Date().toISOString();
-  var updated = _mlRepo.MeetingLinks_update(spreadsheet, linkId, {
-    link_status: 'INACTIVE',
-    is_preferred: false,
-    deactivated_at: now,
-    updated_at: now
-  });
 
-  _mlAudit.recordAuditEvent(spreadsheet, _mlReg, _mlMap, {
-    actor_id: actor.actorId,
-    actor_email: actor.email,
-    entity_type: 'MEETING_LINK',
-    entity_id: linkId,
-    action: 'DEACTIVATE',
-    before_summary: { link_status: existing.link_status },
-    after_summary: { link_status: 'INACTIVE', deactivated_at: now },
-    request_id: actor.requestId
+  var updated = _mlRepo.MeetingLinks_update(spreadsheet, existing.student_id, {
+    meeting_link_1: '',
+    meeting_link_2: ''
   });
 
   return { success: true, data: updated };

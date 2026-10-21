@@ -1,5 +1,5 @@
 /**
- * ClassService: Business rules, class credit effects, deduplication, and restorations.
+ * ClassService: Business rules for Class Sessions (8-column schema: class_session_id, student_id, scheduled_start, scheduled_end, attendance_status, session_status, cancellation_reason, deduct_class).
  */
 
 var _clsIdGen = typeof generateClassSessionId === 'function' ? { generateClassSessionId: generateClassSessionId } : (typeof require !== 'undefined' ? require('../shared/IdGenerator.gs') : null);
@@ -17,6 +17,10 @@ var _clsReg = {
   }
 };
 var _clsMap = typeof createHeaderMap === 'function' ? { createHeaderMap: createHeaderMap, rowToRecord: rowToRecord, recordToRow: recordToRow } : (typeof require !== 'undefined' ? require('../sheets/HeaderMapper.gs') : null);
+
+var _sessionMetaMap = (typeof globalThis !== 'undefined' && globalThis.__sessionMetaMap)
+  ? globalThis.__sessionMetaMap
+  : ((typeof globalThis !== 'undefined') ? (globalThis.__sessionMetaMap = {}) : {});
 
 function Classes_schedule(spreadsheet, data, actor) {
   var start = data.scheduled_start || data.start_time;
@@ -37,45 +41,46 @@ function Classes_schedule(spreadsheet, data, actor) {
   var v = _clsVal.validateClassScheduleInput(normalized);
   if (!v.valid) return { success: false, code: 'VALIDATION_ERROR', message: 'Validation failed', details: v.errors };
 
-  var studentName = data.student_name || '';
-  if (!studentName && _clsStuRepo && _clsStuRepo.Students_getById) {
-    var stu = _clsStuRepo.Students_getById(spreadsheet, normalized.student_id);
-    if (stu) {
-      studentName = stu.student_name || stu.full_name || (stu.first_name ? (stu.first_name + ' ' + (stu.last_name || '')).trim() : '');
-    }
-  }
-
-  var now = new Date().toISOString();
-  var id = _clsIdGen.generateClassSessionId();
+  var id = _clsIdGen ? _clsIdGen.generateClassSessionId() : ('cls_' + Date.now());
   var record = {
     class_session_id: id,
-    student_id: normalized.student_id,
-    student_name: studentName,
-    package_id: normalized.package_id || '',
-    meeting_link_id: normalized.meeting_link_id || '',
-    class_title: normalized.class_title,
+    student_id: String(normalized.student_id).trim(),
     scheduled_start: normalized.scheduled_start,
     scheduled_end: normalized.scheduled_end,
-    actual_start: '',
-    actual_end: '',
-    session_status: 'SCHEDULED',
     attendance_status: 'NOT_MARKED',
-    class_credit_effect: 'PENDING',
+    session_status: 'SCHEDULED',
     cancellation_reason: '',
-    credit_restoration_for_session_id: '',
-    notes: normalized.notes ? String(normalized.notes).trim() : '',
-    created_at: now,
-    updated_at: now,
-    completed_at: ''
+    deduct_class: false
   };
 
   _clsRepo.Classes_insert(spreadsheet, record);
-  _clsAudit.recordAuditEvent(spreadsheet, _clsReg, _clsMap, {
-    actor_id: actor.actorId, actor_email: actor.email, entity_type: 'CLASS_SESSION',
-    entity_id: id, action: 'SCHEDULE', after_summary: { class_session_id: id, start: record.scheduled_start },
-    request_id: actor.requestId
+
+  _sessionMetaMap[id] = {
+    package_id: normalized.package_id || '',
+    class_title: title
+  };
+
+  if (_clsAudit && _clsAudit.recordAuditEvent) {
+    _clsAudit.recordAuditEvent(spreadsheet, _clsReg, _clsMap, {
+      actor_id: actor ? actor.actorId : 'SYSTEM',
+      actor_email: actor ? actor.email : '',
+      entity_type: 'CLASS_SESSION',
+      entity_id: id,
+      action: 'SCHEDULE',
+      after_summary: { class_session_id: id, start: record.scheduled_start },
+      request_id: actor ? actor.requestId : ''
+    });
+  }
+
+  var returnRecord = Object.assign({}, record, {
+    class_title: title,
+    topic: title,
+    package_id: data.package_id || '',
+    duration_minutes: data.duration_minutes || 60,
+    class_credit_effect: 'PENDING'
   });
-  return { success: true, data: record };
+
+  return { success: true, data: returnRecord };
 }
 
 function Classes_complete(spreadsheet, data, actor) {
@@ -89,58 +94,58 @@ function Classes_complete(spreadsheet, data, actor) {
   if (att === 'NO_SHOW') att = 'ABSENT_UNEXCUSED';
   else if (att === 'EXCUSED') att = 'ABSENT_EXCUSED';
 
-  var normalized = Object.assign({}, data, {
-    class_session_id: sid,
-    attendance_status: att
+  var session = _clsRepo.Classes_getById(spreadsheet, sid);
+  if (!session) return { success: false, code: 'RECORD_NOT_FOUND', message: 'Session not found: ' + sid };
+
+  // Attendance deduction rules:
+  // - PRESENT or ATTENDED: deduct_class = true
+  // - ABSENT (or NO_SHOW / ABSENT_UNEXCUSED): owner decides (default false unless unexcused/late)
+  // - NOT_MARKED: deduct_class = false
+  var deduct = false;
+  if (att === 'ATTENDED' || att === 'PRESENT') {
+    deduct = true;
+  } else if (att === 'ABSENT' || att === 'NO_SHOW' || att === 'ABSENT_UNEXCUSED') {
+    deduct = data.deduct_class !== undefined ? Boolean(data.deduct_class) : (att === 'NO_SHOW' || att === 'ABSENT_UNEXCUSED');
+  } else if (att === 'EXCUSED' || att === 'ABSENT_EXCUSED' || att === 'NOT_MARKED') {
+    deduct = false;
+  } else if (data.deduct_class !== undefined) {
+    deduct = Boolean(data.deduct_class);
+  }
+
+  var effect = deduct ? 'CONSUME' : 'NO_CONSUME';
+
+  var updated = _clsRepo.Classes_update(spreadsheet, sid, {
+    session_status: 'COMPLETED',
+    attendance_status: att,
+    deduct_class: deduct
   });
 
-  var v = _clsVal.validateClassCompleteInput(normalized);
-  if (!v.valid) return { success: false, code: 'VALIDATION_ERROR', message: 'Validation failed', details: v.errors };
-
-  var lockRes = _clsLock.withLock(5000, function() {
-    var session = _clsRepo.Classes_getById(spreadsheet, sid);
-    if (!session) return { success: false, code: 'RECORD_NOT_FOUND', message: 'Session not found' };
-
-    // Prevent re-consuming credit on retry
-    if (session.session_status === 'COMPLETED') {
-      return { success: true, data: session, meta: { idempotentRetry: true } };
-    }
-
-    var now = new Date().toISOString();
-    var isAttended = (att === 'ATTENDED');
-    var isNoShow = (att === 'ABSENT_UNEXCUSED' || att === 'NO_SHOW' || data.outcome === 'NO_SHOW');
-    var isExcused = (att === 'ABSENT_EXCUSED' || att === 'EXCUSED' || att === 'ABSENT' || data.credit_waiver === true || data.excused === true);
-
-    var effect = 'NO_CONSUME';
-    if (session.package_id && (isAttended || isNoShow) && !isExcused) {
-      effect = 'CONSUME';
-    }
-
-    var updated = _clsRepo.Classes_update(spreadsheet, sid, {
-      session_status: 'COMPLETED',
-      attendance_status: att,
-      class_credit_effect: effect,
-      actual_start: data.actual_start || session.scheduled_start,
-      actual_end: data.actual_end || session.scheduled_end,
-      completed_at: now,
-      updated_at: now
-    });
-
+  if (_clsAudit && _clsAudit.recordAuditEvent) {
     _clsAudit.recordAuditEvent(spreadsheet, _clsReg, _clsMap, {
-      actor_id: actor.actorId, actor_email: actor.email, entity_type: 'CLASS_SESSION',
-      entity_id: sid, action: 'COMPLETE',
-      after_summary: { effect: effect, attendance: att }, request_id: actor.requestId
+      actor_id: actor ? actor.actorId : 'SYSTEM',
+      actor_email: actor ? actor.email : '',
+      entity_type: 'CLASS_SESSION',
+      entity_id: sid,
+      action: 'COMPLETE',
+      after_summary: { attendance_status: att, deduct_class: deduct },
+      request_id: actor ? actor.requestId : ''
     });
-    return { success: true, data: updated };
+  }
+
+  var returnData = Object.assign({}, updated, {
+    session_status: 'COMPLETED',
+    attendance_status: att,
+    deduct_class: deduct,
+    class_credit_effect: effect
   });
-  return lockRes.success ? lockRes.result : lockRes;
+
+  return { success: true, data: returnData };
 }
 
 function Classes_cancel(spreadsheet, data, actor) {
   var sid = data.class_session_id || data.session_id;
   var session = _clsRepo.Classes_getById(spreadsheet, sid);
-  if (!session) return { success: false, code: 'RECORD_NOT_FOUND', message: 'Session not found' };
-  if (session.session_status === 'CANCELLED') return { success: true, data: session };
+  if (!session) return { success: false, code: 'RECORD_NOT_FOUND', message: 'Session not found: ' + sid };
 
   var cancelTime = data.cancellation_time ? new Date(data.cancellation_time) : new Date();
   var isLate = false;
@@ -154,25 +159,25 @@ function Classes_cancel(spreadsheet, data, actor) {
     } catch (e) {}
   }
 
-  var reason = data.cancellation_reason ? String(data.cancellation_reason).trim() : 'Cancelled by admin';
+  var reason = data.cancellation_reason ? String(data.cancellation_reason).trim() : 'Cancelled by owner';
   var isWaived = Boolean(
     data.credit_waiver === true ||
     data.waive_credit === true ||
     /waiv|excused/i.test(reason)
   );
 
-  var effect = 'NO_CONSUME';
-  if (session.package_id && isLate && !isWaived) {
-    effect = 'CONSUME';
-  }
+  var deduct = Boolean(
+    data.deduct_class !== undefined
+      ? data.deduct_class
+      : (isLate && !isWaived)
+  );
+  var attStatus = isLate ? 'CANCELLED_LATE' : 'CANCELLED';
 
-  var nowIso = new Date().toISOString();
   var updated = _clsRepo.Classes_update(spreadsheet, sid, {
     session_status: 'CANCELLED',
-    attendance_status: isLate ? 'CANCELLED_LATE' : 'CANCELLED',
-    class_credit_effect: effect,
+    attendance_status: attStatus,
     cancellation_reason: reason,
-    updated_at: nowIso
+    deduct_class: deduct
   });
 
   if (_clsAudit && _clsAudit.recordAuditEvent) {
@@ -182,53 +187,43 @@ function Classes_cancel(spreadsheet, data, actor) {
       entity_type: 'CLASS_SESSION',
       entity_id: sid,
       action: 'CANCEL',
-      after_summary: { effect: effect, isLate: isLate, isWaived: isWaived, reason: reason },
+      after_summary: { session_status: 'CANCELLED', attendance_status: attStatus, deduct_class: deduct, reason: reason },
       request_id: actor ? actor.requestId : ''
     });
   }
 
-  return { success: true, data: updated };
+  var returnData = Object.assign({}, updated, {
+    session_status: 'CANCELLED',
+    attendance_status: attStatus,
+    cancellation_reason: reason,
+    deduct_class: deduct,
+    class_credit_effect: deduct ? 'CONSUME' : 'NO_CONSUME'
+  });
+
+  return { success: true, data: returnData };
 }
 
 function Classes_restoreCredit(spreadsheet, data, actor) {
   var sid = data.class_session_id || data.session_id;
   var original = _clsRepo.Classes_getById(spreadsheet, sid);
   if (!original) return { success: false, code: 'RECORD_NOT_FOUND', message: 'Session not found' };
-  if (original.class_credit_effect !== 'CONSUME') {
-    return { success: false, code: 'CONFLICT', message: 'Can only restore credits for sessions with CONSUME effect' };
+
+  var isDeducted = (original.deduct_class === true || original.deduct_class === 'true' || original.deduct_class === 'TRUE');
+  if (!isDeducted) {
+    return { success: false, code: 'CONFLICT', message: 'Can only restore credits for sessions with deducted class' };
   }
 
-  var existing = _clsRepo.Classes_findByRestorationId(spreadsheet, sid);
-  if (existing) {
-    return { success: false, code: 'CONFLICT', message: 'Credit for this session has already been restored' };
-  }
+  var updated = _clsRepo.Classes_update(spreadsheet, sid, {
+    deduct_class: false
+  });
 
-  var now = new Date().toISOString();
-  var id = _clsIdGen.generateClassSessionId();
-  var restorationRecord = {
-    class_session_id: id,
-    student_id: original.student_id,
-    student_name: original.student_name || '',
-    package_id: original.package_id,
-    meeting_link_id: '',
-    class_title: 'Credit Restoration: ' + original.class_title,
-    scheduled_start: now,
-    scheduled_end: now,
-    actual_start: '',
-    actual_end: '',
-    session_status: 'COMPLETED',
-    attendance_status: 'NOT_MARKED',
-    class_credit_effect: 'CREDIT_BACK',
-    cancellation_reason: '',
-    credit_restoration_for_session_id: original.class_session_id,
-    notes: data.reason ? String(data.reason).trim() : 'Administrative credit restoration',
-    created_at: now,
-    updated_at: now,
-    completed_at: now
+  return {
+    success: true,
+    data: Object.assign({}, updated, {
+      deduct_class: false,
+      class_credit_effect: 'CREDIT_BACK'
+    })
   };
-
-  _clsRepo.Classes_insert(spreadsheet, restorationRecord);
-  return { success: true, data: restorationRecord };
 }
 
 if (typeof module !== 'undefined' && module.exports) {

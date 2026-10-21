@@ -11,18 +11,15 @@ function registerClassOperations(router) {
 
   reg('classes.list', function(ctx) {
     var studentId = ctx.payload && (ctx.payload.studentId || ctx.payload.student_id);
-    var includeRestorations = ctx.payload && ctx.payload.includeRestorations;
     var all = _clsRepoH.Classes_getAll(ctx.spreadsheet);
 
     var filtered = all.filter(function(c) {
-      if (!includeRestorations && c.class_credit_effect === 'CREDIT_BACK') return false;
       if (studentId && c.student_id !== studentId) return false;
       return true;
     }).map(function(c) {
       var copy = Object.assign({}, c);
-      // UI convenience aliases
       copy.session_id = c.class_session_id;
-      copy.topic = c.class_title;
+      copy.topic = c.class_title || 'Class Session';
       copy.start_time = c.scheduled_start;
       copy.status = c.session_status;
       if (c.scheduled_start && c.scheduled_end) {

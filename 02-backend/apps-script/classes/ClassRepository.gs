@@ -24,7 +24,17 @@ var _clsMapper = typeof createHeaderMap === 'function' ? { createHeaderMap: crea
 
 function Classes_getAll(spreadsheet) {
   var sheet = spreadsheet.getSheetByName(_clsRegistry.SHEET_NAMES.CLASS_SESSIONS);
-  return _clsRowReader.readAllRecords(sheet, _clsMapper);
+  var records = _clsRowReader.readAllRecords(sheet, _clsMapper);
+  var metaMap = (typeof globalThis !== 'undefined' && globalThis.__sessionMetaMap) ? globalThis.__sessionMetaMap : {};
+  for (var i = 0; i < records.length; i++) {
+    var rec = records[i];
+    var meta = metaMap[rec.class_session_id];
+    if (meta) {
+      if (meta.package_id && !rec.package_id) rec.package_id = meta.package_id;
+      if (meta.class_title && !rec.class_title) rec.class_title = meta.class_title;
+    }
+  }
+  return records;
 }
 
 function Classes_getById(spreadsheet, id) {

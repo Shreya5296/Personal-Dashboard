@@ -234,3 +234,31 @@ NEXT ACTION
     - API boundary documented: Sheets API / Execution API disabled in GCP project 1072944905499; Web App @22 frozen without deploying. Owner can run runApprovedSchemaMigration in Apps Script editor with 1 click.
   * 5. Quality Gates Verified: 108/108 Vitest tests passing across 23 test suites; line-limit check passing (117 files <= 149 lines); TypeScript strict check (0 errors); clean Vite production build (1.81s).
   * Status: DOCUMENTATION & CODE FINALIZED. READY FOR OWNER ACCEPTANCE.
+- Antigravity Follow-up: Align All Six Finalized Tables completed:
+  * 1. All Six Finalized Schemas Implemented Across Backend:
+    - Students (9 cols): student_id, student_name, parent_name, parent_phone, student_phone, parent_email, student_email, subject, status.
+    - Packages (11 cols): package_id, student_id, student_name, plan_type, currency, package_price, per_class, classes_purchased, start_date, end_date, next_due_date.
+    - Payments (Payment Details: 6 cols): student_id, student_name, payment_date, amount, currency, in_inr. Manual in_inr never overwritten by automatic conversion.
+    - ClassSessions (8 cols): class_session_id, student_id, scheduled_start, scheduled_end, attendance_status, session_status, cancellation_reason, deduct_class. Present automatically deducts 1 class; absent asks owner; unmarked/cancelled do not deduct unless explicitly applied.
+    - MeetingLinks (4 cols): student_id, student_name, meeting_link_1, meeting_link_2. Flat structure, 1 row per student.
+    - StudentNotes (5 cols): student_id, student_name, note_date, note_text, follow_up_date. Multiple notes per student supported.
+    - Legacy tabs handled safely: Enrollments and FeeObligations deleted if empty, or renamed to Enrollments_Archive / FeeObligations_Archive if non-empty.
+  * 2. Backend Services & Handlers Adapted:
+    - SheetRegistry.gs and SchemaMigration.gs updated with exact 6 target schemas.
+    - PaymentValidation.gs, PaymentRepository.gs, PaymentService.gs, PaymentHandlers.gs aligned to 6 columns.
+    - ClassValidation.gs, ClassRepository.gs, ClassService.gs, ClassHandlers.gs aligned to 8 columns with deduct_class rules.
+    - PackageService.gs balance derivation updated to sum deduct_class === true for student and deduct FIFO by start_date across packages.
+    - MeetingLinkValidation.gs, MeetingLinkRepository.gs, MeetingLinkService.gs, MeetingLinkHandlers.gs aligned to flat 4 columns.
+    - NoteValidation.gs, NoteRepository.gs, NoteService.gs, NoteHandlers.gs aligned to 5 columns.
+  * 3. Authoritative Documentation Aligned:
+    - 03-data/01-master-spreadsheet-schema.md, 03-data/02-entity-relationships-and-data-dictionary.md, 03-data/03-financial-and-class-balance-calculations.md, 03-data/04-data-validation-and-schema-migrations.md, 00-documentation/04-google-sheets-data-model.md, 05-agent-handoff/00-project-state.md, running.txt.
+  * 4. Verification and Quality Gates:
+    - 108/108 Vitest tests passing across all 23 test suites.
+    - Line limit verified: 117/117 files <= 149 lines in src/ and public/.
+    - Strict TypeScript check (tsc --noEmit) passing with 0 errors.
+    - Clean Vite production build in 1.71s.
+  * 5. Strict Guardrails Respected:
+    - Zero live migration execution against canonical sheet 1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8.
+    - Zero new Apps Script deployments (web app remains frozen at version @22).
+    - Pre-launch backup 1kIFYmI81DfNIAqb-ZHsTifiKE6JxhfQrXqpfphrw9eU preserved intact.
+    - Source code ready to be pushed to Apps Script editor HEAD.

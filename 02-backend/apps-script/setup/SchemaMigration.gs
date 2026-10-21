@@ -17,30 +17,18 @@ var TARGET_SCHEMAS = {
     'package_price', 'per_class', 'classes_purchased',
     'start_date', 'end_date', 'next_due_date'
   ],
-  'FeeObligations': [
-    'fee_obligation_id', 'student_id', 'student_name', 'package_id',
-    'obligation_description', 'amount_due', 'credit_applied', 'currency',
-    'issue_date', 'due_date', 'obligation_status', 'notes',
-    'created_at', 'updated_at', 'voided_at', 'void_reason'
-  ],
   'Payments': [
-    'payment_id', 'student_id', 'student_name', 'fee_obligation_id',
-    'payment_date', 'amount', 'currency', 'payment_method',
-    'transaction_reference', 'idempotency_key', 'payment_status', 'notes',
-    'created_at', 'updated_at', 'voided_at', 'void_reason'
+    'student_id', 'student_name', 'payment_date', 'amount', 'currency', 'in_inr'
   ],
   'ClassSessions': [
-    'class_session_id', 'student_id', 'student_name', 'package_id',
-    'meeting_link_id', 'class_title', 'scheduled_start', 'scheduled_end',
-    'actual_start', 'actual_end', 'session_status', 'attendance_status',
-    'class_credit_effect', 'cancellation_reason',
-    'credit_restoration_for_session_id', 'notes',
-    'created_at', 'updated_at', 'completed_at'
+    'class_session_id', 'student_id', 'scheduled_start', 'scheduled_end',
+    'attendance_status', 'session_status', 'cancellation_reason', 'deduct_class'
   ],
   'MeetingLinks': [
-    'meeting_link_id', 'student_id', 'student_name', 'link_label',
-    'meeting_url', 'provider', 'is_preferred', 'link_status',
-    'created_at', 'updated_at'
+    'student_id', 'student_name', 'meeting_link_1', 'meeting_link_2'
+  ],
+  'StudentNotes': [
+    'student_id', 'student_name', 'note_date', 'note_text', 'follow_up_date'
   ]
 };
 
@@ -49,7 +37,11 @@ var FORBIDDEN_OBSOLETE_COLUMNS = [
   'parent_guardian_name', 'parent_guardian_relationship', 'primary_phone',
   'secondary_phone', 'internal_summary', 'city', 'first_enrollment_date',
   'last_active_date', 'source_reference', 'in_INR', 'closed_at',
-  'expiry_date', 'plan_name', 'package_status'
+  'expiry_date', 'plan_name', 'package_status',
+  'fee_obligation_id', 'payment_method', 'transaction_reference',
+  'class_credit_effect', 'credit_restoration_for_session_id', 'class_title',
+  'meeting_link_id', 'link_label', 'provider', 'is_preferred',
+  'note_id', 'note_type', 'created_by'
 ];
 
 function runApprovedSchemaMigration(spreadsheet) {
@@ -158,7 +150,7 @@ function runApprovedSchemaMigration(spreadsheet) {
       });
     }
 
-    // 2. Safely remove Enrollments tab if empty
+    // 2. Safely remove Enrollments tab if empty, or rename to Enrollments_Archive if non-empty
     var enrSheet = ss.getSheetByName('Enrollments');
     var enrollmentsStatus = 'NOT_PRESENT';
     if (enrSheet) {
@@ -167,15 +159,39 @@ function runApprovedSchemaMigration(spreadsheet) {
         ss.deleteSheet(enrSheet);
         enrollmentsStatus = 'PHYSICALLY_DELETED_EMPTY';
       } else {
-        verificationErrors.push('Enrollments sheet has ' + enrRows + ' rows; cannot delete non-empty sheet');
-        enrollmentsStatus = 'DELETION_ABORTED_NON_EMPTY';
+        var enrArchive = 'Enrollments_Archive';
+        if (ss.getSheetByName(enrArchive)) {
+          enrArchive = 'Enrollments_Archive_' + Date.now();
+        }
+        enrSheet.setName(enrArchive);
+        enrollmentsStatus = 'RENAMED_TO_' + enrArchive;
       }
     }
 
-    // Verify Enrollments is gone
-    var enrVerify = ss.getSheetByName('Enrollments');
-    if (enrVerify !== null) {
-      verificationErrors.push('Enrollments tab still exists after deletion attempt');
+    // Safely remove FeeObligations tab if empty, or rename to FeeObligations_Archive if non-empty
+    var feeSheet = ss.getSheetByName('FeeObligations');
+    var feeStatus = 'NOT_PRESENT';
+    if (feeSheet) {
+      var feeRows = feeSheet.getLastRow();
+      if (feeRows <= 1) {
+        ss.deleteSheet(feeSheet);
+        feeStatus = 'PHYSICALLY_DELETED_EMPTY';
+      } else {
+        var feeArchive = 'FeeObligations_Archive';
+        if (ss.getSheetByName(feeArchive)) {
+          feeArchive = 'FeeObligations_Archive_' + Date.now();
+        }
+        feeSheet.setName(feeArchive);
+        feeStatus = 'RENAMED_TO_' + feeArchive;
+      }
+    }
+
+    // Verify neither Enrollments nor FeeObligations active tab exists
+    if (ss.getSheetByName('Enrollments') !== null) {
+      verificationErrors.push('Enrollments tab still exists after migration');
+    }
+    if (ss.getSheetByName('FeeObligations') !== null) {
+      verificationErrors.push('FeeObligations tab still exists after migration');
     }
 
     // 3. Verify operational tabs are preserved
@@ -229,6 +245,7 @@ function runApprovedSchemaMigration(spreadsheet) {
       spreadsheetId: ss.getId(),
       executedAt: new Date().toISOString(),
       enrollmentsTab: enrollmentsStatus,
+      feeObligationsTab: feeStatus,
       operationalTabs: operationalStatus,
       results: migrationResults,
       verificationErrors: verificationErrors

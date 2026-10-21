@@ -37,24 +37,24 @@ describe('Phase 5 — Classes, Credits, Meeting Links, and Notes', () => {
     studentId = s.data.student_id;
   });
 
-  it('enforces single preferred meeting link policy', () => {
+  it('manages flat meeting links (primary meeting_link_1 and secondary meeting_link_2)', () => {
     const l1 = MeetingLinkService.MeetingLinks_create(spreadsheet, {
-      student_id: studentId, provider: 'ZOOM', link_label: 'Main Zoom',
-      meeting_url: 'https://zoom.us/j/111', is_preferred: true
+      student_id: studentId,
+      meeting_link_1: 'https://zoom.us/j/111',
     }, actor);
     expect(l1.success).toBe(true);
-    expect(l1.data.is_preferred).toBe(true);
+    expect(l1.data.meeting_link_1).toBe('https://zoom.us/j/111');
 
     const l2 = MeetingLinkService.MeetingLinks_create(spreadsheet, {
-      student_id: studentId, provider: 'GOOGLE_MEET', link_label: 'Backup Meet',
-      meeting_url: 'https://meet.google.com/abc', is_preferred: true
+      student_id: studentId,
+      meeting_link_2: 'https://meet.google.com/abc',
     }, actor);
     expect(l2.success).toBe(true);
-    expect(l2.data.is_preferred).toBe(true);
 
-    // L1 should have been unmarked as preferred
-    const l1Updated = MeetingLinkRepository.MeetingLinks_getById(spreadsheet, l1.data.meeting_link_id);
-    expect(l1Updated.is_preferred).toBe(false);
+    const row = MeetingLinkRepository.MeetingLinks_getByStudentId(spreadsheet, studentId);
+    expect(row).toBeDefined();
+    expect(row.meeting_link_1).toBe('https://zoom.us/j/111');
+    expect(row.meeting_link_2).toBe('https://meet.google.com/abc');
   });
 
   it('manages class consumption, no-shows, and credit restoration safeguards', () => {
