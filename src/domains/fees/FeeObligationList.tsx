@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { FeeObligation, FeeObligationInput } from './feeTypes';
 import { fetchFeeObligations, createFeeObligation, voidFeeObligation } from './feeApi';
+import { fetchPayments } from '../payments/paymentApi';
+import { calculateStudentCredits, CurrencyCreditSummary } from './creditCalculator';
+import { AvailableCreditBadge } from './AvailableCreditBadge';
 import { FeeObligationForm } from './FeeObligationForm';
 import { PaymentForm } from '../payments/PaymentForm';
 import { recordPayment } from '../payments/paymentApi';
@@ -15,6 +18,7 @@ import { getFeeColumns } from './feeColumns';
 export const FeeObligationList: React.FC<{ studentId?: string }> = ({ studentId }) => {
   const { token } = useAuth();
   const [fees, setFees] = useState<FeeObligation[]>([]);
+  const [credits, setCredits] = useState<CurrencyCreditSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [payingFee, setPayingFee] = useState<FeeObligation | null>(null);
@@ -25,16 +29,18 @@ export const FeeObligationList: React.FC<{ studentId?: string }> = ({ studentId 
   const loadData = async () => {
     setLoading(true);
     try {
-      const data = await fetchFeeObligations(studentId, token);
-      setFees(data);
+      const [feeData, payData] = await Promise.all([
+        fetchFeeObligations(studentId, token),
+        fetchPayments(studentId, undefined, token).catch(() => []),
+      ]);
+      setFees(feeData);
+      setCredits(calculateStudentCredits(feeData, payData, studentId));
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, [studentId, token]);
+  useEffect(() => { loadData(); }, [studentId, token]);
 
   const handleCreate = async (input: FeeObligationInput) => {
     setFormLoading(true);
@@ -42,7 +48,7 @@ export const FeeObligationList: React.FC<{ studentId?: string }> = ({ studentId 
     try {
       await createFeeObligation(input, token);
       setIsAdding(false);
-      setSuccessMessage(`Fee obligation of ₹${input.amount_due.toLocaleString('en-IN')} created successfully.`);
+      setSuccessMessage(`Fee obligation created successfully.`);
       await loadData();
     } finally {
       setFormLoading(false);
@@ -56,7 +62,7 @@ export const FeeObligationList: React.FC<{ studentId?: string }> = ({ studentId 
     try {
       await recordPayment(input, token);
       setPayingFee(null);
-      setSuccessMessage(`Payment of ₹${input.amount.toLocaleString('en-IN')} recorded successfully.`);
+      setSuccessMessage(`Payment recorded successfully.`);
       await loadData();
     } catch (err: unknown) {
       setPaymentError((err as Error).message || 'Failed to record payment');
@@ -76,8 +82,11 @@ export const FeeObligationList: React.FC<{ studentId?: string }> = ({ studentId 
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
-        <h4 style={{ margin: 0 }}>Fee Obligations & Invoices</h4>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)', flexWrap: 'wrap', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+          <h4 style={{ margin: 0 }}>Fee Obligations & Invoices</h4>
+          <AvailableCreditBadge summaries={credits} />
+        </div>
         {studentId && (
           <Button variant="secondary" onClick={() => { setIsAdding(!isAdding); setSuccessMessage(null); }}>
             {isAdding ? 'Cancel' : '+ New Fee Obligation'}
@@ -86,26 +95,9 @@ export const FeeObligationList: React.FC<{ studentId?: string }> = ({ studentId 
       </div>
 
       {successMessage && (
-        <div style={{
-          padding: '0.75rem 1rem',
-          backgroundColor: '#dcfce7',
-          border: '1px solid #22c55e',
-          borderRadius: 'var(--radius-md)',
-          color: '#15803d',
-          fontSize: '0.875rem',
-          marginBottom: 'var(--space-4)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}>
+        <div style={{ padding: '0.75rem 1rem', backgroundColor: '#dcfce7', border: '1px solid #22c55e', borderRadius: 'var(--radius-md)', color: '#15803d', fontSize: '0.875rem', marginBottom: 'var(--space-4)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>✓ {successMessage}</span>
-          <button
-            type="button"
-            onClick={() => setSuccessMessage(null)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', fontWeight: 'bold' }}
-          >
-            ✕
-          </button>
+          <button type="button" onClick={() => setSuccessMessage(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
         </div>
       )}
 

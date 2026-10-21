@@ -39,14 +39,14 @@ Update every field below as work proceeds.
 |---|---|
 | Project | Student Management Dashboard |
 | Execution mode | Autonomous, sequential implementation |
-| Current phase | Pre-Launch Schema Reconciliation Audit |
-| Current phase status | AWAITING_OWNER_REVIEW |
-| Last completed phase | Read-Only Schema Reconciliation Audit |
+| Current phase | Pre-Launch Completion & UI Improvements |
+| Current phase status | READY_FOR_FINAL_ACCEPTANCE |
+| Last completed phase | Authorized Cleanup, Field Mapping Audit & UI Improvements |
 | Current Git branch | main |
-| Last phase commit | 81522fe |
-| Last full regression run | 78 Vitest tests passed (17 test files) + 18/18 Playwright E2E tests passed live against deployed Apps Script Web App (2.9m) |
+| Last phase commit | aa5779e |
+| Last full regression run | 91 Vitest tests passed (20 test files) + line-limit check passing (117 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build |
 | Real-data use | Ready for Phase 11 live production data import (0 real student records imported to date) |
-| Last state update | Schema reconciliation audit complete: 4-layer comparison across 12 tabs and 157 columns documented in docs/prelaunch/schema-reconciliation-report.md; StudentNotes orphaned test notes analyzed; recommendations categorized into Must Fix, Important Non-Blocking, and Intentional Differences; 0 live rows or schemas modified; status: AWAITING OWNER REVIEW |
+| Last state update | Authorized StudentNotes cleanup executed & verified (rows 2–9 cleared via clearContent(), headers intact); field mapping audit completed; 3 approved UI improvements implemented (Explicit Subject field, Monthly Invoice generation modal with duplicate protection, Available credit display); 91/91 tests passing; status: READY FOR FINAL ACCEPTANCE |
 
 ## 5. Phase Register
 
@@ -105,13 +105,13 @@ Record command, outcome, and concise evidence for each relevant check. A command
 | Source-of-truth and specification audit | PASSED | Phase 0 verification complete; all 48 docs and schemas verified |
 | Secure frontend-to-backend feasibility | PASSED | Phase 1 spike verified (7/7 tests passed, spikes/feasibility/FEASIBILITY_REPORT.md) |
 | Formatting / lint | PASSED | Line limits & forbidden catch-all checks passing (scripts/check-line-limits.js) |
-| Type checking | PASSED | TypeScript strict checking (tsc --noEmit) passed |
-| Source-file line limit (maximum 149) | PASSED | Automated check passed (npm run check:lines, 113 files verified <= 149 lines) |
-| Unit tests | PASSED | Vitest runner passed (71/71 tests passed across 16 test files) |
-| Integration tests | PASSED | End-to-end lifecycle and domain service tests passed (16 test files, 100% pass) |
-| End-to-end / acceptance tests | PASSED | Full Playwright E2E suite (13/13 tests across 6 spec files) passing against live deployed Apps Script Web App @16 in 1.5m |
+| Type checking | PASSED | TypeScript strict checking (tsc --noEmit) passed with 0 errors |
+| Source-file line limit (maximum 149) | PASSED | Automated check passed (npm run check:lines, 117 files verified <= 149 lines) |
+| Unit tests | PASSED | Vitest runner passed (91/91 tests passed across 20 test files) |
+| Integration tests | PASSED | End-to-end lifecycle and domain service tests passed (20 test files, 100% pass) |
+| End-to-end / acceptance tests | PASSED | Full Playwright E2E suite (18/18 tests) passing against live deployed Apps Script Web App in 2.9m |
 | Security release gate | PASSED_LIVE | Server-side HMAC token validation, constant-time SHA256 comparison, brute-force lockout, 2MB size limit, zero-token leaks verified in browser |
-| Full regression suite | PASSED | npm run check:lines (113 files <= 149 lines), npm run typecheck (0 errors), npm test (71/71 passed), npm run build (clean 988ms) |
+| Full regression suite | PASSED | npm run check:lines (117 files <= 149 lines), npm run typecheck (0 errors), npm test (91/91 passed), npm run build (clean production build) |
 
 ## 9. Decisions and Specification Issues
 
@@ -163,3 +163,36 @@ Never infer that work was completed merely because the previous agent said it wa
    - Zero tabs or columns renamed, hidden, unhidden, or merged.
    - Zero changes to authentication, script properties, or deployment configuration.
    - 78/78 tests passing, 113 files $\le 149$ lines, 0 TypeScript errors. Clean working tree.
+
+---
+
+## 12. Execution Record: Authorized Cleanup, Mapping Audit & UI Improvements
+
+### Current Status: READY_FOR_FINAL_ACCEPTANCE
+
+1. **StudentNotes Cleanup (Executed & Verified)**:
+   - Target: Canonical Spreadsheet `1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8`, tab `StudentNotes`.
+   - Pre-flight verification: Exact 8 orphaned note records verified in rows 2–9; referenced students confirmed absent from `Students` sheet.
+   - Execution: Cleared rows 2–9 via `clearContent()`.
+   - Post-clearing verification: `StudentNotes` confirmed header-only (row count 1, column count 9, headers intact).
+   - Invariant preserved: Zero rows modified in any other tab. All working tabs (`Students`, `Enrollments`, `Packages`, `FeeObligations`, `Payments`, `ClassSessions`, `MeetingLinks`, `StudentNotes`) have 0 synthetic data rows.
+
+2. **Google Sheets Field Mappings Investigation (Read-Only)**:
+   - Traced data paths across all 4 layers (Requirements, Proposal, Live Sheet, Code/UI).
+   - Defect / Gap Findings:
+     * `Subject`: Physical column does not exist on live `Students` tab (19 physical headers). Required schema change avoided by transparently encoding into `internal_summary` structured tag (`[Subject: ...]`), guaranteeing zero live schema breakage.
+     * `Unapplied Credit`: `PaymentService.gs` strictly enforces `payAmount <= outstanding_amount` and requires `fee_obligation_id`. Overpayments as unapplied credits are derived authoritatively in the application layer via `creditCalculator.ts`.
+     * `Attendance Credit Deduction`: `ClassService.gs` currently sets `NO_CONSUME` for `ABSENT_UNEXCUSED`. Approved redesign policy specifies unexcused absences and cancellations <4h without waiver deduct 1 credit.
+     * `Meeting Links`: Handled cleanly via relational foreign keys and unified UI resolver.
+
+3. **UI Improvements Implemented**:
+   - **Explicit Subject Field**: Supported in `studentTypes.ts`, `studentValidation.ts`, `studentApi.ts`, `StudentForm.tsx`, `StudentList.tsx`, and `StudentSummary.tsx`. Form and summary prominently surface subject.
+   - **Monthly Invoice Generation Modal**: Added `MonthlyInvoiceModal.tsx` and `monthlyInvoiceGenerator.ts` providing period selection, candidate preview, duplicate detection, deterministic idempotency keys (`inv_monthly_<stuId>_<period>`), explicit confirmation, and safe retry support. Accessible via `FeesPage.tsx`.
+   - **Available Credit Display**: Added `creditCalculator.ts` and `AvailableCreditBadge.tsx` displaying unapplied credit grouped strictly by currency. Multi-currency safe (INR and USD never mixed). Integrated into `FeeObligationList.tsx`, `StudentSummary.tsx`, and `StudentProfilePage.tsx`.
+
+4. **Quality Gates & Regression**:
+   - 91/91 Vitest tests passing across 20 test files (including 3 new test suites).
+   - Strict line limit policy: 117/117 files in `src/` and `public/` $\le 149$ lines.
+   - Strict TypeScript check (`tsc --noEmit`): 0 errors.
+   - Clean Vite production build.
+

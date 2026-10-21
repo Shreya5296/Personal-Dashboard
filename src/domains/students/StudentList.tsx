@@ -43,6 +43,11 @@ export const StudentList: React.FC<StudentListProps> = ({
       ),
     },
     {
+      key: 'subject',
+      header: 'Subject',
+      render: (s) => s.subject || '—',
+    },
+    {
       key: 'email',
       header: 'Email',
       render: (s) => s.email || '—',

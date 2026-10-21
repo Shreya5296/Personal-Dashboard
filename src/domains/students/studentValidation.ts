@@ -28,6 +28,10 @@ export function validateStudentInput(input: Partial<StudentInput>): ValidationRe
     }
   }
 
+  if (input.subject && input.subject.trim().length > 100) {
+    errors.subject = 'Subject cannot exceed 100 characters.';
+  }
+
   return {
     isValid: Object.keys(errors).length === 0,
     errors,

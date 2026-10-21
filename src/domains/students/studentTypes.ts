@@ -1,6 +1,7 @@
 export interface Student {
   student_id: string;
   full_name: string;
+  subject?: string;
   email?: string;
   phone?: string;
   parent_name?: string;
@@ -14,6 +15,7 @@ export interface Student {
 
 export interface StudentInput {
   full_name: string;
+  subject?: string;
   email?: string;
   phone?: string;
   parent_name?: string;

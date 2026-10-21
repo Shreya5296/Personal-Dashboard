@@ -9,6 +9,14 @@ export function adaptStudentInput(input: Partial<StudentInput>): Record<string, 
   const parentEmail = input.parent_email || input.email || '';
   const parentGuardianName = input.parent_name || '';
 
+  let notesText = input.notes || '';
+  if (input.subject && input.subject.trim()) {
+    const subjTag = `[Subject: ${input.subject.trim()}]`;
+    if (!notesText.includes(subjTag)) {
+      notesText = notesText ? `${subjTag} ${notesText}` : subjTag;
+    }
+  }
+
   return {
     ...input,
     first_name: firstName,
@@ -16,8 +24,23 @@ export function adaptStudentInput(input: Partial<StudentInput>): Record<string, 
     parent_guardian_name: parentGuardianName,
     primary_phone: primaryPhone,
     parent_email: parentEmail,
-    internal_summary: input.notes || '',
+    internal_summary: notesText,
+    subject: input.subject?.trim() || '',
   };
+}
+
+export function enrichStudentData(student: Student): Student {
+  if (!student) return student;
+  let subject = student.subject || '';
+  let notes = student.notes || '';
+  if (!subject && notes) {
+    const match = notes.match(/\[Subject:\s*([^\]]+)\]/i);
+    if (match) {
+      subject = match[1].trim();
+      notes = notes.replace(match[0], '').trim();
+    }
+  }
+  return { ...student, subject, notes };
 }
 
 export async function fetchStudents(
@@ -40,12 +63,12 @@ export async function fetchStudents(
   );
 
   if (Array.isArray(response.data)) {
-    return response.data as Student[];
+    return (response.data as Student[]).map(enrichStudentData);
   }
   if (response.data && typeof response.data === 'object') {
     const obj = response.data as Record<string, unknown>;
-    if (Array.isArray(obj.students)) return obj.students as Student[];
-    if (Array.isArray(obj.items)) return obj.items as Student[];
+    if (Array.isArray(obj.students)) return (obj.students as Student[]).map(enrichStudentData);
+    if (Array.isArray(obj.items)) return (obj.items as Student[]).map(enrichStudentData);
   }
   return [];
 }
@@ -59,7 +82,7 @@ export async function getStudentById(
     { student_id: studentId },
     { token }
   );
-  return response.data || null;
+  return response.data ? enrichStudentData(response.data) : null;
 }
 
 export async function createStudent(
@@ -72,7 +95,7 @@ export async function createStudent(
     payload,
     { token }
   );
-  return response.data!;
+  return enrichStudentData(response.data!);
 }
 
 export async function updateStudent(
@@ -86,7 +109,7 @@ export async function updateStudent(
     { student_id: studentId, ...adapted },
     { token }
   );
-  return response.data!;
+  return enrichStudentData(response.data!);
 }
 
 export async function archiveStudent(

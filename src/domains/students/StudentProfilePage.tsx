@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { Student } from './studentTypes';
 import { archiveStudent, reactivateStudent } from './studentApi';
@@ -10,6 +10,9 @@ import { PackageList } from '../packages/PackageList';
 import { FeeObligationList } from '../fees/FeeObligationList';
 import { ClassSchedule } from '../classes/ClassSchedule';
 import { MeetingLinkList } from '../meeting-links/MeetingLinkList';
+import { fetchFeeObligations } from '../fees/feeApi';
+import { fetchPayments } from '../payments/paymentApi';
+import { calculateStudentCredits, CurrencyCreditSummary } from '../fees/creditCalculator';
 
 export interface StudentProfilePageProps {
   student: Student;
@@ -29,6 +32,14 @@ export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
   const { token } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('enrollments');
   const [isArchiving, setIsArchiving] = useState(false);
+  const [credits, setCredits] = useState<CurrencyCreditSummary[]>([]);
+
+  useEffect(() => {
+    Promise.all([
+      fetchFeeObligations(student.student_id, token),
+      fetchPayments(student.student_id, undefined, token).catch(() => []),
+    ]).then(([f, p]) => setCredits(calculateStudentCredits(f, p, student.student_id)));
+  }, [student.student_id, token]);
 
   const tabs: { id: TabType; label: string }[] = [
     { id: 'enrollments', label: 'Enrollments' },
@@ -72,7 +83,7 @@ export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
         </div>
       </div>
 
-      <StudentSummary student={student} />
+      <StudentSummary student={student} credits={credits} />
 
       <div style={{ display: 'flex', gap: 'var(--space-2)', borderBottom: '1px solid var(--color-border-subtle)', marginBottom: 'var(--space-4)' }}>
         {tabs.map((tab) => (

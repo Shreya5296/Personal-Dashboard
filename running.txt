@@ -173,4 +173,16 @@ NEXT ACTION
   * StudentNotes analyzed: 8 retained rows are orphaned synthetic test notes referencing cleared student IDs; recommended keeping tab visible and clearing rows 2-9 before onboarding real data.
   * Recommendations categorized into Must Fix, Important Non-Blocking, and Intentional Differences.
   * Zero live rows, headers, tabs, auth, or deployment settings modified.
-  * Status: AWAITING OWNER REVIEW.
+- Authorized StudentNotes Cleanup, Mapping Audit, and UI Improvements completed & verified:
+  * 1. StudentNotes Cleanup: Canonical spreadsheet ID (1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8) pre-flight validated; exactly 8 orphaned synthetic test notes verified in rows 2–9; confirmed student references absent; rows 2–9 cleared via clearContent(); Row 1 headers intact (1 row, 9 cols); 0 rows modified elsewhere.
+  * 2. Field Mappings Audit: Traced concrete data paths across all 4 layers (Requirements, Proposal, Live Sheet, Code/UI). Concrete defects and design reconciliations documented (Subject storage requires authorized schema change if dedicated column desired, handled cleanly via structured summary; unapplied credit handling in PaymentService vs redesign; attendance credit deduction for unexcused cancellations).
+  * 3. UI Improvements Implemented:
+    - A. Explicit Subject field: Added to student types, validation (<= 100 chars), create/edit form, directory list, and profile summary. Seamlessly persists and retrieves via structured summary tag without requiring destructive live schema modification.
+    - B. Monthly invoice generation with preview & duplicate protection: Added MonthlyInvoiceModal and monthlyInvoiceGenerator with period selection, candidate preview, duplicate detection, deterministic idempotency keys, explicit confirmation modal, and safe retry support.
+    - C. Available-credit display: Added creditCalculator and AvailableCreditBadge displaying unapplied student credit grouped strictly by currency (never mixed across INR/USD) in FeeObligationList, StudentSummary, and StudentProfilePage.
+  * 4. Automated Testing & Quality Gates:
+    - 91/91 Vitest tests passing across 20 test suites (including new suites for subject field, monthly invoice generation, and credit calculation).
+    - Line limit policy strictly verified: 117/117 files in src/ and public/ <= 149 lines.
+    - TypeScript type check passing with 0 errors.
+    - Production Vite build built cleanly.
+  * Status: READY FOR FINAL OWNER ACCEPTANCE.

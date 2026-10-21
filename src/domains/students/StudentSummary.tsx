@@ -2,12 +2,15 @@ import React from 'react';
 import { Student } from './studentTypes';
 import { formatStatusBadge } from '../../lib/textFormat';
 import { formatDate } from '../../lib/dateFormat';
+import { CurrencyCreditSummary } from '../fees/creditCalculator';
+import { AvailableCreditBadge } from '../fees/AvailableCreditBadge';
 
 export interface StudentSummaryProps {
   student: Student;
+  credits?: CurrencyCreditSummary[];
 }
 
-export const StudentSummary: React.FC<StudentSummaryProps> = ({ student }) => {
+export const StudentSummary: React.FC<StudentSummaryProps> = ({ student, credits }) => {
   const badge = formatStatusBadge(student.status);
 
   return (
@@ -27,19 +30,26 @@ export const StudentSummary: React.FC<StudentSummaryProps> = ({ student }) => {
             ID: {student.student_id} • Registered: {formatDate(student.created_at)}
           </span>
         </div>
-        <span style={{
-          padding: '4px 10px',
-          borderRadius: 'var(--radius-full)',
-          fontSize: 'var(--font-size-xs)',
-          fontWeight: 600,
-          backgroundColor: badge.tone === 'success' ? 'var(--color-success-bg)' : 'var(--color-danger-bg)',
-          color: badge.tone === 'success' ? 'var(--color-success-text)' : 'var(--color-danger-text)',
-        }}>
-          {badge.label}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+          {credits && <AvailableCreditBadge summaries={credits} />}
+          <span style={{
+            padding: '4px 10px',
+            borderRadius: 'var(--radius-full)',
+            fontSize: 'var(--font-size-xs)',
+            fontWeight: 600,
+            backgroundColor: badge.tone === 'success' ? 'var(--color-success-bg)' : 'var(--color-danger-bg)',
+            color: badge.tone === 'success' ? 'var(--color-success-text)' : 'var(--color-danger-text)',
+          }}>
+            {badge.label}
+          </span>
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-4)', fontSize: 'var(--font-size-sm)' }}>
+        <div>
+          <span style={{ color: 'var(--color-text-muted)', display: 'block' }}>Subject</span>
+          <strong>{student.subject || '—'}</strong>
+        </div>
         <div>
           <span style={{ color: 'var(--color-text-muted)', display: 'block' }}>Email</span>
           <strong>{student.email || '—'}</strong>
