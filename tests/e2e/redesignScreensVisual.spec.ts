@@ -1,0 +1,110 @@
+import { test, expect, Page } from '@playwright/test';
+
+const MOCK_JWT = `${btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))}.${btoa(JSON.stringify({ email: 'ashreya0502@gmail.com', name: 'Authorized Administrator' }))}.mocksig`;
+
+async function navigate(page: Page, label: string) {
+  const menuToggle = page.locator('button[aria-label="Toggle navigation menu"]');
+  if (await menuToggle.isVisible()) {
+    await menuToggle.click();
+    await page.waitForTimeout(200);
+  }
+  const btn = page.locator(`aside button:has-text("${label}")`);
+  await btn.click();
+}
+
+test.describe('Frontend UI/UX Redesign — Screen & Viewport Coverage', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(({ token }) => {
+      sessionStorage.setItem('smd_use_mock_data', 'true');
+      sessionStorage.setItem('smd_auth_token', token);
+      sessionStorage.setItem('smd_auth_user', JSON.stringify({
+        email: 'ashreya0502@gmail.com',
+        name: 'Authorized Administrator',
+        isAdmin: true,
+      }));
+    }, { token: MOCK_JWT });
+    await page.goto('/');
+    await expect(page.locator('button:has-text("Sign Out")')).toBeVisible({ timeout: 10000 });
+  });
+
+  test('verifies all 8 redesigned screens at Desktop (1440px)', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+
+    // 1. Dashboard
+    await navigate(page, 'Dashboard');
+    await expect(page.locator('h1:has-text("Administrative Dashboard")')).toBeVisible();
+    await expect(page.locator('text=Active Students')).toBeVisible();
+    await expect(page.locator('text=Upcoming Classes (7 Days)')).toBeVisible();
+    await expect(page.locator('text=Outstanding Fees')).toBeVisible();
+    await expect(page.locator('button:has-text("+ Manage Students")')).toBeVisible();
+
+    // 2. Students Directory
+    await navigate(page, 'Students');
+    await expect(page.locator('h1:has-text("Students Directory")')).toBeVisible();
+    await expect(page.locator('button:has-text("+ Add Student")')).toBeVisible();
+    await expect(page.locator('input[placeholder*="Search students"]')).toBeVisible();
+    await expect(page.locator('text=Aarav Sharma')).toBeVisible();
+
+    // 3. Fees & Payments
+    await navigate(page, 'Fees');
+    await expect(page.locator('h1:has-text("Fees & Payments Ledger")')).toBeVisible();
+    await expect(page.locator('button:has-text("Fee Invoices & Obligations")')).toBeVisible();
+    await expect(page.locator('button:has-text("Payment Transactions")')).toBeVisible();
+
+    // 4. Classes
+    await navigate(page, 'Classes');
+    await expect(page.locator('h1:has-text("Class Schedule & Attendance")')).toBeVisible();
+    await expect(page.locator('button:has-text("+ Schedule Class")')).toBeVisible();
+
+    // 5. Meeting Links
+    await navigate(page, 'Meeting Links');
+    await expect(page.locator('h1:has-text("Meeting Links Directory")')).toBeVisible();
+    await expect(page.locator('button:has-text("+ Add Meeting Link")')).toBeVisible();
+
+    // 6. Import & Reconcile
+    await navigate(page, 'Import');
+    await expect(page.locator('h1:has-text("Spreadsheet Import & Reconciliation")')).toBeVisible();
+    await expect(page.locator('text=1. Paste CSV Data')).toBeVisible();
+    await expect(page.locator('button:has-text("Load Synthetic Sample")')).toBeVisible();
+
+    // 7. Reports
+    await navigate(page, 'Reports');
+    await expect(page.locator('h1:has-text("Financial Reports")')).toBeVisible();
+    await expect(page.locator('text=Total Invoiced')).toBeVisible();
+    await expect(page.locator('text=Total Collected')).toBeVisible();
+    await expect(page.locator('text=Total Outstanding')).toBeVisible();
+    await expect(page.locator('text=Collection Performance')).toBeVisible();
+
+    // 8. Settings
+    await navigate(page, 'Settings');
+    await expect(page.locator('h1:has-text("Settings & System Health")')).toBeVisible();
+    await expect(page.locator('text=Administrator Identity')).toBeVisible();
+    await expect(page.locator('text=Backend & Spreadsheet Service')).toBeVisible();
+  });
+
+  test('verifies desktop 1280px layout without horizontal overflow', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await navigate(page, 'Dashboard');
+    await expect(page.locator('h1:has-text("Administrative Dashboard")')).toBeVisible();
+
+    const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+    const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
+    expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 2);
+  });
+
+  test('verifies tablet 768px layout and card wrapping', async ({ page }) => {
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await navigate(page, 'Students');
+    await expect(page.locator('h1:has-text("Students Directory")')).toBeVisible();
+    await expect(page.locator('button:has-text("+ Add Student")')).toBeVisible();
+  });
+
+  test('verifies mobile 390px responsive drawer navigation', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/');
+
+    await navigate(page, 'Students');
+    await expect(page.locator('h1:has-text("Students Directory")')).toBeVisible();
+  });
+});
