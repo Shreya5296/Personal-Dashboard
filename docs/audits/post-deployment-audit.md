@@ -10,14 +10,16 @@
 ## 1. Overall Verdict
 
 ```
-READY FOR OWNER-AUTHORIZED VERCEL LAUNCH
+READY FOR OWNER REVIEW (WITH OPERATIONAL LIMITATIONS)
 ```
 
 ### Verdict Justification
 - **100% Quality Gates Passed:** 125 / 125 Vitest unit and integration tests passing across 25 suites; 0 TypeScript compiler errors; 117 micro-files strictly $\le 149$ lines; production Vite bundle built cleanly in 776ms.
 - **All 9 Core Workflows Fully Verified:** Complete end-to-end lifecycle verification implemented in `tests/integration/finalizedWorkflowsLifecycle.test.ts` covering student lifecycle, package management, payment operations, class attendance, the complete deduction rules matrix, multi-package FIFO allocation, flat meeting links, student notes, dynamic dashboard/financial reporting, and import safety gates.
 - **Backend & Datastore Integrity:** Apps Script Version `@23` matches the migrated Google Sheet across all six finalized business tables. Obsolete legacy tabs (`Enrollments`, `FeeObligations`) are safely ignored by `RowReader.gs` without errors.
-- **Production Data Hygiene Preserved:** In strict compliance with project safety rules, no real student records were written, modified, or deleted on the live canonical sheet. All state mutations were tested using isolated post-migration mock fixtures.
+- **Operational Limitations (Intentional):**
+  1. *Production Writes Preserved Pristine:* In strict compliance with safety rules, no live records were created, modified, or deleted on the real `Private Class Dashboard` spreadsheet (`1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8`). All mutations were verified via isolated fixtures.
+  2. *Vercel Deployment Held:* The frontend is built and ready for production, but has not been deployed to Vercel awaiting owner authorization.
 
 ---
 
