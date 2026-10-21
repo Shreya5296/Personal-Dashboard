@@ -46,7 +46,7 @@ Legacy Tab Retained Intact (1)
 
 ## 3. Detailed Data Model Specification
 
-### Tab 1: `Students`
+### Tab 1: `Students` (Exactly 9 columns)
 Authoritative directory of active and archived students.
 
 | Column Header | Data Type | Required | Description | Sample Value |
@@ -58,34 +58,27 @@ Authoritative directory of active and archived students.
 | `student_phone` | String | No | Direct student phone number | `+919876543211` |
 | `parent_email` | String | No | Parent email for billing notifications | `parent.sharma@example.com` |
 | `student_email` | String | No | Student email for calendar invites | `aarav@example.com` |
-| `subject` | String | No | Primary enrolled subject/grade | `Grade 10 Mathematics` |
+| `subject` | String | No | Dedicated subject column | `Grade 10 Mathematics` |
 | `status` | Enum | Yes | `ACTIVE`, `INACTIVE`, `ARCHIVED` | `ACTIVE` |
-| `notes` | String | No | Internal background or parent remarks | `Targeting 95%+ in ICSE boards` |
-| `created_at` | ISO Timestamp | Yes | Record creation timestamp | `2026-10-21T06:00:00.000Z` |
-| `updated_at` | ISO Timestamp | Yes | Last modification timestamp | `2026-10-21T06:00:00.000Z` |
 
 ---
 
-### Tab 2: `Packages`
+### Tab 2: `Packages` (Exactly 11 columns)
 Defines course blocks, fee structures, and billing plans.
 
 | Column Header | Data Type | Required | Description | Sample Value |
 |---|---|---|---|---|
 | `package_id` | String (`pkg_...`) | Yes | Unique package/plan identifier | `pkg_82hx91nd44` |
 | `student_id` | String (`stu_...`) | Yes | Foreign key to `Students` | `stu_k92j8fms01` |
-| `plan_type` | Enum | Yes | `PACKAGE`, `MONTHLY`, `YEARLY`, `PER_CLASS` | `PACKAGE` |
-| `plan_name` | String | Yes | Descriptive title of the plan | `10-Class Physics Sprint` |
+| `student_name` | String | Yes | Student name snapshot for readability | `Aarav Sharma` |
+| `plan_type` | Enum/Text | Yes | Billing model: `PACKAGE`, `MONTHLY`, `YEARLY`, `PER_CLASS` | `PACKAGE` |
 | `currency` | String | Yes | Currency code (`INR`) | `INR` |
-| `per_class_rate` | Number | No | Effective rate per session | `1200` |
-| `price` | Number | Yes | Total plan price or recurring billing amount | `12000` |
+| `package_price` | Number | Yes | Total agreed price or recurring billing amount | `12000` |
+| `per_class` | Number | No | Effective rate per individual session | `1200` |
 | `classes_purchased` | Number | Yes | Total sessions purchased (0 for unlimited time plans) | `10` |
 | `start_date` | Date (YYYY-MM-DD) | Yes | Plan commencement date | `2026-10-01` |
-| `billing_frequency` | Enum | Yes | `ONE_OFF`, `MONTHLY`, `YEARLY`, `PER_CLASS` | `ONE_OFF` |
+| `end_date` | Date (YYYY-MM-DD) | No | Plan expiration or validity end date | `2026-11-01` |
 | `next_due_date` | Date (YYYY-MM-DD) | No | Next billing invoice milestone date | `2026-11-01` |
-| `status` | Enum | Yes | `ACTIVE`, `COMPLETED`, `EXPIRED`, `CANCELLED` | `ACTIVE` |
-| `notes` | String | No | Plan conditions or discount notes | `10% sibling discount applied` |
-| `created_at` | ISO Timestamp | Yes | Record creation timestamp | `2026-10-01T08:00:00.000Z` |
-| `updated_at` | ISO Timestamp | Yes | Last modification timestamp | `2026-10-01T08:00:00.000Z` |
 
 > [!IMPORTANT]
 > **Authoritative Balance Invariant:**  
@@ -93,75 +86,73 @@ Defines course blocks, fee structures, and billing plans.
 
 ---
 
-### Tab 3: `ClassSessions`
+### Tab 3: `ClassSessions` (Exactly 19 columns)
 Calendar events, completed lessons, teacher/student attendance, and credit effects.
 
 | Column Header | Data Type | Required | Description | Sample Value |
 |---|---|---|---|---|
-| `class_id` | String (`cls_...`) | Yes | Unique class session identifier | `cls_91nd72bf11` |
+| `class_session_id` | String (`cls_...`) | Yes | Unique class session identifier | `cls_91nd72bf11` |
 | `student_id` | String (`stu_...`) | Yes | Foreign key to `Students` | `stu_k92j8fms01` |
+| `student_name` | String | Yes | Student name snapshot | `Aarav Sharma` |
 | `package_id` | String (`pkg_...`) | No | Associated package (if consuming prepaid credits) | `pkg_82hx91nd44` |
-| `billed_fee_id` | String (`fee_...`) | No | Invoiced fee obligation ID (for per-class billing duplicate protection) | `fee_48fn19kd22` |
-| `class_date` | Date (YYYY-MM-DD) | Yes | Date of session | `2026-10-21` |
-| `start_time` | String (HH:mm) | Yes | Scheduled start time | `17:00` |
-| `end_time` | String (HH:mm) | Yes | Scheduled end time | `18:00` |
-| `duration_minutes` | Number | Yes | Session duration | `60` |
-| `status` | Enum | Yes | `SCHEDULED`, `COMPLETED`, `CANCELLED`, `RESCHEDULED` | `COMPLETED` |
-| `teacher_attended` | Boolean | Yes | `TRUE` if teacher joined/conducted class | `TRUE` |
-| `student_attended` | Boolean | Yes | `TRUE` if student attended session | `TRUE` |
-| `credit_deducted` | Number | Yes | Exact credit impact: `1`, `0`, or `-1` | `1` |
+| `meeting_link_id` | String (`ml_...`) | No | Virtual meeting room link used for class | `ml_19nd83hf44` |
+| `class_title` | String | Yes | Human-readable title | `Rotational Mechanics` |
+| `scheduled_start` | ISO Timestamp | Yes | Scheduled start time | `2026-10-21T17:00:00.000Z` |
+| `scheduled_end` | ISO Timestamp | Yes | Scheduled end time | `2026-10-21T18:00:00.000Z` |
+| `actual_start` | ISO Timestamp | No | Actual start time if recorded | `2026-10-21T17:02:00.000Z` |
+| `actual_end` | ISO Timestamp | No | Actual end time if recorded | `2026-10-21T18:01:00.000Z` |
+| `session_status` | Enum | Yes | `SCHEDULED`, `COMPLETED`, `CANCELLED`, `RESCHEDULED`, `NO_SHOW` | `COMPLETED` |
+| `attendance_status` | Enum | Yes | `NOT_MARKED`, `ATTENDED`, `ABSENT`, `EXCUSED` | `ATTENDED` |
+| `class_credit_effect` | Enum | Yes | `PENDING`, `CONSUME`, `NO_CONSUME`, `CREDIT_BACK` | `CONSUME` |
 | `cancellation_reason` | String | No | Reason for cancellation or notice window | `Sick with >24h notice` |
-| `credit_waiver` | Boolean | No | `TRUE` if tutor explicitly waived late-cancellation penalty | `FALSE` |
-| `meeting_link` | String (URL) | No | Session-specific URL (or blank to use primary link) | `https://meet.google.com/xyz` |
+| `credit_restoration_for_session_id` | String | Conditional | Populated ONLY for `CREDIT_BACK` records | `` |
 | `notes` | String | No | Lesson homework, topics covered, or remarks | `Covered Rotational Dynamics` |
 | `created_at` | ISO Timestamp | Yes | Record creation timestamp | `2026-10-20T10:00:00.000Z` |
 | `updated_at` | ISO Timestamp | Yes | Last modification timestamp | `2026-10-21T18:05:00.000Z` |
+| `completed_at` | ISO Timestamp | No | Timestamp when attendance was marked | `2026-10-21T18:05:00.000Z` |
 
 ---
 
-### Tab 4: `FeeObligations`
+### Tab 4: `FeeObligations` (Exactly 16 columns)
 Authoritative invoice demands and recurring fee obligations.
 
 | Column Header | Data Type | Required | Description | Sample Value |
 |---|---|---|---|---|
-| `fee_id` | String (`fee_...`) | Yes | Unique fee obligation identifier | `fee_48fn19kd22` |
+| `fee_obligation_id` | String (`fee_...`) | Yes | Unique fee obligation identifier | `fee_48fn19kd22` |
 | `student_id` | String (`stu_...`) | Yes | Foreign key to `Students` | `stu_k92j8fms01` |
+| `student_name` | String | Yes | Student name snapshot | `Aarav Sharma` |
 | `package_id` | String (`pkg_...`) | No | Optional reference to package | `pkg_82hx91nd44` |
-| `billing_period` | String | Yes | Period or description | `October 2026 Tutoring (4 classes @ ₹1,500)` |
-| `billed_class_ids` | String (CSV) | No | Exact session IDs included in this invoice | `cls_01,cls_02,cls_03,cls_04` |
-| `due_date` | Date (YYYY-MM-DD) | Yes | Payment deadline | `2026-11-05` |
-| `amount` | Number | Yes | Total billed obligation | `6000.00` |
+| `obligation_description` | String | Yes | Period or description | `October 2026 Tutoring (4 classes @ ₹1,500)` |
+| `amount_due` | Number | Yes | Total billed obligation before credit | `6000.00` |
+| `credit_applied` | Number | Yes | Overpayment credit absorbed by invoice | `0.00` |
 | `currency` | String | Yes | Currency code (`INR`) | `INR` |
-| `status` | Enum | Yes | `OPEN`, `PARTIALLY_PAID`, `PAID`, `VOID` | `PARTIALLY_PAID` |
+| `issue_date` | Date (YYYY-MM-DD) | Yes | Issuance date | `2026-10-21` |
+| `due_date` | Date (YYYY-MM-DD) | Yes | Payment deadline | `2026-11-05` |
+| `obligation_status` | Enum | Yes | `OPEN`, `PARTIALLY_PAID`, `PAID`, `VOID` | `OPEN` |
 | `notes` | String | No | Invoicing remarks or payment terms | `Generated via Monthly Invoice Preview` |
 | `created_at` | ISO Timestamp | Yes | Creation timestamp | `2026-10-25T09:00:00.000Z` |
 | `updated_at` | ISO Timestamp | Yes | Last modification timestamp | `2026-10-26T14:30:00.000Z` |
 | `voided_at` | ISO Timestamp | No | Timestamp if invoice was voided | `` |
 | `void_reason` | String | No | Administrative justification for void | `` |
 
-> [!NOTE]
-> `paid_amount` and `outstanding_balance` are dynamically derived by summing non-voided `Payments` referencing `fee_id`.
-
 ---
 
-### Tab 5: `Payments`
+### Tab 5: `Payments` (Exactly 16 columns)
 Immutable ledger of financial receipts, partial payments, and unapplied student credit.
 
 | Column Header | Data Type | Required | Description | Sample Value |
 |---|---|---|---|---|
 | `payment_id` | String (`pay_...`) | Yes | Unique payment receipt identifier | `pay_73kd91nb33` |
 | `student_id` | String (`stu_...`) | Yes | Foreign key to `Students` | `stu_k92j8fms01` |
-| `fee_id` | String (`fee_...`) | No | Foreign key to `FeeObligations` (blank if advance payment) | `fee_48fn19kd22` |
-| `package_id` | String (`pkg_...`) | No | Optional foreign key to `Packages` | `pkg_82hx91nd44` |
+| `student_name` | String | Yes | Student name snapshot | `Aarav Sharma` |
+| `fee_obligation_id` | String (`fee_...`) | Yes | Foreign key to `FeeObligations` | `fee_48fn19kd22` |
 | `payment_date` | Date (YYYY-MM-DD) | Yes | Date funds were received | `2026-10-26` |
 | `amount` | Number | Yes | Total amount received in this transaction | `7000.00` |
-| `applied_amount` | Number | Yes | Portion applied to target fee obligation | `6000.00` |
-| `unapplied_amount` | Number | Yes | Excess amount held as student credit for future fees | `1000.00` |
 | `currency` | String | Yes | Transaction currency (`INR`) | `INR` |
 | `payment_method` | Enum | Yes | `UPI`, `BANK_TRANSFER`, `CASH`, `CHEQUE`, `OTHER` | `UPI` |
-| `reference` | String | No | Bank UTR or transaction reference number | `UPI/428919201928` |
-| `status` | Enum | Yes | `RECORDED`, `VOID` | `RECORDED` |
+| `transaction_reference` | String | No | Bank UTR or transaction reference number | `UPI/428919201928` |
 | `idempotency_key` | String | Yes | Client UUID preventing double-submission | `idemp_83fn2019` |
+| `payment_status` | Enum | Yes | `RECORDED`, `VOID` | `RECORDED` |
 | `notes` | String | No | Transaction remarks | `Overpayment of ₹1,000 tracked as unapplied credit` |
 | `created_at` | ISO Timestamp | Yes | Creation timestamp | `2026-10-26T14:30:00.000Z` |
 | `updated_at` | ISO Timestamp | Yes | Modification timestamp | `2026-10-26T14:30:00.000Z` |
@@ -170,16 +161,19 @@ Immutable ledger of financial receipts, partial payments, and unapplied student 
 
 ---
 
-### Tab 6: `MeetingLinks`
+### Tab 6: `MeetingLinks` (Exactly 10 columns)
 Configured virtual meeting rooms and online conference URLs per student.
 
 | Column Header | Data Type | Required | Description | Sample Value |
 |---|---|---|---|---|
 | `meeting_link_id` | String (`ml_...`) | Yes | Unique meeting link identifier | `ml_19nd83hf44` |
 | `student_id` | String (`stu_...`) | Yes | Foreign key to `Students` | `stu_k92j8fms01` |
-| `primary_link` | String (HTTPS URL) | Yes | Default Google Meet / Zoom URL | `https://meet.google.com/abc-defg-hij` |
-| `backup_link` | String (HTTPS URL) | No | Secondary backup URL if primary fails | `https://zoom.us/j/987654321` |
-| `notes` | String | No | Link instructions (passcodes, platform) | `Password: math2026` |
+| `student_name` | String | Yes | Student name snapshot | `Aarav Sharma` |
+| `link_label` | String | Yes | Label (e.g. Primary Google Meet, Backup Zoom) | `Primary Google Meet` |
+| `meeting_url` | String (HTTPS URL) | Yes | Default Google Meet / Zoom URL | `https://meet.google.com/abc-defg-hij` |
+| `provider` | Enum | Yes | `GOOGLE_MEET`, `ZOOM`, `OTHER` | `GOOGLE_MEET` |
+| `is_preferred` | Boolean | Yes | `TRUE` if default primary link for student | `TRUE` |
+| `link_status` | Enum | Yes | `ACTIVE`, `INACTIVE` | `ACTIVE` |
 | `created_at` | ISO Timestamp | Yes | Creation timestamp | `2026-10-01T09:00:00.000Z` |
 | `updated_at` | ISO Timestamp | Yes | Modification timestamp | `2026-10-01T09:00:00.000Z` |
 

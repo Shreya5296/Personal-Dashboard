@@ -1,364 +1,118 @@
 # 04 — Data Validation and Schema Migrations
 
-## 1. Purpose
+**Project:** Student Management Dashboard / Personal Dashboard  
+**Status:** Authoritative Architecture Specification  
+**Version:** 2.0.0 (Finalized Owner Data Model)  
+**Companion Schema:** `03-data/01-master-spreadsheet-schema.md`
+
+---
+
+## 1. Purpose & Migration Philosophy
+
+This document defines the validation rules, integrity safeguards, and schema migration procedures for the Personal Dashboard Google Spreadsheet database.
+
+### 1.1 Core Principles
+1. **Physical Column Deletion, Not Just Renaming**: Obsolete columns are physically deleted from the spreadsheet grid (`sheet.deleteColumns(targetColCount + 1, count)`), not merely overwritten in Row 1.
+2. **Strict Verification**: After mutating headers, the migration runner reads back Row 1 and asserts that `lastColumn == targetColCount` and that every column matches the expected header name.
+3. **Forbidden Obsolete Columns Assertions**: The runner explicitly scans headers to guarantee forbidden legacy CRM fields (`first_name`, `last_name`, `dob`, `city`, `expiry_date`, `plan_name`, etc.) do not exist.
+4. **Physical Removal of `Enrollments`**: The legacy `Enrollments` tab is checked for data. If it has 0 data rows (empty header-only tab), it is physically deleted via `ss.deleteSheet(enrSheet)`.
+5. **Operational Tabs Preservation**: Operational tabs (`AuditLog`, `ImportBatches`, `ImportRowResults`, `AppConfig`, `StudentNotes`) are strictly preserved.
+6. **Pre-Launch Backup Preservation**: Canonical backup `1kIFYmI81DfNIAqb-ZHsTifiKE6JxhfQrXqpfphrw9eU` is preserved untouched.
+
+---
+
+## 2. Authoritative Target Schemas
+
+The migration runner enforces these exact physical columns in this exact order:
+
+```javascript
+var TARGET_SCHEMAS = {
+  'Students': [
+    'student_id', 'student_name', 'parent_name', 'parent_phone', 'student_phone',
+    'parent_email', 'student_email', 'subject', 'status'
+  ],
+  'Packages': [
+    'package_id', 'student_id', 'student_name', 'plan_type', 'currency',
+    'package_price', 'per_class', 'classes_purchased',
+    'start_date', 'end_date', 'next_due_date'
+  ],
+  'FeeObligations': [
+    'fee_obligation_id', 'student_id', 'student_name', 'package_id',
+    'obligation_description', 'amount_due', 'credit_applied', 'currency',
+    'issue_date', 'due_date', 'obligation_status', 'notes',
+    'created_at', 'updated_at', 'voided_at', 'void_reason'
+  ],
+  'Payments': [
+    'payment_id', 'student_id', 'student_name', 'fee_obligation_id',
+    'payment_date', 'amount', 'currency', 'payment_method',
+    'transaction_reference', 'idempotency_key', 'payment_status', 'notes',
+    'created_at', 'updated_at', 'voided_at', 'void_reason'
+  ],
+  'ClassSessions': [
+    'class_session_id', 'student_id', 'student_name', 'package_id',
+    'meeting_link_id', 'class_title', 'scheduled_start', 'scheduled_end',
+    'actual_start', 'actual_end', 'session_status', 'attendance_status',
+    'class_credit_effect', 'cancellation_reason',
+    'credit_restoration_for_session_id', 'notes',
+    'created_at', 'updated_at', 'completed_at'
+  ],
+  'MeetingLinks': [
+    'meeting_link_id', 'student_id', 'student_name', 'link_label',
+    'meeting_url', 'provider', 'is_preferred', 'link_status',
+    'created_at', 'updated_at'
+  ]
+};
+```
+
+### Forbidden Obsolete Columns
+```javascript
+var FORBIDDEN_OBSOLETE_COLUMNS = [
+  'first_name', 'last_name', 'preferred_name', 'date_of_birth', 'dob',
+  'parent_guardian_name', 'parent_guardian_relationship', 'primary_phone',
+  'secondary_phone', 'internal_summary', 'city', 'first_enrollment_date',
+  'last_active_date', 'source_reference', 'in_INR', 'closed_at',
+  'expiry_date', 'plan_name', 'package_status'
+];
+```
+
+---
+
+## 3. Migration Runner Implementation (`SchemaMigration.gs`)
+
+The standalone migration runner is implemented in `02-backend/apps-script/setup/SchemaMigration.gs`.
+
+### Execution Flow:
+1. **Spreadsheet Identity & Safety Lock**:
+   - Opens target spreadsheet by canonical ID (`1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8`).
+   - Asserts that `ss.getId() === CANONICAL_SPREADSHEET_ID`.
+   - Acquires `LockService.getScriptLock()` with 15-second timeout.
+2. **Column Alignment & Physical Truncation**:
+   - For each of the 6 working tabs:
+     * Inserts sheet if missing.
+     * Expands grid width if current column count is less than target.
+     * Writes exact target headers into Row 1 (`1, 1, 1, targetColCount`) with bold styling.
+     * Calculates `deletedCount = updatedMaxCols - targetColCount`.
+     * If `deletedCount > 0`, calls `sheet.deleteColumns(targetColCount + 1, deletedCount)`.
+     * Reads back Row 1 and verifies 100% header alignment and absence of forbidden columns.
+3. **Empty `Enrollments` Sheet Removal**:
+   - Finds sheet named `'Enrollments'`.
+   - If present and row count $\le 1$, executes `ss.deleteSheet(enrSheet)`.
+   - Asserts `ss.getSheetByName('Enrollments') === null`.
+4. **Operational Tabs Verification**:
+   - Asserts that `AuditLog`, `ImportBatches`, `ImportRowResults`, `AppConfig`, and `StudentNotes` exist intact.
+5. **Audit Event Logging**:
+   - Appends an audit entry (`SCHEMA / MIGRATE_PHYSICAL_SCHEMA / SUCCESS`) to `AuditLog`.
+6. **Result Reporting**:
+   - Returns structured JSON containing per-tab status, final column count, deleted column count, and verification errors.
 
-Define how the Student Management Dashboard validates data, protects relationships, detects schema drift, and safely evolves its Google Sheets database.
+---
 
-This document complements:
-- `01-master-spreadsheet-schema.md` — canonical tab and column definitions.
-- `02-entity-relationships-and-data-dictionary.md` — entities, field meanings, and relationships.
-- `03-financial-and-class-balance-calculations.md` — authoritative financial and class-balance rules.
-- `05-existing-sheets-import-and-reconciliation.md` — source-data import behavior.
+## 4. Execution Protocol & Owner Runbook
 
-If a rule here conflicts with a canonical field definition or business rule, stop and resolve the conflict in the relevant documents before implementation. Do not silently choose an interpretation.
+Due to Google Cloud Project API boundaries (Sheets API and Execution API disabled in GCP project `1072944905499`), physical modification of the spreadsheet is performed safely via the Apps Script editor:
 
-## 2. Core Principles
-
-1. Validate on the Apps Script backend before writing data.
-2. Frontend validation improves usability but is never a security or integrity boundary.
-3. Validate records by header name and schema definition, never by assumed column letter or row position.
-4. Keep identifiers stable and independent of names, phone numbers, and row numbers.
-5. Reject invalid references and invalid state transitions.
-6. Do not silently repair ambiguous, financial, or historical data.
-7. Make schema changes explicit, versioned, repeatable, and recoverable.
-8. Do not delete or rename production columns automatically.
-9. Keep validation errors actionable without exposing secrets or unnecessary personal information.
-10. Prefer a small set of shared validators over duplicated rules across endpoints.
-
-## 3. Validation Layers
-
-### 3.1 Request validation
-
-Validate the incoming request envelope, operation name, required fields, allowed fields, value types, string lengths, and identifier formats before business logic runs.
-
-Reject malformed JSON, unknown operations, unsupported enum values, and unexpected payload shapes with a consistent API error response.
-
-### 3.2 Field validation
-
-Validate each field against the canonical schema, including requiredness, length, format, range, and allowed values.
-
-### 3.3 Relationship validation
-
-Before a write, verify that referenced records exist and that their relationships are consistent. For example, a payment's student must match the student associated with its fee obligation; a package must belong to the same student and enrollment as a linked class session.
-
-### 3.4 Business-rule validation
-
-Apply the rules defined in the business-rules document. Examples include payment allocation, package balance, session completion, archiving, and reactivation.
-
-### 3.5 Persistence validation
-
-Check that the target tab and expected headers exist, that the schema version is supported, and that the intended mutation can be performed safely.
-
-### 3.6 Post-write verification
-
-For high-impact mutations, verify the persisted result or use a read-back check when appropriate. Do not return success if the write failed or the result cannot be confirmed.
-
-## 4. Shared Field Rules
-
-### 4.1 Identifiers
-
-- IDs are generated by the backend.
-- IDs must be non-empty, unique, immutable, and treated as strings.
-- IDs must not be inferred from row positions.
-- User-provided IDs must not be accepted as new IDs unless the operation is an explicitly supported import or migration.
-- A duplicate ID is a data-integrity error; do not overwrite the existing record.
-
-### 4.2 Strings
-
-- Trim leading and trailing whitespace where appropriate.
-- Do not collapse meaningful internal spaces in names or notes.
-- Enforce documented maximum lengths.
-- Reject values that are blank when the field is required.
-- Treat spreadsheet content as data; never evaluate it as code or HTML.
-- Prevent formula injection in user-controlled values when exporting or writing data in a way that could cause spreadsheet formulas to execute. Preserve legitimate values without silently changing their meaning.
-
-### 4.3 Dates and timestamps
-
-- Validate that dates are real calendar dates, not merely strings matching a pattern.
-- Keep date-only fields distinct from timestamp fields.
-- Store timestamps in a documented, consistent timezone-aware convention.
-- Interpret dashboard display times using `Asia/Kolkata` unless configuration explicitly changes the display timezone.
-- Reject impossible dates and malformed timestamps.
-- Do not infer a missing date from the current date unless the relevant field explicitly defines that default.
-- Validate end dates against start dates where applicable.
-
-### 4.4 Monetary values
-
-- Use the configured currency consistently; Version 1 defaults to INR.
-- Store amounts as numeric values, not strings containing currency symbols.
-- Reject NaN, infinity, malformed numeric strings, and unsupported precision.
-- Apply one documented rounding policy at calculation boundaries.
-- Do not use a display-formatted amount as the source for a financial calculation.
-- Distinguish charges, payments, credits, refunds, and voids according to the financial model.
-- Never permit an invalid amount by silently coercing it to zero.
-
-### 4.5 Booleans and enums
-
-- Boolean fields must be explicit true/false values after normalization.
-- Enum values must match the canonical documented set.
-- Do not accept arbitrary status strings.
-- Any enum expansion requires a documented schema/business-rule change and corresponding tests.
-
-### 4.6 URLs
-
-- Accept only explicitly permitted URL schemes; meeting links should normally use HTTPS.
-- Reject executable schemes such as `javascript:` and malformed URLs.
-- Provider labels must not be treated as proof that a URL belongs to that provider.
-- Validate URL/provider consistency where practical and require review for ambiguous links.
-- Never open an unvalidated URL automatically.
-
-## 5. Entity-Specific Validation
-
-### 5.1 Students
-
-- Require the canonical required identity and contact fields.
-- Validate `student_status` against the supported lifecycle values.
-- Preserve the same `student_id` through edits, archiving, and reactivation.
-- Treat phone numbers as strings so leading zeroes and country prefixes are preserved.
-- Use duplicate detection to flag likely matches; do not merge people automatically based only on a name or phone number.
-- Do not hard-delete a student through normal application operations.
-
-### 5.2 Enrollments and packages
-
-- Every enrollment must reference an existing student.
-- Every package must reference an existing student.
-- If an enrollment ID is supplied for a package, verify that it belongs to the same student.
-- Class quantity must be a positive integer unless the canonical schema explicitly permits a different case.
-- Validate date ordering and status transitions.
-- A package balance is calculated from valid session records and supported adjustments; it is not a manually editable authoritative field.
-
-### 5.3 Fee obligations and payments
-
-- Every fee obligation must reference an existing student.
-- Optional enrollment/package references must belong to the same student.
-- Every payment must reference an existing student and a valid, non-void fee obligation belonging to that student with matching currency.
-- Missing obligation IDs, nonexistent or void obligations, student mismatches, currency mismatches, and payments exceeding the allowed outstanding balance must be strictly rejected before processing.
-- Advance payments and unallocated credits are explicitly out of scope in Version 1.
-- Reject zero or negative amounts for ordinary payment records; refunds or reversals require explicit modeling.
-- Payment creation requires an `idempotency_key` that is stored directly alongside the payment record in the spreadsheet.
-- Deduplication rules: A retry with the same `idempotency_key` and equivalent payload returns the original outcome; reusing the key with a materially different payload must return a conflict error.
-- For class completion, deduplication is enforced via existing-state check, script locking, and single-credit-consumption protection.
-- A voided payment must not count toward paid balances and must retain an audit trail.
-- Do not directly edit a calculated outstanding balance.
-
-### 5.4 Class sessions and meeting links
-
-- Every session must reference an existing student.
-- Linked enrollment, package, and meeting-link records must be consistent with the session's student.
-- Validate that scheduled end time follows scheduled start time.
-- A completed session must satisfy the required completion fields.
-- A cancelled or rescheduled session must not be counted as completed class consumption.
-- Attendance and class-credit effects must use documented enum values and transition rules.
-- A preferred meeting link must be active and valid under the canonical preferred-link rule.
-
-### 5.5 Notes, audit records, and imports
-
-- Notes must reference an existing student and contain non-empty required content.
-- Audit entries are created by backend operations and must not be editable through ordinary CRUD endpoints.
-- Import row results must reference an existing import batch.
-- Import counts must reconcile with recorded row outcomes.
-- Import failures must identify a source row or stable source reference without unnecessarily copying personal data into error messages.
-
-## 6. Cross-Record Invariants
-
-Before committing a mutation, validate applicable invariants:
-
-1. Every foreign key points to an existing record.
-2. Related student IDs agree across the entire relationship chain.
-3. Record IDs are unique within their entity type.
-4. Voided financial records are excluded from authoritative totals.
-5. Historical records are retained when a student becomes inactive.
-6. A reactivated student keeps the original student ID.
-7. A session cannot consume a package class more than once.
-8. A package cannot be linked to another student's session.
-9. Every payment must reference a valid, non-void fee obligation belonging to the same student with matching currency, and must not exceed the remaining outstanding balance.
-10. A schema migration cannot silently discard populated columns or records.
-
-When an invariant fails, reject the operation with a stable error code and a human-readable explanation. Do not attempt broad automatic repair during a normal user request.
-
-## 7. Validation Errors
-
-Use a consistent API error structure as defined in the API contract. Validation errors should identify:
-- A stable error code.
-- The affected field or record reference where safe.
-- A concise explanation of the failed rule.
-- Whether the user can correct and retry the request.
-
-Do not include stack traces, tokens, spreadsheet credentials, or full sensitive records in client-facing errors.
-
-Examples of error categories:
-- `VALIDATION_ERROR`
-- `INVALID_DATE`
-- `INVALID_AMOUNT`
-- `INVALID_STATUS`
-- `RECORD_NOT_FOUND`
-- `DUPLICATE_ID`
-- `RELATIONSHIP_MISMATCH`
-- `SCHEMA_MISMATCH`
-- `CONFLICT`
-- `MIGRATION_REQUIRED`
-
-The final list and response envelope must match the API specification.
-
-## 8. Spreadsheet Schema Health Checks
-
-The backend must provide a controlled schema health check that verifies:
-- Required tabs exist.
-- Required headers exist exactly as documented.
-- Header names are unique within each tab.
-- The schema version is supported.
-- Required configuration values are present and valid.
-- No required tab is unexpectedly empty or malformed where data is expected.
-
-Header order may be normalized by the repository layer if the canonical implementation explicitly supports header-name mapping. Missing required headers, duplicate headers, or unsupported schema versions must fail closed for affected writes.
-
-The health check must report the affected tab and issue without exposing sensitive data. It must not automatically rename tabs, remove columns, or rewrite records.
-
-## 9. Schema Versioning
-
-Maintain a single explicit `schema_version` value in the agreed application configuration location. The configuration document must specify its initial value and storage location.
-
-A schema version identifies the structure and semantics expected by the deployed backend. It is not the application release number.
-
-Every schema migration must have:
-- A unique migration identifier.
-- A source schema version.
-- A target schema version.
-- A concise purpose.
-- Preconditions.
-- An ordered set of changes.
-- Validation checks.
-- A backup/recovery procedure.
-- A post-migration verification step.
-
-Migrations must be applied in a documented order. The backend must refuse unsafe writes when the stored schema version is newer than the backend supports or when a required migration has not been applied.
-
-### Approved Migration: MIG-001 (Schema Version 1.0.0 → 1.1.0)
-
-- **Source version:** `1.0.0`
-- **Target version:** `1.1.0`
-- **Purpose:** Enforce financial integrity and persist idempotency directly on payment records.
-- **Changes:**
-  1. Add mandatory `idempotency_key` column to `Payments` tab (Column 9).
-  2. Change `Payments.fee_obligation_id` to mandatory (Required: Yes).
-  3. Enforce mandatory `class_title` (with frontend default 'Class session') and `scheduled_end` (persisted from UI duration) on `ClassSessions`.
-  4. Expand `ClassSessions.class_credit_effect` enum to include `CREDIT_BACK` and align credit calculation formulas and session outcome rules.
-- **Verification:** Read back headers across all tabs, verify unique column names, confirm `idempotency_key` is persisted for payments, and update `schema_version` config key to `1.1.0`.
-
-## 10. Migration Procedure
-
-For each schema change:
-
-1. Update the canonical data dictionary and affected business/API documents.
-2. Define the old and new schema versions.
-3. Identify affected tabs, columns, records, and relationships.
-4. Take a verified backup of the affected data.
-5. Run a read-only preflight check.
-6. Report missing columns, malformed values, duplicate IDs, and invalid relationships.
-7. Stop if unresolved issues could cause data loss or ambiguous interpretation.
-8. Apply the migration in a controlled operation.
-9. Re-read and validate migrated data.
-10. Reconcile record counts and key totals.
-11. Update the stored schema version only after successful verification.
-12. Record the migration outcome in operational logs and, where appropriate, the audit log.
-13. Keep the recovery procedure available until the migration is accepted.
-
-Do not update the schema version before the actual data migration and verification succeed.
-
-## 11. Safe and Unsafe Changes
-
-### Generally additive changes
-
-Examples include adding an optional column with a documented default or adding a new tab for a new entity. These still require a versioned migration and compatibility tests.
-
-### Changes requiring explicit transformation
-
-Examples include renaming a column, splitting a field, changing a data type, changing an enum, altering a relationship, or changing the meaning of an existing field.
-
-These changes require a migration script or procedure that preserves existing values and records a reconciliation result.
-
-### Prohibited automatic changes
-
-- Deleting a populated column because it is undocumented.
-- Replacing IDs with row numbers.
-- Merging students based only on fuzzy matching.
-- Recalculating historical financial records without an approved rule.
-- Converting malformed amounts to zero.
-- Removing old payments, sessions, notes, or audit entries to make a migration pass.
-- Silently changing a status to a convenient default.
-
-## 12. Migration Idempotency and Recovery
-
-A migration should be safe to detect as already applied and must not duplicate records when retried.
-
-Use the migration identifier and stored schema version to determine whether a migration is pending, completed, or inconsistent. Do not rely only on a successful execution log.
-
-If a migration fails:
-- Do not advance the schema version.
-- Record the failure and affected stage.
-- Avoid rerunning non-idempotent steps blindly.
-- Restore from backup or run a documented repair procedure when needed.
-- Reconcile all affected records before resuming normal writes.
-
-Because Google Sheets does not provide full multi-table transactions, migrations must minimize partial writes and include explicit recovery steps.
-
-## 13. Concurrent Writes
-
-For mutations that may conflict, the backend must use appropriate Apps Script locking and revalidate relevant records within the protected operation.
-
-Keep critical lock duration short. Do not perform unnecessary network requests while holding a lock.
-
-For operations touching multiple tabs, define the write order, failure behavior, and reconciliation strategy. If partial completion is possible, return an explicit failure/conflict and do not imply that the full operation succeeded.
-
-## 14. Data Quality Reports
-
-Provide an administrative validation report for migration and maintenance use. It should summarize:
-- Missing required values.
-- Duplicate IDs.
-- Potential duplicate students requiring review.
-- Invalid dates or amounts.
-- Broken foreign-key references.
-- Unsupported enum values.
-- Schema/header mismatches.
-- Financial reconciliation discrepancies.
-- Package/session balance discrepancies.
-
-Reports should identify affected record IDs or source row references. Avoid exposing unnecessary personal data.
-
-The report must distinguish blocking errors from warnings. Blocking errors prevent unsafe imports or writes; warnings require review but do not silently modify records.
-
-## 15. Testing Requirements
-
-Tests must cover:
-- Required and optional fields.
-- Invalid and boundary values.
-- Malformed dates and numeric values.
-- Unknown enum values.
-- Duplicate IDs.
-- Missing related records.
-- Relationships between different students.
-- Invalid financial allocations.
-- Duplicate payment submissions.
-- Invalid class status transitions.
-- Invalid meeting URLs.
-- Missing and duplicate spreadsheet headers.
-- Unsupported schema versions.
-- Migration retries.
-- Migration interruption and recovery.
-- Record-count reconciliation.
-- Preservation of historical records.
-
-Test fixtures must not contain real student or parent personal data.
-
-## 16. Acceptance Criteria
-
-This specification is implemented when:
-- All protected writes validate on the backend.
-- Repository operations validate the expected spreadsheet schema.
-- Cross-record relationships are checked before mutation.
-- Invalid operations fail without silently corrupting existing records.
-- Schema versions are explicit and checked.
-- Migrations are documented, repeatable, and recoverable.
-- Existing records and history survive supported migrations.
-- Migration and validation results are reviewable.
-- Automated tests cover the critical rules above.
+1. Open the Apps Script project (`https://script.google.com/d/1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL/edit`).
+2. Open the file `setup/SchemaMigration.gs`.
+3. In the function dropdown at the top, select `runApprovedSchemaMigration`.
+4. Click **Run** (authorized under `ashreya0502@gmail.com`).
+5. Execution logs will show the verification of each tab, the physical deletion of excess columns, and the successful removal of the `Enrollments` tab.

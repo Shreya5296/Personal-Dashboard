@@ -219,3 +219,18 @@ NEXT ACTION
   * 4. Frontend Forms & Models Updated: StudentForm, StudentList, StudentSummary, StudentProfilePage, studentValidation, studentApi, creditCalculator aligned.
   * 5. Quality Gates Verified: 107/107 Vitest tests passing across 22 test files (including 4 new regression tests proving single student_name, strict email separation, dedicated subject column, and overpayment ledger reconciliation). Line limit verified (117 files in src/ and public/ <= 149 lines). Strict TypeScript check passing with 0 errors. Clean Vite production build.
   * Status: IMPLEMENTED AND VERIFIED LOCALLY. READY FOR OWNER ACCEPTANCE.
+- Finalize Dashboard Data Model Documentation and Google Sheet completed:
+  * 1. Authoritative Schema Finalization:
+    - Students: Exactly 9 columns in order (student_id, student_name, parent_name, parent_phone, student_phone, parent_email, student_email, subject, status). Dropped notes, created_at, updated_at, archived_at, and CRM fluff.
+    - Packages: Exactly 11 columns in order (package_id, student_id, student_name, plan_type, currency, package_price, per_class, classes_purchased, start_date, end_date, next_due_date). Uses end_date, dropped plan_name, plan_status, package_status, notes, created_at, updated_at.
+    - Child tables aligned: FeeObligations (16 cols), Payments (16 cols), ClassSessions (19 cols), MeetingLinks (10 cols).
+    - Operational tabs preserved: StudentNotes (9 cols), AuditLog (12 cols), ImportBatches (14 cols), ImportRowResults (9 cols), AppConfig (4 cols).
+    - Enrollments deprecated and removed from active schemas.
+  * 2. Comprehensive Documentation Alignment: Updated 03-data/01-master-spreadsheet-schema.md, 03-data/02-entity-relationships-and-data-dictionary.md, 03-data/03-financial-and-class-balance-calculations.md, 03-data/04-data-validation-and-schema-migrations.md, 00-documentation/04-google-sheets-data-model.md, docs/prelaunch/final-schema-proposal.md, and 05-agent-handoff/00-project-state.md.
+  * 3. Backend & Migration Hardening: Updated SheetRegistry.gs, SchemaMigration.gs, PackageService.gs, PackageValidation.gs. Pushed all 68 files to Apps Script editor HEAD via clasp.
+  * 4. Infrastructure Verification:
+    - Canonical spreadsheet (1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8) inspected via deployed endpoint system.inspectTabs: 1 row per tab, 0 business rows.
+    - Pre-launch backup (1kIFYmI81DfNIAqb-ZHsTifiKE6JxhfQrXqpfphrw9eU) inspected and verified via Drive API; preserved intact.
+    - API boundary documented: Sheets API / Execution API disabled in GCP project 1072944905499; Web App @22 frozen without deploying. Owner can run runApprovedSchemaMigration in Apps Script editor with 1 click.
+  * 5. Quality Gates Verified: 108/108 Vitest tests passing across 23 test suites; line-limit check passing (117 files <= 149 lines); TypeScript strict check (0 errors); clean Vite production build (1.81s).
+  * Status: DOCUMENTATION & CODE FINALIZED. READY FOR OWNER ACCEPTANCE.

@@ -10,14 +10,12 @@ var BACKUP_SPREADSHEET_ID = '1kIFYmI81DfNIAqb-ZHsTifiKE6JxhfQrXqpfphrw9eU';
 var TARGET_SCHEMAS = {
   'Students': [
     'student_id', 'student_name', 'parent_name', 'parent_phone', 'student_phone',
-    'parent_email', 'student_email', 'subject', 'status', 'notes',
-    'created_at', 'updated_at', 'archived_at'
+    'parent_email', 'student_email', 'subject', 'status'
   ],
   'Packages': [
-    'package_id', 'student_id', 'student_name', 'plan_name', 'plan_type',
-    'currency', 'package_price', 'per_class', 'classes_purchased',
-    'start_date', 'expiry_date', 'next_due_date', 'package_status', 'notes',
-    'created_at', 'updated_at'
+    'package_id', 'student_id', 'student_name', 'plan_type', 'currency',
+    'package_price', 'per_class', 'classes_purchased',
+    'start_date', 'end_date', 'next_due_date'
   ],
   'FeeObligations': [
     'fee_obligation_id', 'student_id', 'student_name', 'package_id',
@@ -50,7 +48,8 @@ var FORBIDDEN_OBSOLETE_COLUMNS = [
   'first_name', 'last_name', 'preferred_name', 'date_of_birth', 'dob',
   'parent_guardian_name', 'parent_guardian_relationship', 'primary_phone',
   'secondary_phone', 'internal_summary', 'city', 'first_enrollment_date',
-  'last_active_date', 'source_reference', 'in_INR', 'closed_at'
+  'last_active_date', 'source_reference', 'in_INR', 'closed_at',
+  'expiry_date', 'plan_name', 'package_status'
 ];
 
 function runApprovedSchemaMigration(spreadsheet) {

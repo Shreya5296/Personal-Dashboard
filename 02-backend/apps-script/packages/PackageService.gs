@@ -51,7 +51,8 @@ function Packages_create(spreadsheet, data, actor) {
     per_class: rawPerClass,
     classes_purchased: rawQty !== undefined && rawQty !== '' ? Number(rawQty) : 0,
     start_date: data.start_date || '',
-    expiry_date: data.expiry_date || '',
+    end_date: data.end_date || data.expiry_date || '',
+    expiry_date: data.end_date || data.expiry_date || '',
     next_due_date: data.next_due_date || '',
     package_status: data.package_status || data.status || 'ACTIVE',
     notes: data.notes ? String(data.notes).trim() : '',
@@ -103,7 +104,10 @@ function Packages_enrichWithBalance(spreadsheet, pkgRecord) {
   enriched.classes_purchased = purchased;
   enriched.purchased_classes = purchased;
   enriched.total_classes = purchased;
-  enriched.package_name = pkgRecord.plan_name || pkgRecord.package_name;
+  enriched.plan_type = pkgRecord.plan_type || 'PACKAGE';
+  enriched.package_name = pkgRecord.plan_name || pkgRecord.package_name || pkgRecord.plan_type || 'Custom Plan';
+  enriched.end_date = pkgRecord.end_date || pkgRecord.expiry_date || '';
+  enriched.expiry_date = enriched.end_date;
   enriched.price = (pkgRecord.package_price !== '' && pkgRecord.package_price !== undefined) ? Number(pkgRecord.package_price) : 0;
   enriched.status = pkgRecord.package_status || 'ACTIVE';
 

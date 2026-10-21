@@ -121,8 +121,8 @@ describe('Clean Single-Truth Requirements & Ledger Reconciliation Regression Tes
 
     const stu = StudentRepository.Students_getById(spreadsheet, stuId);
     expect(stu.subject).toBe('Computer Science');
-    expect(stu.notes).toBe('Preparing for board exams');
-    expect(stu.notes).not.toContain('[Subject:');
+    // In finalized 9-column Students schema, notes is not a physical column
+    expect(stu.notes).toBeUndefined();
   });
 
   it('proves overpayment on Fee A carries forward via credit_applied on Fee B with zero double counting', () => {

@@ -61,7 +61,7 @@ describe('Physical Schema Migration Runner (SchemaMigration.gs)', () => {
     // 1. Students sheet verification
     const stuSheet = spreadsheet.getSheetByName('Students')!;
     expect(stuSheet).toBeDefined();
-    expect(stuSheet.getMaxColumns()).toBe(13); // Physically 13 columns, not 19
+    expect(stuSheet.getMaxColumns()).toBe(9); // Physically 9 columns, not 19 or 13
     const stuHeaders = stuSheet.rows[0];
     expect(stuHeaders).toEqual(TARGET_SCHEMAS['Students']);
 
@@ -76,7 +76,7 @@ describe('Physical Schema Migration Runner (SchemaMigration.gs)', () => {
 
     // 3. Packages sheet verification
     const pkgSheet = spreadsheet.getSheetByName('Packages')!;
-    expect(pkgSheet.getMaxColumns()).toBe(16);
+    expect(pkgSheet.getMaxColumns()).toBe(11); // Physically 11 columns, not 16
     expect(pkgSheet.rows[0]).toEqual(TARGET_SCHEMAS['Packages']);
     expect(pkgSheet.rows[0]).not.toContain('in_INR');
     expect(pkgSheet.rows[0]).not.toContain('enrollment_id');

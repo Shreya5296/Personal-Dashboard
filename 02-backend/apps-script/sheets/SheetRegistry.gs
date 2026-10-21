@@ -22,10 +22,10 @@ var SHEET_SCHEMAS = {};
 
 SHEET_SCHEMAS[SHEET_NAMES.STUDENTS] = [
   'student_id', 'student_name', 'parent_name', 'parent_phone', 'student_phone',
-  'parent_email', 'student_email', 'subject', 'status', 'notes',
-  'created_at', 'updated_at', 'archived_at'
+  'parent_email', 'student_email', 'subject', 'status'
 ];
 
+// Preserved for legacy transitions; deprecated in finalized schema
 SHEET_SCHEMAS[SHEET_NAMES.ENROLLMENTS] = [
   'enrollment_id', 'student_id', 'enrollment_name', 'start_date', 'end_date',
   'enrollment_status', 'fee_plan_name', 'agreed_total_amount', 'currency',
@@ -33,10 +33,9 @@ SHEET_SCHEMAS[SHEET_NAMES.ENROLLMENTS] = [
 ];
 
 SHEET_SCHEMAS[SHEET_NAMES.PACKAGES] = [
-  'package_id', 'student_id', 'student_name', 'plan_name', 'plan_type',
+  'package_id', 'student_id', 'student_name', 'plan_type',
   'currency', 'package_price', 'per_class', 'classes_purchased',
-  'start_date', 'expiry_date', 'next_due_date', 'package_status', 'notes',
-  'created_at', 'updated_at'
+  'start_date', 'end_date', 'next_due_date'
 ];
 
 SHEET_SCHEMAS[SHEET_NAMES.FEE_OBLIGATIONS] = [

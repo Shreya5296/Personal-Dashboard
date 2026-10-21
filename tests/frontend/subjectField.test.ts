@@ -121,19 +121,17 @@ describe('Student Subject Field & Persistence Handling (Phase D)', () => {
       SpreadsheetBootstrap.bootstrapSpreadsheet(spreadsheet, SheetRegistry, '1.0.0');
     });
 
-    it('creates and enriches student with subject and notes cleanly', () => {
+    it('creates and enriches student with subject cleanly', () => {
       const created = StudentService.Students_create(spreadsheet, {
         first_name: 'Dev',
         last_name: 'Sharma',
         parent_name: 'Anita Sharma',
         parent_phone: '+919876543210',
-        subject: 'Physics [Mechanics]',
-        notes: 'Needs kinematics practice'
+        subject: 'Physics [Mechanics]'
       }, actor);
 
       expect(created.success).toBe(true);
       expect(created.data.subject).toBe('Physics [Mechanics]');
-      expect(created.data.notes).toBe('Needs kinematics practice');
 
       // Update only subject
       const updatedSubj = StudentService.Students_update(spreadsheet, created.data.student_id, {
@@ -141,15 +139,6 @@ describe('Student Subject Field & Persistence Handling (Phase D)', () => {
       }, actor);
       expect(updatedSubj.success).toBe(true);
       expect(updatedSubj.data.subject).toBe('Physics [Optics]');
-      expect(updatedSubj.data.notes).toBe('Needs kinematics practice');
-
-      // Update only notes
-      const updatedNotes = StudentService.Students_update(spreadsheet, created.data.student_id, {
-        notes: 'Mastered optics; practice wave interference'
-      }, actor);
-      expect(updatedNotes.success).toBe(true);
-      expect(updatedNotes.data.subject).toBe('Physics [Optics]');
-      expect(updatedNotes.data.notes).toBe('Mastered optics; practice wave interference');
 
       // Clear subject
       const clearedSubj = StudentService.Students_update(spreadsheet, created.data.student_id, {
@@ -157,7 +146,6 @@ describe('Student Subject Field & Persistence Handling (Phase D)', () => {
       }, actor);
       expect(clearedSubj.success).toBe(true);
       expect(clearedSubj.data.subject).toBe('');
-      expect(clearedSubj.data.notes).toBe('Mastered optics; practice wave interference');
     });
   });
 });

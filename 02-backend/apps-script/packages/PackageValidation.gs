@@ -11,8 +11,8 @@ function validatePackageInput(data, isUpdate) {
     }
   }
 
-  var planName = data.plan_name || data.package_name;
-  if (!isUpdate || data.plan_name !== undefined || data.package_name !== undefined) {
+  var planName = data.plan_name || data.package_name || data.plan_type;
+  if (!isUpdate || data.plan_name !== undefined || data.package_name !== undefined || data.plan_type !== undefined) {
     if (!planName || !String(planName).trim()) {
       errors.package_name = 'Plan name is required';
     }
@@ -49,9 +49,10 @@ function validatePackageInput(data, isUpdate) {
     }
   }
 
-  if (data.start_date && data.expiry_date) {
-    if (String(data.expiry_date) < String(data.start_date)) {
-      errors.expiry_date = 'Expiry date cannot precede start date';
+  var endDate = data.end_date || data.expiry_date;
+  if (data.start_date && endDate) {
+    if (String(endDate) < String(data.start_date)) {
+      errors.end_date = 'End date cannot precede start date';
     }
   }
 

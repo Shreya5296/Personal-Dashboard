@@ -237,7 +237,7 @@ describe('Isolated Schema Redesign — Multi-Model Billing, Attendance & Safegua
     expect(archRes.success).toBe(true);
     let stu = StudentRepository.Students_getById(spreadsheet, studentId);
     expect(stu.status || stu.student_status).toBe('INACTIVE');
-    expect(stu.archived_at).toBeTruthy();
+    expect(archRes.data.status).toBe('INACTIVE');
 
     const reactRes = StudentService.Students_reactivate(spreadsheet, studentId, actor);
     expect(reactRes.success).toBe(true);
