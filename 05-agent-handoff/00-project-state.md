@@ -39,14 +39,14 @@ Update every field below as work proceeds.
 |---|---|
 | Project | Student Management Dashboard |
 | Execution mode | Autonomous, sequential implementation |
-| Current phase | Pre-Launch Decision Execution (Phases A-E) |
-| Current phase status | PASSED_PRELAUNCH_EXECUTION |
-| Last completed phase | Pre-Launch Decision Execution (Phases A-E) |
+| Current phase | Pre-Launch Decision Execution — Cleanup Audit |
+| Current phase status | AWAITING_OWNER_APPROVAL |
+| Last completed phase | Non-Destructive Cleanup-Readiness Audit |
 | Current Git branch | main |
-| Last phase commit | 65093c8 |
-| Last full regression run | 78 Vitest tests passed (17 test files) + 18/18 Playwright E2E tests passed live against deployed Apps Script Web App @18 (2.9m) |
+| Last phase commit | c10b314 |
+| Last full regression run | 78 Vitest tests passed (17 test files) + 18/18 Playwright E2E tests passed live against deployed Apps Script Web App (2.9m) |
 | Real-data use | Prohibited until security release gate passes (0 real student records imported) |
-| Last state update | Execution of approved decisions complete: operational tabs hidden on master sheet; Master Backup verified (1kAvJZVSn...); cleanup manifest prepared in docs/prelaunch/test-data-cleanup-plan.md; zero live rows deleted; awaiting owner cleanup authorization |
+| Last state update | Read-only cleanup readiness audit completed: cell-by-cell comparison verified against Master Backup (1kAvJZVSn...); 100% headers match; 0 live rows modified; cleanup manifest audited down to exact record IDs; Enrollments, StudentNotes, AuditLog, AppConfig preserved; status: AWAITING OWNER APPROVAL |
 
 ## 5. Phase Register
 
@@ -138,33 +138,35 @@ When resuming after a crash, context loss, agent restart, or handoff:
 
 Never infer that work was completed merely because the previous agent said it was. Verify repository state, tests, and artifacts.
 
-## 11. Final Release-Readiness Assessment & Next Actions
+## 11. Final Cleanup-Readiness Assessment & Next Actions
 
-### Release-Readiness Assessment: READY_FOR_OWNER_ACCEPTANCE
+### Pre-Launch Cleanup Status: AWAITING_OWNER_APPROVAL
 
-1. **Codebase & Architecture Integrity**:
-   - Git working tree verified clean at commit `eff3226`.
-   - All 113 source files strictly conform to the `<= 149 lines` rule.
-   - Zero TypeScript compiler errors (`tsc --noEmit`).
-   - Clean production bundle (`npm run build`, 219 kB gzip: 63.5 kB) with zero runtime secrets or sensitive tokens.
+1. **Backup Verification**:
+   - Master backup `Master Backup (Pre-Launch 2026-10-21T06-54-52-647Z)` (ID: `1kAvJZVSnWyVsg2QnfKl5tIIE_X28EySwAVeYnKQT8C4`) verified via cell-by-cell comparison.
+   - All 12 tabs present in both spreadsheets; 100% column header match across all tabs.
+   - Row-for-row match on pre-backup rows; formulas in backup verified as phone numbers starting with `+` (zero calculated business formulas).
+   - Zero changes made to live spreadsheet during audit.
 
-2. **Backend & Google Integration**:
-   - Google Apps Script Web App deployed at version `@16` (`AKfycbx4d_VG4CsZIEAomX_OjNMuej06ktTYmKLME5ennLsI7mx3Fn5b-YBu9CRqe7NwrUVH3w`).
-   - Live HMAC session authentication and constant-time token verification active and verified.
-   - Dynamic sheet name resolution and flat-scope recursion bug verified resolved.
+2. **Audited Cleanup Manifest**:
+   - `Students`: Rows 2–73 (72 synthetic student records)
+   - `Packages`: Rows 2–9 (8 synthetic package records)
+   - `ClassSessions`: Rows 2–9 (8 synthetic class session records)
+   - `FeeObligations`: Rows 2–27 (26 synthetic fee obligation records)
+   - `Payments`: Rows 2–14 (13 synthetic payment records)
+   - `MeetingLinks`: Rows 2–9 (8 synthetic meeting link records)
+   - Preserved Tabs (0 rows cleared): `Enrollments` (1 header row), `StudentNotes` (9 rows, 8 notes), `AuditLog` (196 rows, 195 audit logs), `ImportBatches` (8 rows), `ImportRowResults` (14 rows), `AppConfig` (5 rows).
 
-3. **Data Integrity & Live Test Footprint**:
-   - Zero real student data touched or imported.
-   - Live Google Sheet audited: contains 23 student rows (1 initial diagnostic + 22 synthetic test accounts), 6 fee obligations, 2 payments, 3 packages, 2 class sessions, 0 notes, 0 meeting links.
-   - Safe cleanup proposal documented for owner execution prior to production launch.
+3. **Classification & Ambiguity**:
+   - 100% of the 72 student records confirmed synthetic test artifacts (`SYNTHETIC_SUITE`, `IMPORT_TEST`, `Concurrency Test Student`, bootstrap fixture).
+   - Zero real student records at risk.
 
-4. **Test Verification & Untested Edge Cases**:
-   - 71/71 Vitest unit & integration tests passing across 16 test files.
-   - 13/13 Playwright E2E browser tests passing against live Apps Script backend.
-   - Untested workflows identified: Live bulk spreadsheet import execution (Phase 11), UI student archival/reactivation flow, fee/payment voiding flow in UI, meeting links and notes creation via UI, concurrent high-volume write contention on Google Sheets.
+4. **StudentNotes Role**:
+   - Formally retained intact as chronological progress log and tutor observations ledger linked to `Students` and `ClassSessions`.
 
-5. **Next Action (Owner Decisions Only)**:
-   - Review release audit report and proposed synthetic test data cleanup.
-   - Authorize or trigger synthetic data cleanup script.
-   - Configure custom production `ADMIN_AUTH_KEY` in Google Apps Script properties if replacing development key.
-   - Authorize Vercel frontend deployment and initiate Phase 11 production data migration.
+5. **Rollback & Safeguards**:
+   - Hard safeguards implemented: spreadsheet identity check (`1cVQknq...`), idempotency check (`Students.getLastRow() <= 1`), fail-closed script locking, Row 1 header immutability.
+   - Rollback runbook documented: updating `SPREADSHEET_ID` to backup snapshot restores entire spreadsheet to `2026-10-21T06:54:52.647Z` (overwriting subsequent edits).
+
+6. **Next Action (Owner Authorization Gate)**:
+   - Provide explicit written authorization: `"Execute pre-launch test data cleanup"`. Zero live records will be modified until authorized.
