@@ -6,6 +6,7 @@ import { getRuntimeConfig } from '../config/runtimeConfig';
 export interface RequestOptions {
   token?: string | null;
   requestId?: string;
+  idempotencyKey?: string;
   timeoutMs?: number;
 }
 
@@ -17,12 +18,14 @@ export async function sendApiRequest<T = unknown>(
   const config = getRuntimeConfig();
   const url = config.appsScriptUrl;
   const requestId = options.requestId || generateRequestId();
+  const idempKey = options.idempotencyKey || (payload.idempotency_key as string | undefined) || undefined;
 
   const bodyData = {
     apiVersion: '1',
     operation,
     token: options.token || undefined,
     identityToken: options.token || undefined,
+    idempotencyKey: idempKey,
     requestId,
     data: payload,
     payload: payload,

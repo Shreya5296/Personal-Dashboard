@@ -39,14 +39,14 @@ Update every field below as work proceeds.
 |---|---|
 | Project | Student Management Dashboard |
 | Execution mode | Autonomous, sequential implementation |
-| Current phase | Pre-Launch Completion & UI Improvements |
-| Current phase status | READY_FOR_FINAL_ACCEPTANCE |
-| Last completed phase | Authorized Cleanup, Field Mapping Audit & UI Improvements |
+| Current phase | Post-Implementation Verification & Safety Fixes |
+| Current phase status | READY_FOR_FINAL_HANDOFF |
+| Last completed phase | Verification, Overpayment Analysis & Backend Invoice Protection |
 | Current Git branch | main |
 | Last phase commit | 5856eb4 |
-| Last full regression run | 91 Vitest tests passed (20 test files) + line-limit check passing (117 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build |
+| Last full regression run | 98 Vitest tests passed (21 test files) + line-limit check passing (117 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build (2.27s) |
 | Real-data use | Ready for Phase 11 live production data import (0 real student records imported to date) |
-| Last state update | Authorized StudentNotes cleanup executed & verified (rows 2–9 cleared via clearContent(), headers intact); field mapping audit completed; 3 approved UI improvements implemented (Explicit Subject field, Monthly Invoice generation modal with duplicate protection, Available credit display); 91/91 tests passing; status: READY FOR FINAL ACCEPTANCE |
+| Last state update | Post-implementation verification complete: actual repository and deployment @22 verified; payment overpayment / credit data path traced and architectural constraints documented; fee obligation balance capping implemented in FeeService.gs; backend invoice duplicate protection implemented under concurrency lock in FeeService.gs and FeeRepository.gs; void status filtering fixed in creditCalculator.ts; 98/98 tests passing; status: READY FOR FINAL HANDOFF |
 
 ## 5. Phase Register
 
@@ -107,11 +107,11 @@ Record command, outcome, and concise evidence for each relevant check. A command
 | Formatting / lint | PASSED | Line limits & forbidden catch-all checks passing (scripts/check-line-limits.js) |
 | Type checking | PASSED | TypeScript strict checking (tsc --noEmit) passed with 0 errors |
 | Source-file line limit (maximum 149) | PASSED | Automated check passed (npm run check:lines, 117 files verified <= 149 lines) |
-| Unit tests | PASSED | Vitest runner passed (91/91 tests passed across 20 test files) |
-| Integration tests | PASSED | End-to-end lifecycle and domain service tests passed (20 test files, 100% pass) |
+| Unit tests | PASSED | Vitest runner passed (98/98 tests passed across 21 test files) |
+| Integration tests | PASSED | End-to-end lifecycle and domain service tests passed (21 test files, 100% pass) |
 | End-to-end / acceptance tests | PASSED | Full Playwright E2E suite (18/18 tests) passing against live deployed Apps Script Web App in 2.9m |
 | Security release gate | PASSED_LIVE | Server-side HMAC token validation, constant-time SHA256 comparison, brute-force lockout, 2MB size limit, zero-token leaks verified in browser |
-| Full regression suite | PASSED | npm run check:lines (117 files <= 149 lines), npm run typecheck (0 errors), npm test (91/91 passed), npm run build (clean production build) |
+| Full regression suite | PASSED | npm run check:lines (117 files <= 149 lines), npm run typecheck (0 errors), npm test (98/98 passed), npm run build (clean production build) |
 
 ## 9. Decisions and Specification Issues
 
@@ -195,4 +195,41 @@ Never infer that work was completed merely because the previous agent said it wa
    - Strict line limit policy: 117/117 files in `src/` and `public/` $\le 149$ lines.
    - Strict TypeScript check (`tsc --noEmit`): 0 errors.
    - Clean Vite production build.
+
+---
+
+## 13. Execution Record: Post-Implementation Verification, Safety Fixes & Final Handoff
+
+### Current Status: READY_FOR_FINAL_HANDOFF
+
+1. **Real State Established (Phase A)**:
+   - Git working tree verified clean; commit `cb8e014` confirms documentation of previous phase.
+   - Apps Script deployment `AKfycbx4d_VG4CsZIEAomX_OjNMuej06ktTYmKLME5ennLsI7mx3Fn5b-YBu9CRqe7NwrUVH3w` verified active at `@22`.
+   - Frontend runtime configuration confirmed: `apiVersion: '1'` with endpoint resolved via `VITE_APPS_SCRIPT_URL`.
+   - Traced callers and implementations across all 11 target components and services.
+
+2. **Payment Overpayment / Unapplied Credit Analysis & Safe Handling (Phase B)**:
+   - **Architectural Trace:** Traced payment entry through form, API client, backend validator, `PaymentService.gs`, `FeeService.gs`, and `ReportService.gs`.
+   - **Physical Schema Missing Representation:** The live `Payments` tab has 15 columns (`payment_id`, `student_id`, `fee_obligation_id`, `payment_date`, `amount`, `currency`, `payment_method`, `transaction_reference`, `idempotency_key`, `payment_status`, `notes`, `created_at`, `updated_at`, `voided_at`, `void_reason`). It lacks `applied_amount` and `unapplied_amount` columns.
+   - **Financial Invariant Risk:** In the current schema, if a payment of ₹6,000 is recorded against a ₹5,000 fee, simply removing the overpayment guard causes `FeeObligations_enrichWithBalances` to record `paid_amount = 6000` (exceeding amount due). Furthermore, if the ₹1,000 credit is subsequently applied to another fee by inserting another payment record, `Reports_getFinancialSummary` (which sums `Payments.amount`) counts ₹7,000 total received, double-counting cash receipts.
+   - **Safe Fixes Implemented:**
+     * `FeeService.gs`: In `FeeObligations_enrichWithBalances`, capped `paid_amount` on any fee obligation to `Math.min(rawPaid, due)`, preventing fees from displaying negative balances or >100% paid states.
+     * `PaymentService.gs`: Maintained strict overpayment guard to protect financial ledger integrity from corrupted cash receipts.
+     * `creditCalculator.ts`: Authoritatively derives student unapplied credit as `totalNonVoidPayments - totalAppliedToNonVoidFees`, strictly isolated by currency. Updated void filtering to check both `status` and `payment_status` aliases.
+   - **Proposed Schema Redesign for Future Review:** Add a dedicated `PaymentAllocations` sub-ledger (`allocation_id`, `payment_id`, `fee_obligation_id`, `allocated_amount`, `allocated_at`) to cleanly separate bank cash receipts from fee allocations.
+
+3. **Backend Monthly Invoice Duplicate Protection (Phase C)**:
+   - **Defect Identified:** Previously, duplicate detection existed only in frontend candidate generation; concurrent clicks or retries at the API level could create duplicate fee obligations.
+   - **Backend Fixes Implemented:**
+     * `FeeRepository.gs`: Added `FeeObligations_findByStudentAndPeriodOrIdempotency` to look up existing obligations by `(student_id, obligation_description)` or idempotency key in notes.
+     * `FeeService.gs`: Wrapped `FeeObligations_create` in concurrency lock `_feeLock.withLock(10000)`. If an active fee obligation for that student and period already exists, returns the existing record idempotently (`meta: { idempotentRetry: true, alreadyExists: true }`) without creating duplicate rows.
+     * `apiClient.ts`: Updated request envelope to propagate `idempotencyKey` directly.
+     * `FeeHandlers.gs`: Passes `idempotency_key` from payload and request context.
+
+4. **Automated Regression Evidence**:
+   - 98/98 Vitest tests passing across 21 test suites (+7 tests in `tests/domains/paymentAndInvoiceSafety.test.ts`).
+   - Line limits strictly verified: 117/117 files in `src/` and `public/` $\le 149$ lines.
+   - TypeScript strict check (`tsc --noEmit`): 0 errors.
+   - Clean production build (2.27s).
+
 

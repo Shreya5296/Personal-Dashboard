@@ -60,6 +60,7 @@ export function candidateToFeeInput(
     description: `${candidate.periodLabel} Tuition`,
     amount_due: candidate.amount,
     due_date: dueDate,
+    idempotency_key: candidate.idempotencyKey,
     notes: `Generated via Monthly Billing. IdempotencyKey: ${candidate.idempotencyKey}`,
   };
 }

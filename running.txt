@@ -185,4 +185,13 @@ NEXT ACTION
     - Line limit policy strictly verified: 117/117 files in src/ and public/ <= 149 lines.
     - TypeScript type check passing with 0 errors.
     - Production Vite build built cleanly.
-  * Status: READY FOR FINAL OWNER ACCEPTANCE.
+- Post-Implementation Verification, Backend Safety Fixes & Final Handoff completed:
+  * 1. Real State Verified: Working tree clean, Apps Script deployment AKfycbx4d... active at @22, frontend backend URL and apiVersion '1' confirmed, all callers/implementations traced.
+  * 2. Payment Overpayment / Credit Safety: Detailed 9-stage data path traced. Demonstrated why current 15-column Payments table lacking applied_amount/unapplied_amount cannot safely allocate overpayments to subsequent fees without corrupting total receipts in financial reports. Implemented safe backend capping of fee paid_amount at amount_due and updated creditCalculator to filter void records across both status and payment_status aliases. Provided minimal schema extension proposal for future owner review.
+  * 3. Monthly Invoice Backend Duplicate Protection: Added FeeObligations_findByStudentAndPeriodOrIdempotency in FeeRepository.gs, concurrency locking via withLock in FeeService.gs, request envelope idempotencyKey propagation in apiClient.ts, and idempotent retry response handling to guarantee duplicate invoices cannot be generated under concurrency, retries, or direct API calls.
+  * 4. Regression & Quality Gates:
+    - 98/98 Vitest tests passing across 21 test suites (+7 tests in tests/domains/paymentAndInvoiceSafety.test.ts).
+    - Line limits verified: 117/117 files in src/ and public/ <= 149 lines.
+    - TypeScript check (tsc --noEmit) passed with 0 errors.
+    - Vite production build clean in 2.27s.
+  * Status: READY FOR FINAL OWNER HANDOFF.

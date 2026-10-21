@@ -49,11 +49,33 @@ function FeeObligations_update(spreadsheet, id, updates) {
   return _feeRowWriter.updateRecordById(sheet, _feeMapper, headers, 'fee_obligation_id', id, updates);
 }
 
+function FeeObligations_findByStudentAndPeriodOrIdempotency(spreadsheet, studentId, description, idempotencyKey) {
+  var all = FeeObligations_getByStudentId(spreadsheet, studentId);
+  var descClean = String(description || '').trim().toLowerCase();
+  var keyClean = idempotencyKey ? String(idempotencyKey).trim() : '';
+
+  for (var i = 0; i < all.length; i++) {
+    var f = all[i];
+    if (f.obligation_status !== 'VOID') {
+      var fDesc = String(f.obligation_description || '').trim().toLowerCase();
+      var fNotes = String(f.notes || '');
+      if (keyClean && fNotes.indexOf(keyClean) !== -1) {
+        return f;
+      }
+      if (descClean && fDesc === descClean) {
+        return f;
+      }
+    }
+  }
+  return null;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     FeeObligations_getAll: FeeObligations_getAll,
     FeeObligations_getById: FeeObligations_getById,
     FeeObligations_getByStudentId: FeeObligations_getByStudentId,
+    FeeObligations_findByStudentAndPeriodOrIdempotency: FeeObligations_findByStudentAndPeriodOrIdempotency,
     FeeObligations_insert: FeeObligations_insert,
     FeeObligations_update: FeeObligations_update
   };

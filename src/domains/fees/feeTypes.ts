@@ -19,5 +19,6 @@ export interface FeeObligationInput {
   description: string;
   amount_due: number;
   due_date: string;
+  idempotency_key?: string;
   notes?: string;
 }

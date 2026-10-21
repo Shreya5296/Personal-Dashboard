@@ -25,6 +25,7 @@ function registerFeeOperations(router) {
   reg('fees.create', function(ctx) {
     var p = Object.assign({}, ctx.payload);
     p.obligation_description = p.obligation_description || p.description;
+    p.idempotency_key = p.idempotency_key || ctx.idempotencyKey;
     return _feeSvcH.FeeObligations_create(ctx.spreadsheet, p, {
       actorId: ctx.actorId,
       email: ctx.verifiedEmail,

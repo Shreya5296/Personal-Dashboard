@@ -4,9 +4,10 @@
 
 var _feeIdGen = typeof generateFeeObligationId === 'function' ? { generateFeeObligationId: generateFeeObligationId } : (typeof require !== 'undefined' ? require('../shared/IdGenerator.gs') : null);
 var _feeVal = typeof validateFeeObligationInput === 'function' ? { validateFeeObligationInput: validateFeeObligationInput, validateFeeVoidInput: validateFeeVoidInput } : (typeof require !== 'undefined' ? require('./FeeValidation.gs') : null);
-var _feeRepo = typeof FeeObligations_getAll === 'function' ? { FeeObligations_getAll: FeeObligations_getAll, FeeObligations_getById: FeeObligations_getById, FeeObligations_getByStudentId: FeeObligations_getByStudentId, FeeObligations_insert: FeeObligations_insert, FeeObligations_update: FeeObligations_update } : (typeof require !== 'undefined' ? require('./FeeRepository.gs') : null);
+var _feeRepo = typeof FeeObligations_getAll === 'function' ? { FeeObligations_getAll: FeeObligations_getAll, FeeObligations_getById: FeeObligations_getById, FeeObligations_getByStudentId: FeeObligations_getByStudentId, FeeObligations_findByStudentAndPeriodOrIdempotency: typeof FeeObligations_findByStudentAndPeriodOrIdempotency === 'function' ? FeeObligations_findByStudentAndPeriodOrIdempotency : null, FeeObligations_insert: FeeObligations_insert, FeeObligations_update: FeeObligations_update } : (typeof require !== 'undefined' ? require('./FeeRepository.gs') : null);
 var _feeStuRepo = typeof Students_getById === 'function' ? { Students_getById: Students_getById } : (typeof require !== 'undefined' ? require('../students/StudentRepository.gs') : null);
 var _feeAudit = typeof recordAuditEvent === 'function' ? { recordAuditEvent: recordAuditEvent } : (typeof require !== 'undefined' ? require('../audit/AuditService.gs') : null);
+var _feeLock = typeof withLock === 'function' ? { withLock: withLock } : (typeof require !== 'undefined' ? require('../sheets/LockManager.gs') : null);
 var _feeReg = {
   get SHEET_NAMES() {
     return (typeof SHEET_NAMES !== 'undefined' && SHEET_NAMES) || (typeof require !== 'undefined' ? require('../sheets/SheetRegistry.gs').SHEET_NAMES : {});
@@ -29,39 +30,58 @@ function FeeObligations_create(spreadsheet, data, actor) {
     return { success: false, code: 'RECORD_NOT_FOUND', message: 'Student not found: ' + data.student_id };
   }
 
-  var now = new Date().toISOString();
-  var id = _feeIdGen.generateFeeObligationId();
-  var record = {
-    fee_obligation_id: id,
-    student_id: data.student_id,
-    enrollment_id: data.enrollment_id || '',
-    package_id: data.package_id || '',
-    obligation_description: String(data.obligation_description || data.description).trim(),
-    amount_due: Math.round(Number(data.amount_due) * 100) / 100,
-    currency: 'INR',
-    issue_date: data.issue_date || now.split('T')[0],
-    due_date: data.due_date || '',
-    obligation_status: 'OPEN',
-    notes: data.notes ? String(data.notes).trim() : '',
-    created_at: now,
-    updated_at: now,
-    voided_at: '',
-    void_reason: ''
-  };
+  var lockFn = _feeLock && _feeLock.withLock ? _feeLock.withLock : function(timeout, fn) { return { success: true, result: fn() }; };
+  var lockRes = lockFn(10000, function() {
+    var desc = String(data.obligation_description || data.description).trim();
+    var idemp = data.idempotency_key || data.idempotencyKey;
 
-  _feeRepo.FeeObligations_insert(spreadsheet, record);
+    if (_feeRepo && _feeRepo.FeeObligations_findByStudentAndPeriodOrIdempotency) {
+      var existing = _feeRepo.FeeObligations_findByStudentAndPeriodOrIdempotency(spreadsheet, data.student_id, desc, idemp);
+      if (existing) {
+        return {
+          success: true,
+          data: FeeObligations_enrichWithBalances(spreadsheet, existing),
+          meta: { idempotentRetry: true, alreadyExists: true }
+        };
+      }
+    }
 
-  _feeAudit.recordAuditEvent(spreadsheet, _feeReg, _feeMap, {
-    actor_id: actor.actorId,
-    actor_email: actor.email,
-    entity_type: 'FEE_OBLIGATION',
-    entity_id: id,
-    action: 'CREATE',
-    after_summary: { fee_obligation_id: id, student_id: data.student_id, amount: record.amount_due },
-    request_id: actor.requestId
+    var now = new Date().toISOString();
+    var id = _feeIdGen.generateFeeObligationId();
+    var record = {
+      fee_obligation_id: id,
+      student_id: data.student_id,
+      enrollment_id: data.enrollment_id || '',
+      package_id: data.package_id || '',
+      obligation_description: desc,
+      amount_due: Math.round(Number(data.amount_due) * 100) / 100,
+      currency: 'INR',
+      issue_date: data.issue_date || now.split('T')[0],
+      due_date: data.due_date || '',
+      obligation_status: 'OPEN',
+      notes: data.notes ? String(data.notes).trim() : '',
+      created_at: now,
+      updated_at: now,
+      voided_at: '',
+      void_reason: ''
+    };
+
+    _feeRepo.FeeObligations_insert(spreadsheet, record);
+
+    _feeAudit.recordAuditEvent(spreadsheet, _feeReg, _feeMap, {
+      actor_id: actor.actorId,
+      actor_email: actor.email,
+      entity_type: 'FEE_OBLIGATION',
+      entity_id: id,
+      action: 'CREATE',
+      after_summary: { fee_obligation_id: id, student_id: data.student_id, amount: record.amount_due },
+      request_id: actor.requestId
+    });
+
+    return { success: true, data: record };
   });
 
-  return { success: true, data: record };
+  return lockRes.success ? lockRes.result : lockRes;
 }
 
 function FeeObligations_void(spreadsheet, data, actor) {
@@ -104,26 +124,27 @@ function FeeObligations_enrichWithBalances(spreadsheet, feeRecord) {
   var paySheet = spreadsheet.getSheetByName(_feeReg.SHEET_NAMES.PAYMENTS);
   var payments = _feeSvcRowReader.readAllRecords(paySheet, _feeMap);
 
-  var paidAmount = 0;
+  var rawPaid = 0;
   for (var i = 0; i < payments.length; i++) {
     var p = payments[i];
     if (p.fee_obligation_id === feeRecord.fee_obligation_id && p.payment_status !== 'VOID') {
-      paidAmount += Number(p.amount) || 0;
+      rawPaid += Number(p.amount) || 0;
     }
   }
 
-  paidAmount = Math.round(paidAmount * 100) / 100;
+  rawPaid = Math.round(rawPaid * 100) / 100;
   var due = Number(feeRecord.amount_due) || 0;
-  var outstanding = feeRecord.obligation_status === 'VOID' ? 0 : Math.max(0, Math.round((due - paidAmount) * 100) / 100);
+  var applied = Math.min(rawPaid, due);
+  var outstanding = feeRecord.obligation_status === 'VOID' ? 0 : Math.max(0, Math.round((due - applied) * 100) / 100);
 
   var todayStr = new Date().toISOString().split('T')[0];
   var isOverdue = Boolean(feeRecord.due_date && feeRecord.due_date < todayStr && outstanding > 0 && feeRecord.obligation_status !== 'VOID');
 
   var derivedStatus = feeRecord.obligation_status;
   if (derivedStatus !== 'VOID') {
-    if (paidAmount >= due && due > 0) {
+    if (applied >= due && due > 0) {
       derivedStatus = 'PAID';
-    } else if (paidAmount > 0) {
+    } else if (applied > 0) {
       derivedStatus = 'PARTIALLY_PAID';
     } else {
       derivedStatus = 'OPEN';
@@ -131,7 +152,8 @@ function FeeObligations_enrichWithBalances(spreadsheet, feeRecord) {
   }
 
   var enriched = Object.assign({}, feeRecord);
-  enriched.paid_amount = paidAmount;
+  enriched.paid_amount = applied;
+  enriched.raw_paid_amount = rawPaid;
   enriched.outstanding_amount = outstanding;
   enriched.is_overdue = isOverdue;
   enriched.obligation_status = derivedStatus;
@@ -139,7 +161,7 @@ function FeeObligations_enrichWithBalances(spreadsheet, feeRecord) {
   // UI convenience aliases
   enriched.fee_id = feeRecord.fee_obligation_id;
   enriched.description = feeRecord.obligation_description;
-  enriched.amount_paid = paidAmount;
+  enriched.amount_paid = applied;
   enriched.outstanding_balance = outstanding;
   enriched.status = derivedStatus;
 
