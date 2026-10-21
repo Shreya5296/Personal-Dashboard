@@ -39,14 +39,14 @@ Update every field below as work proceeds.
 |---|---|
 | Project | Student Management Dashboard |
 | Execution mode | Autonomous, sequential implementation |
-| Current phase | Pre-Launch Completion, Field Review & Sheet Simplification |
-| Current phase status | PASSED_PRELAUNCH_AUDIT |
-| Last completed phase | Pre-Launch Completion, Field Review & Sheet Simplification |
+| Current phase | Minimal Schema Redesign & Multi-Model Billing Proposal |
+| Current phase status | PASSED_SCHEMA_PROPOSAL |
+| Last completed phase | Minimal Schema Redesign & Multi-Model Billing Proposal |
 | Current Git branch | main |
-| Last phase commit | eff3226 (Pre-launch documentation & tests pending commit) |
-| Last full regression run | 73 Vitest tests passed (16 test files) + 18/18 Playwright E2E tests passed live against deployed Apps Script Web App @17 (3.4m) |
+| Last phase commit | 8154245 (Pre-launch documentation & tests committed) |
+| Last full regression run | 76 Vitest tests passed (17 test files) + 18/18 Playwright E2E tests passed live against deployed Apps Script Web App @17 (2.9m) |
 | Real-data use | Prohibited until security release gate passes (0 real student records imported) |
-| Last state update | Pre-launch completion & simplification verified: 18/18 live browser E2E workflows passed; zero line-limit violations (113 files <= 149 lines); field inventory, sheet simplification proposal, and owner decisions finalized in docs/prelaunch/ |
+| Last state update | Schema redesign proposal & isolated multi-model validation completed: 6 working tabs defined; 4 operational tabs hidden; Enrollments retained intact; all 4 fee models verified in isolated tests; full docs generated in docs/prelaunch/ |
 
 ## 5. Phase Register
 

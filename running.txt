@@ -139,3 +139,15 @@ NEXT ACTION
     - docs/prelaunch/field-inventory.md: complete catalog across all screens/forms/tables with recommendations.
     - docs/prelaunch/sheet-simplification-proposal.md: structural analysis proposing reduction from 12 tabs to 7 visible tabs.
     - docs/prelaunch/owner-decisions.md: 6 concise numbered decisions for owner approval before Vercel deploy or data migration.
+- Minimal Schema Redesign and Safe Implementation proposal completed:
+  * Inspected live master spreadsheet data shapes: 54 students, 5 packages, 20 fees, 10 payments, 5 classes, 5 meeting links, 5 notes.
+  * Validated zero native spreadsheet formulas: all derivations (balances, credit deductions, overdue flags) are authoritative in backend domain services.
+  * Designed 6-tab visible data model: Students, Packages, ClassSessions, FeeObligations, Payments, MeetingLinks.
+  * Preserved internal operational tabs (AuditLog, ImportBatches, ImportRowResults, AppConfig) as hidden tabs; preserved legacy Enrollments tab intact without row deletion.
+  * Added isolated multi-model test suite tests/domains/schemaRedesignMultiModel.test.ts verifying all 4 fee models (prepaid, monthly, yearly, per-class), partial and voided payments, attendance credit deduction safeguards, credit restoration, and student archival.
+  * Regression test status: 76/76 Vitest tests passing across 17 test suites; 18/18 Playwright E2E tests passing live in 2.9m; 113/113 files <= 149 lines; clean production build (754ms).
+  * Documentation Deliverables Finalized:
+    - docs/prelaunch/final-schema-proposal.md: full 6-tab specification and credit calculation invariants.
+    - docs/prelaunch/field-migration-map.md: 1:1 column migration and adapter mapping matrix.
+    - docs/prelaunch/migration-and-rollback-plan.md: step-by-step backup and rollback runbook.
+    - docs/prelaunch/schema-owner-decisions.md: 7 clear decisions awaiting owner confirmation.
