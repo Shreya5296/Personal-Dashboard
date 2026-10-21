@@ -34,10 +34,13 @@ function validateClassCompleteInput(data) {
   var sid = data.class_session_id || data.session_id;
   if (!sid) errors.class_session_id = 'Class session ID is required';
 
-  var att = data.attendance_status || (data.outcome === 'NO_SHOW' ? 'ABSENT' : data.outcome);
-  var validAttendance = ['ATTENDED', 'ABSENT', 'EXCUSED'];
+  var att = data.attendance_status || data.outcome;
+  var validAttendance = [
+    'ATTENDED', 'ABSENT', 'EXCUSED', 'NO_SHOW',
+    'ABSENT_UNEXCUSED', 'ABSENT_EXCUSED', 'CANCELLED'
+  ];
   if (!att || validAttendance.indexOf(att) === -1) {
-    errors.attendance_status = 'Attendance status must be ATTENDED, ABSENT, or EXCUSED';
+    errors.attendance_status = 'Attendance status must be ATTENDED, ABSENT, EXCUSED, NO_SHOW, or CANCELLED';
   }
 
   return {

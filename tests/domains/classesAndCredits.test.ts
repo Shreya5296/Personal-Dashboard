@@ -116,6 +116,90 @@ describe('Phase 5 — Classes, Credits, Meeting Links, and Notes', () => {
     expect(dupRestore.code).toBe('CONFLICT');
   });
 
+  it('enforces approved attendance and late cancellation business policies (Phase F)', () => {
+    // Create 10-class package
+    const pkgRes = PackageService.Packages_create(spreadsheet, {
+      student_id: studentId, package_name: '10-Class Science', purchased_classes: 10
+    }, actor);
+    const pkgId = pkgRes.data.package_id;
+
+    // 1. Unexcused No-Show (outcome: 'NO_SHOW') consumes 1 credit
+    const clsNoShow = ClassService.Classes_schedule(spreadsheet, {
+      student_id: studentId, package_id: pkgId, class_title: 'Physics Lab 1',
+      scheduled_start: '2026-03-10T10:00:00.000Z', scheduled_end: '2026-03-10T11:00:00.000Z'
+    }, actor);
+    const compNoShow = ClassService.Classes_complete(spreadsheet, {
+      class_session_id: clsNoShow.data.class_session_id, outcome: 'NO_SHOW'
+    }, actor);
+    expect(compNoShow.data.class_credit_effect).toBe('CONSUME');
+    expect(compNoShow.data.attendance_status).toBe('ABSENT_UNEXCUSED');
+
+    let bal = PackageService.Packages_enrichWithBalance(spreadsheet, PackageRepository.Packages_getById(spreadsheet, pkgId));
+    expect(bal.remaining_classes).toBe(9);
+
+    // 2. Excused Absence (outcome: 'EXCUSED') preserves credit
+    const clsExcused = ClassService.Classes_schedule(spreadsheet, {
+      student_id: studentId, package_id: pkgId, class_title: 'Physics Lab 2',
+      scheduled_start: '2026-03-11T10:00:00.000Z', scheduled_end: '2026-03-11T11:00:00.000Z'
+    }, actor);
+    const compExcused = ClassService.Classes_complete(spreadsheet, {
+      class_session_id: clsExcused.data.class_session_id, outcome: 'EXCUSED'
+    }, actor);
+    expect(compExcused.data.class_credit_effect).toBe('NO_CONSUME');
+    expect(compExcused.data.attendance_status).toBe('ABSENT_EXCUSED');
+
+    bal = PackageService.Packages_enrichWithBalance(spreadsheet, PackageRepository.Packages_getById(spreadsheet, pkgId));
+    expect(bal.remaining_classes).toBe(9);
+
+    // 3. Advance cancellation (>= 4 hours notice) preserves credit
+    const clsAdvanceCancel = ClassService.Classes_schedule(spreadsheet, {
+      student_id: studentId, package_id: pkgId, class_title: 'Physics Lab 3',
+      scheduled_start: '2026-03-15T15:00:00.000Z', scheduled_end: '2026-03-15T16:00:00.000Z'
+    }, actor);
+    const compAdvCancel = ClassService.Classes_cancel(spreadsheet, {
+      class_session_id: clsAdvanceCancel.data.class_session_id,
+      cancellation_time: '2026-03-15T09:00:00.000Z', // 6 hours prior
+      cancellation_reason: 'Doctor appointment'
+    }, actor);
+    expect(compAdvCancel.data.class_credit_effect).toBe('NO_CONSUME');
+    expect(compAdvCancel.data.session_status).toBe('CANCELLED');
+
+    bal = PackageService.Packages_enrichWithBalance(spreadsheet, PackageRepository.Packages_getById(spreadsheet, pkgId));
+    expect(bal.remaining_classes).toBe(9);
+
+    // 4. Late cancellation (< 4 hours notice) without waiver deducts 1 credit
+    const clsLateCancel = ClassService.Classes_schedule(spreadsheet, {
+      student_id: studentId, package_id: pkgId, class_title: 'Physics Lab 4',
+      scheduled_start: '2026-03-16T15:00:00.000Z', scheduled_end: '2026-03-16T16:00:00.000Z'
+    }, actor);
+    const compLateCancel = ClassService.Classes_cancel(spreadsheet, {
+      class_session_id: clsLateCancel.data.class_session_id,
+      cancellation_time: '2026-03-16T13:30:00.000Z', // 1.5 hours prior (< 4h)
+      cancellation_reason: 'Forgot session'
+    }, actor);
+    expect(compLateCancel.data.class_credit_effect).toBe('CONSUME');
+    expect(compLateCancel.data.attendance_status).toBe('CANCELLED_LATE');
+
+    bal = PackageService.Packages_enrichWithBalance(spreadsheet, PackageRepository.Packages_getById(spreadsheet, pkgId));
+    expect(bal.remaining_classes).toBe(8); // Deducted 1 credit!
+
+    // 5. Late cancellation (< 4 hours notice) WITH tutor waiver preserves credit
+    const clsLateWaived = ClassService.Classes_schedule(spreadsheet, {
+      student_id: studentId, package_id: pkgId, class_title: 'Physics Lab 5',
+      scheduled_start: '2026-03-17T15:00:00.000Z', scheduled_end: '2026-03-17T16:00:00.000Z'
+    }, actor);
+    const compLateWaived = ClassService.Classes_cancel(spreadsheet, {
+      class_session_id: clsLateWaived.data.class_session_id,
+      cancellation_time: '2026-03-17T14:00:00.000Z', // 1 hour prior (< 4h)
+      cancellation_reason: 'Family emergency',
+      credit_waiver: true
+    }, actor);
+    expect(compLateWaived.data.class_credit_effect).toBe('NO_CONSUME');
+
+    bal = PackageService.Packages_enrichWithBalance(spreadsheet, PackageRepository.Packages_getById(spreadsheet, pkgId));
+    expect(bal.remaining_classes).toBe(8); // Preserved!
+  });
+
   it('records student notes and provides dashboard overview metrics', () => {
     const note = NoteService.Notes_create(spreadsheet, {
       student_id: studentId, note_type: 'FOLLOW_UP', note_text: 'Check homework completion',

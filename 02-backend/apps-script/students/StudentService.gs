@@ -25,6 +25,39 @@ var _stuReg = {
 };
 var _stuMap = typeof createHeaderMap === 'function' ? { createHeaderMap: createHeaderMap, rowToRecord: rowToRecord, recordToRow: recordToRow } : (typeof require !== 'undefined' ? require('../sheets/HeaderMapper.gs') : null);
 
+function Students_parseSummary(text) {
+  if (!text) return { subject: '', notes: '' };
+  var str = String(text).trim();
+  var lines = str.split(/\r?\n/);
+  var firstLine = lines[0].trim();
+  var fullLineMatch = firstLine.match(/^\[Subject:\s*(.*)\]$/i);
+  if (fullLineMatch) {
+    return {
+      subject: fullLineMatch[1].trim(),
+      notes: lines.slice(1).join('\n').trim()
+    };
+  }
+  var inlineMatch = str.match(/^\[Subject:\s*(.*?)(?:\]\s+|\s*\]$)([\s\S]*)$/i);
+  if (inlineMatch) {
+    return {
+      subject: inlineMatch[1].trim(),
+      notes: inlineMatch[2].trim()
+    };
+  }
+  return { subject: '', notes: str };
+}
+
+function Students_formatSummary(subject, notes) {
+  var cleanSubj = (subject || '').trim();
+  var cleanNotes = (notes || '').trim();
+  var parsed = Students_parseSummary(cleanNotes);
+  if (parsed.subject) {
+    cleanNotes = parsed.notes;
+  }
+  if (!cleanSubj) return cleanNotes;
+  return cleanNotes ? '[Subject: ' + cleanSubj + ']\n' + cleanNotes : '[Subject: ' + cleanSubj + ']';
+}
+
 function Students_enrich(s) {
   if (!s) return s;
   var copy = Object.assign({}, s);
@@ -34,7 +67,9 @@ function Students_enrich(s) {
   copy.parent_name = s.parent_guardian_name || '';
   copy.parent_phone = s.secondary_phone || s.primary_phone || '';
   copy.status = s.student_status || 'ACTIVE';
-  copy.notes = s.internal_summary || '';
+  var parsed = Students_parseSummary(s.internal_summary || '');
+  copy.subject = s.subject || parsed.subject;
+  copy.notes = parsed.notes;
   return copy;
 }
 
@@ -68,6 +103,10 @@ function Students_create(spreadsheet, data, actor) {
 
   var now = new Date().toISOString();
   var studentId = _stuIdGen.generateStudentId();
+  var rawSubject = normalized.subject !== undefined ? String(normalized.subject).trim() : '';
+  var rawNotes = normalized.notes !== undefined ? normalized.notes : (normalized.internal_summary !== undefined ? normalized.internal_summary : '');
+  var summaryText = Students_formatSummary(rawSubject, rawNotes);
+
   var record = {
     student_id: studentId,
     first_name: String(normalized.first_name).trim(),
@@ -83,7 +122,7 @@ function Students_create(spreadsheet, data, actor) {
     student_status: 'ACTIVE',
     first_enrollment_date: normalized.first_enrollment_date || '',
     last_active_date: normalized.last_active_date || '',
-    internal_summary: normalized.internal_summary || normalized.notes ? String(normalized.internal_summary || normalized.notes).trim() : '',
+    internal_summary: summaryText,
     created_at: now,
     updated_at: now,
     archived_at: '',
@@ -147,8 +186,14 @@ function Students_update(spreadsheet, studentId, updates, actor) {
       safeUpdates[f] = normalized[f] !== null ? String(normalized[f]).trim() : '';
     }
   }
-  if (normalized.notes !== undefined && safeUpdates.internal_summary === undefined) {
-    safeUpdates.internal_summary = String(normalized.notes).trim();
+  var existingParsed = Students_parseSummary(existing.internal_summary || '');
+  var hasSubjectUpdate = normalized.subject !== undefined;
+  var hasNotesUpdate = normalized.notes !== undefined || normalized.internal_summary !== undefined;
+
+  if (hasSubjectUpdate || hasNotesUpdate) {
+    var newSubject = hasSubjectUpdate ? String(normalized.subject).trim() : existingParsed.subject;
+    var rawNewNotes = normalized.notes !== undefined ? normalized.notes : (normalized.internal_summary !== undefined ? normalized.internal_summary : existingParsed.notes);
+    safeUpdates.internal_summary = Students_formatSummary(newSubject, rawNewNotes);
   }
   safeUpdates.updated_at = new Date().toISOString();
 
@@ -253,6 +298,8 @@ function Students_list(spreadsheet, filter) {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     Students_enrich: Students_enrich,
+    Students_parseSummary: Students_parseSummary,
+    Students_formatSummary: Students_formatSummary,
     Students_create: Students_create,
     Students_update: Students_update,
     Students_archive: Students_archive,

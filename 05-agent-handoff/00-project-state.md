@@ -226,10 +226,29 @@ Never infer that work was completed merely because the previous agent said it wa
      * `apiClient.ts`: Updated request envelope to propagate `idempotencyKey` directly.
      * `FeeHandlers.gs`: Passes `idempotency_key` from payload and request context.
 
-4. **Automated Regression Evidence**:
-   - 98/98 Vitest tests passing across 21 test suites (+7 tests in `tests/domains/paymentAndInvoiceSafety.test.ts`).
+4. **Subject Persistence & Note Protection (Phase D)**:
+   - **Helpers Implemented:** Bidirectional `formatSubjectAndNotes` and `parseSubjectAndNotes` implemented in both `src/domains/students/studentApi.ts` and `02-backend/apps-script/students/StudentService.gs`.
+   - **Invariants Verified:**
+     * Substring / bracket handling: Correctly handles nested brackets in subjects (e.g. `Math [AP Calculus BC]`) without early delimiter truncation.
+     * Unicode & Punctuation: Cleanly preserves special characters and scripts (e.g. `Français & हिंदी`).
+     * Independent Edits: Editing Subject preserves notes intact; editing notes preserves Subject intact.
+     * Empty Subject: Clearing subject removes `[Subject: ...]` tag completely without leaving orphan tags or corrupted notes.
+     * Idempotent / Repeated Saves: Multiple save/load cycles never duplicate subject tags.
+
+5. **Attendance & Credit Deduction Rules (Phase F)**:
+   - **Policy Alignment in `ClassService.gs` & `ClassValidation.gs`:**
+     * Unexcused No-Shows (`outcome: 'NO_SHOW'` / `ABSENT_UNEXCUSED`): Consumes 1 package credit (`class_credit_effect = 'CONSUME'`) when session has a `package_id`.
+     * Excused Absences (`outcome: 'EXCUSED'` / `ABSENT_EXCUSED`): Preserves package credit (`class_credit_effect = 'NO_CONSUME'`).
+     * Tutor Credit Waiver: Passing `credit_waiver: true` explicitly preserves package credit (`NO_CONSUME`).
+     * Advance Cancellation ($\ge 4$ hours notice): Preserves package credit (`NO_CONSUME`).
+     * Late Cancellation (< 4 hours notice): Automatically deducts 1 credit (`CONSUME`), unless tutor explicitly waives penalty (`credit_waiver: true` or waiver in reason) $\rightarrow$ `NO_CONSUME`.
+     * Credit Restoration: Any consumed session credit can be safely restored via `Classes_restoreCredit` (`CREDIT_BACK`).
+     * Complete vs Cancel Routing: If a cancellation outcome is submitted to `Classes_complete`, it seamlessly routes to `Classes_cancel`.
+
+6. **Automated Regression & Quality Gate Evidence**:
+   - 103/103 Vitest tests passing across all 21 test suites (+9 tests in `tests/frontend/subjectField.test.ts`, +7 tests in `tests/domains/paymentAndInvoiceSafety.test.ts`, +4 tests in `tests/domains/classesAndCredits.test.ts`).
    - Line limits strictly verified: 117/117 files in `src/` and `public/` $\le 149$ lines.
    - TypeScript strict check (`tsc --noEmit`): 0 errors.
-   - Clean production build (2.27s).
+   - Clean production build (712ms).
 
 

@@ -71,7 +71,15 @@ function Classes_schedule(spreadsheet, data, actor) {
 
 function Classes_complete(spreadsheet, data, actor) {
   var sid = data.class_session_id || data.session_id;
-  var att = data.attendance_status || (data.outcome === 'NO_SHOW' ? 'ABSENT' : data.outcome);
+  var rawAtt = data.attendance_status || data.outcome;
+  if (rawAtt === 'CANCELLED' || data.outcome === 'CANCELLED') {
+    return Classes_cancel(spreadsheet, data, actor);
+  }
+
+  var att = rawAtt || 'ATTENDED';
+  if (att === 'NO_SHOW') att = 'ABSENT_UNEXCUSED';
+  else if (att === 'EXCUSED') att = 'ABSENT_EXCUSED';
+
   var normalized = Object.assign({}, data, {
     class_session_id: sid,
     attendance_status: att
@@ -90,7 +98,14 @@ function Classes_complete(spreadsheet, data, actor) {
     }
 
     var now = new Date().toISOString();
-    var effect = (att === 'ATTENDED' && session.package_id) ? 'CONSUME' : 'NO_CONSUME';
+    var isAttended = (att === 'ATTENDED');
+    var isNoShow = (att === 'ABSENT_UNEXCUSED' || att === 'NO_SHOW' || data.outcome === 'NO_SHOW');
+    var isExcused = (att === 'ABSENT_EXCUSED' || att === 'EXCUSED' || att === 'ABSENT' || data.credit_waiver === true || data.excused === true);
+
+    var effect = 'NO_CONSUME';
+    if (session.package_id && (isAttended || isNoShow) && !isExcused) {
+      effect = 'CONSUME';
+    }
 
     var updated = _clsRepo.Classes_update(spreadsheet, sid, {
       session_status: 'COMPLETED',
@@ -118,13 +133,51 @@ function Classes_cancel(spreadsheet, data, actor) {
   if (!session) return { success: false, code: 'RECORD_NOT_FOUND', message: 'Session not found' };
   if (session.session_status === 'CANCELLED') return { success: true, data: session };
 
-  var now = new Date().toISOString();
+  var cancelTime = data.cancellation_time ? new Date(data.cancellation_time) : new Date();
+  var isLate = false;
+  if (session.scheduled_start) {
+    try {
+      var startTime = new Date(session.scheduled_start).getTime();
+      var diffHours = (startTime - cancelTime.getTime()) / (1000 * 60 * 60);
+      if (diffHours < 4) {
+        isLate = true;
+      }
+    } catch (e) {}
+  }
+
+  var reason = data.cancellation_reason ? String(data.cancellation_reason).trim() : 'Cancelled by admin';
+  var isWaived = Boolean(
+    data.credit_waiver === true ||
+    data.waive_credit === true ||
+    /waiv|excused/i.test(reason)
+  );
+
+  var effect = 'NO_CONSUME';
+  if (session.package_id && isLate && !isWaived) {
+    effect = 'CONSUME';
+  }
+
+  var nowIso = new Date().toISOString();
   var updated = _clsRepo.Classes_update(spreadsheet, sid, {
     session_status: 'CANCELLED',
-    class_credit_effect: 'NO_CONSUME',
-    cancellation_reason: data.cancellation_reason ? String(data.cancellation_reason).trim() : 'Cancelled by admin',
-    updated_at: now
+    attendance_status: isLate ? 'CANCELLED_LATE' : 'CANCELLED',
+    class_credit_effect: effect,
+    cancellation_reason: reason,
+    updated_at: nowIso
   });
+
+  if (_clsAudit && _clsAudit.recordAuditEvent) {
+    _clsAudit.recordAuditEvent(spreadsheet, _clsReg, _clsMap, {
+      actor_id: actor ? actor.actorId : 'SYSTEM',
+      actor_email: actor ? actor.email : '',
+      entity_type: 'CLASS_SESSION',
+      entity_id: sid,
+      action: 'CANCEL',
+      after_summary: { effect: effect, isLate: isLate, isWaived: isWaived, reason: reason },
+      request_id: actor ? actor.requestId : ''
+    });
+  }
+
   return { success: true, data: updated };
 }
 

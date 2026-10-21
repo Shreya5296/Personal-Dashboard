@@ -189,9 +189,11 @@ NEXT ACTION
   * 1. Real State Verified: Working tree clean, Apps Script deployment AKfycbx4d... active at @22, frontend backend URL and apiVersion '1' confirmed, all callers/implementations traced.
   * 2. Payment Overpayment / Credit Safety: Detailed 9-stage data path traced. Demonstrated why current 15-column Payments table lacking applied_amount/unapplied_amount cannot safely allocate overpayments to subsequent fees without corrupting total receipts in financial reports. Implemented safe backend capping of fee paid_amount at amount_due and updated creditCalculator to filter void records across both status and payment_status aliases. Provided minimal schema extension proposal for future owner review.
   * 3. Monthly Invoice Backend Duplicate Protection: Added FeeObligations_findByStudentAndPeriodOrIdempotency in FeeRepository.gs, concurrency locking via withLock in FeeService.gs, request envelope idempotencyKey propagation in apiClient.ts, and idempotent retry response handling to guarantee duplicate invoices cannot be generated under concurrency, retries, or direct API calls.
-  * 4. Regression & Quality Gates:
-    - 98/98 Vitest tests passing across 21 test suites (+7 tests in tests/domains/paymentAndInvoiceSafety.test.ts).
+  * 4. Subject Persistence & Note Protection: Implemented formatSubjectAndNotes and parseSubjectAndNotes in studentApi.ts and StudentService.gs. Tested bracket handling (Math [AP Calculus]), Unicode/punctuation (Français & हिंदी), independent field editing, clean tag stripping on empty subject, and multi-cycle idempotency.
+  * 5. Attendance & Credit Deduction Rules: Updated ClassService.gs and ClassValidation.gs to enforce approved policies: unexcused no-shows (outcome: 'NO_SHOW' / ABSENT_UNEXCUSED) consume 1 package credit; excused absences (outcome: 'EXCUSED' / ABSENT_EXCUSED) preserve credit; tutor waivers preserve credit; advance cancellation (>=4h notice) preserves credit; late cancellation (<4h notice) consumes 1 credit unless tutor explicitly waives penalty; credit restorations (CREDIT_BACK) supported; cancellation routing seamless.
+  * 6. Regression & Quality Gates:
+    - 103/103 Vitest tests passing across 21 test suites (+9 subject tests, +7 payment/invoice tests, +4 class policy tests).
     - Line limits verified: 117/117 files in src/ and public/ <= 149 lines.
     - TypeScript check (tsc --noEmit) passed with 0 errors.
-    - Vite production build clean in 2.27s.
+    - Vite production build clean in 712ms.
   * Status: READY FOR FINAL OWNER HANDOFF.

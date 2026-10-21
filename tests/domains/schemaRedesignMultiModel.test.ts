@@ -376,7 +376,7 @@ describe('Isolated Schema Redesign — Multi-Model Billing, Attendance & Safegua
     }, actor);
 
     let bal = PackageService.Packages_enrichWithBalance(spreadsheet, PackageRepository.Packages_getById(spreadsheet, pkg.package_id));
-    expect(bal.remaining_classes).toBe(5); // In current service ABSENT_UNEXCUSED is not ATTENDED so NO_CONSUME unless configured
+    expect(bal.remaining_classes).toBe(4); // 1 credit deducted for unexcused no-show under approved policy
 
     // Session B: Student cancels under 4h with tutor explicit waiver -> ABSENT_EXCUSED -> NO_CONSUME (credit preserved)
     const clsLateWaived = ClassService.Classes_schedule(spreadsheet, {
@@ -393,7 +393,7 @@ describe('Isolated Schema Redesign — Multi-Model Billing, Attendance & Safegua
     }, actor);
 
     bal = PackageService.Packages_enrichWithBalance(spreadsheet, PackageRepository.Packages_getById(spreadsheet, pkg.package_id));
-    expect(bal.remaining_classes).toBe(5); // Preserved!
+    expect(bal.remaining_classes).toBe(4); // Preserved!
 
     // 3. Overpayment as Unapplied Student Credit
     // Fee 1: ₹5,000
