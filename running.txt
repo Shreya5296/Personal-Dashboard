@@ -196,4 +196,12 @@ NEXT ACTION
     - Line limits verified: 117/117 files in src/ and public/ <= 149 lines.
     - TypeScript check (tsc --noEmit) passed with 0 errors.
     - Vite production build clean in 712ms.
-  * Status: READY FOR FINAL OWNER HANDOFF.
+- Requirements-First Field and Schema Reconciliation completed (Read-Only Review):
+  * 1. Original Requirements Re-established: Preserved authentic business requirements across Students (10 fields), Package Details (11 fields), Meeting Links (4 fields), Payment Details (4 fields), Classes & Attendance, and Multi-Model Billing.
+  * 2. Comprehensive 8-Column Field-by-Field Mapping: Produced complete matrix across all required fields, current physical tabs/columns, frontend forms, backend adaptors, status, required actions, and justifications in docs/prelaunch/requirements-reconciliation-report.md.
+  * 3. Confirmed Mismatches Documented: Subject missing physical column (currently tag in notes); student_email missing from sheet; per_class, in_INR, and next_due_date missing from Packages; student_name missing from child tables; MeetingLinks over-engineered (13-col relational table vs link1/link2); first_name/last_name artificially split; Enrollments tab redundant.
+  * 4. Simplest Practical Data Model Defined: Compared Ultra-Minimal 5-Tab and Pragmatic 6-Tab models; rejected proposed PaymentAllocations sub-ledger table for immediate operations, establishing that unapplied credit is safely derived and credited forward on future invoices without enterprise machinery.
+  * 5. Unambiguous Billing Terminology Formulated: Concrete mathematical definitions provided for Package price, Per-class rate, Currency, INR equivalent, Classes purchased, Classes consumed, Classes remaining, Fee amount due, Payment received, Amount applied, Unapplied credit, Outstanding balance, and Next payment due date.
+  * 6. Owner-Facing Workflows & Forms Detailed: Short, practical forms designed for student entry, package setup, class scheduling, 1-click attendance, monthly invoicing preview, and payment recording.
+  * 7. Invariants Preserved: Zero live rows, columns, headers, or tabs modified; zero code regressions; 103/103 tests passing; clean production build.
+  * Status: AWAITING OWNER APPROVAL OF RECOMMENDED SCHEMA CHANGES.

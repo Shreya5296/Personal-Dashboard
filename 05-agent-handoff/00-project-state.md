@@ -39,14 +39,14 @@ Update every field below as work proceeds.
 |---|---|
 | Project | Student Management Dashboard |
 | Execution mode | Autonomous, sequential implementation |
-| Current phase | Post-Implementation Verification & Safety Fixes |
-| Current phase status | READY_FOR_FINAL_HANDOFF |
-| Last completed phase | Verification, Overpayment Analysis & Backend Invoice Protection |
+| Current phase | Requirements-First Field & Schema Reconciliation |
+| Current phase status | AWAITING_OWNER_DECISION |
+| Last completed phase | Requirements-First Reconciliation Audit & Simplification Review |
 | Current Git branch | main |
 | Last phase commit | e354aef |
 | Last full regression run | 103 Vitest tests passed (21 test files) + line-limit check passing (117 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build (712ms) |
 | Real-data use | Ready for Phase 11 live production data import (0 real student records imported to date) |
-| Last state update | Post-implementation verification complete: actual repository and deployment @22 verified; payment overpayment / credit data path traced and architectural constraints documented; fee obligation balance capping implemented in FeeService.gs; backend invoice duplicate protection implemented under concurrency lock in FeeService.gs and FeeRepository.gs; subject tag formatting and parsing hardened across frontend and backend; attendance and late-cancellation credit deduction policies implemented and tested; 103/103 tests passing; status: READY FOR FINAL HANDOFF |
+| Last state update | Requirements-first field and schema reconciliation complete: full 8-column field mapping produced in docs/prelaunch/requirements-reconciliation-report.md; all 6 original requirement areas re-established; confirmed mismatches documented (subject missing physical column, student_email missing, per_class/in_INR/next_due_date missing from Packages, student_name missing from child tables, MeetingLinks over-engineered, first_name/last_name split); simplest practical data models evaluated; PaymentAllocations table rejected as unnecessary enterprise overhead; billing terminology defined unambiguously; forms and workflows streamlined; 103/103 tests passing; clean working tree |
 
 ## 5. Phase Register
 
@@ -250,5 +250,37 @@ Never infer that work was completed merely because the previous agent said it wa
    - Line limits strictly verified: 117/117 files in `src/` and `public/` $\le 149$ lines.
    - TypeScript strict check (`tsc --noEmit`): 0 errors.
    - Clean production build (712ms).
+
+---
+
+## 14. Execution Record: Requirements-First Field and Schema Reconciliation
+
+### Current Status: AWAITING_OWNER_DECISION
+
+1. **Requirements Re-anchoring**:
+   - Re-established owner's original requirements as the authoritative source of truth across Students (10 fields), Package Details (11 fields), Meeting Links (4 fields), Payment Details (4 fields), Classes & Attendance, and Multi-Model Billing.
+   - Comprehensive reconciliation report authored in [`docs/prelaunch/requirements-reconciliation-report.md`](docs/prelaunch/requirements-reconciliation-report.md).
+
+2. **Field-by-Field Requirements-to-Schema Mapping Complete**:
+   - Complete 8-column matrix mapping every required field against physical spreadsheet columns, frontend forms, backend services, status, required actions, and justifications.
+   - Traced why `subject` is currently stored in `internal_summary`, why `student_email` is missing, why `per_class` and `next_due_date` are absent from `Packages`, and why child tables lack `student_name`.
+
+3. **Data Model Simplification & Rejection of Enterprise Complexity**:
+   - **Evaluated Ultra-Minimal 5-Tab vs Pragmatic 6-Tab models.**
+   - **Rejection of `PaymentAllocations` Table:** Confirmed that a dedicated allocation sub-ledger is enterprise overhead that a solo tutor does not need. Excess payments are recognized as student unapplied credit and deducted forward on subsequent invoices, preventing cash receipt double-counting without extra database tables.
+   - **Meeting Links Simplification:** Highlighted that the 13-column relational `MeetingLinks` table is over-engineered compared to original requirements (`link1` and `link2`).
+
+4. **Unambiguous Billing and Credit Terminology Formulated**:
+   - Defined 13 critical terms (Package price, Per-class rate, Currency, INR equivalent, Classes purchased, Classes consumed, Classes remaining, Fee amount due, Payment received, Amount applied, Unapplied credit, Outstanding balance, Next payment due date).
+   - Clarified which values are entered by the user vs dynamically derived from attendance and payments.
+
+5. **Streamlined Owner-Facing Workflows & Forms Documented**:
+   - Specified exact inputs, auto-populated values, and calculated metrics across all 6 core tutoring workflows.
+
+6. **Preservation Invariants Preserved**:
+   - Zero live spreadsheet rows, headers, or schemas modified.
+   - Zero Vercel or Apps Script deployments executed.
+   - Zero real student data imported.
+   - 103/103 tests passing, clean working tree.
 
 
