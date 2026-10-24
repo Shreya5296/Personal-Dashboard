@@ -17,15 +17,15 @@ export const ReportsPage: React.FC = () => {
   const [filter, setFilter] = useState<ReportFilter>({});
 
   useEffect(() => {
-    fetchFinancialSummary(token)
+    fetchFinancialSummary(token, filter)
       .then((data) => setSummary(data))
       .finally(() => setLoading(false));
-  }, [token]);
+  }, [token, filter]);
 
   const handleExport = () => {
     if (!summary) return;
     const csvContent = 'data:text/csv;charset=utf-8,Metric,Amount\n' +
-      `Total Invoiced,${summary.totalInvoiced}\n` +
+      `Total Invoiced / Package Value,${summary.totalInvoiced}\n` +
       `Collected Earnings,${summary.totalCollected}\n` +
       `Total Outstanding,${summary.totalOutstanding}\n`;
     const encodedUri = encodeURI(csvContent);
@@ -48,7 +48,7 @@ export const ReportsPage: React.FC = () => {
     <div>
       <PageHeader
         title="Earnings Overview"
-        subtitle="Ledger summary of collected tuition earnings, invoiced fees, and outstanding balances."
+        subtitle="Ledger summary of agreed package values, collected tuition payments, and outstanding balances."
         actions={<ExportAction onExport={handleExport} label="Export Earnings CSV" />}
       />
 
@@ -61,11 +61,11 @@ export const ReportsPage: React.FC = () => {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
         <div style={{ padding: '1.25rem 1.5rem', backgroundColor: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-xs)' }}>
-          <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', fontWeight: 500 }}>Total Invoiced</span>
+          <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', fontWeight: 500 }}>Total Invoiced / Package Value</span>
           <div style={{ fontSize: '1.75rem', fontWeight: 700, margin: '6px 0 4px', color: 'var(--color-text-main)', fontVariantNumeric: 'tabular-nums' }}>
             {formatCurrency(invoiced)}
           </div>
-          <p style={{ margin: 0, fontSize: 'var(--font-size-xs)', color: 'var(--color-text-subtle)' }}>Total billed tuition obligations</p>
+          <p style={{ margin: 0, fontSize: 'var(--font-size-xs)', color: 'var(--color-text-subtle)' }}>Total agreed package value and billed obligations</p>
         </div>
 
         <div style={{ padding: '1.25rem 1.5rem', backgroundColor: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-xs)' }}>
@@ -81,7 +81,7 @@ export const ReportsPage: React.FC = () => {
           <div style={{ fontSize: '1.75rem', fontWeight: 700, margin: '6px 0 4px', color: outstanding > 0 ? '#dc2626' : 'var(--color-text-main)', fontVariantNumeric: 'tabular-nums' }}>
             {formatCurrency(outstanding)}
           </div>
-          <p style={{ margin: 0, fontSize: 'var(--font-size-xs)', color: 'var(--color-text-subtle)' }}>Uncollected receivables due for settlement</p>
+          <p style={{ margin: 0, fontSize: 'var(--font-size-xs)', color: 'var(--color-text-subtle)' }}>Uncollected balance across student packages</p>
         </div>
       </div>
 

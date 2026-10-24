@@ -13,7 +13,7 @@ function registerReportOperations(router) {
   });
 
   reg('reports.financialSummary', function(ctx) {
-    return _repSvcH.Reports_getFinancialSummary(ctx.spreadsheet);
+    return _repSvcH.Reports_getFinancialSummary(ctx.spreadsheet, ctx.payload);
   });
 }
 

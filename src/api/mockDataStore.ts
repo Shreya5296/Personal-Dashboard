@@ -41,7 +41,7 @@ const MOCK_NOTES = [
 export function handleMockApiRequest<T>(operation: string, payload: Record<string, unknown>, reqId: string): ApiResponse<T> {
   const meta = { requestId: reqId, timestamp: new Date().toISOString() };
   if (operation === 'dashboard.overview') {
-    return { ok: true, data: { activeStudentsCount: 3, classesUpcoming7Days: 2, outstandingFeesTotal: 8500, currency: 'INR' } as T, meta };
+    return { ok: true, data: { activeStudentsCount: 3, classesUpcoming7Days: 2, outstandingFeesTotal: 50000, currency: 'INR' } as T, meta };
   }
   if (operation === 'students.list') {
     const q = String(payload.query || '').toLowerCase();
@@ -78,7 +78,18 @@ export function handleMockApiRequest<T>(operation: string, payload: Record<strin
   if (operation === 'packages.getBalance') return { ok: true, data: { totalPurchased: 12, totalConsumed: 4, remainingBalance: 8 } as T, meta };
   if (operation === 'notes.list') return { ok: true, data: MOCK_NOTES as T, meta };
   if (operation === 'reports.financialSummary') {
-    return { ok: true, data: { totalInvoiced: 45000, totalCollected: 36500, totalOutstanding: 8500, currency: 'INR' } as T, meta };
+    return {
+      ok: true,
+      data: {
+        totalInvoiced: 216800,
+        totalBilled: 216800,
+        totalCollected: 166800,
+        totalReceived: 166800,
+        totalOutstanding: 50000,
+        currency: 'INR'
+      } as T,
+      meta
+    };
   }
   if (operation === 'system.health') {
     return { ok: true, data: { appsScriptConnected: true, schemaVersion: 1, appEnv: 'mock', activeSpreadsheetTabs: 6 } as T, meta };

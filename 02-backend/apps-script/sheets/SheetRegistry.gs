@@ -67,12 +67,14 @@ SHEET_SCHEMAS[SHEET_NAMES.STUDENT_NOTES] = [
   'student_id', 'student_name', 'note_date', 'note_text', 'follow_up_date'
 ];
 
+// Operational Tab: AuditLog (Active - audit trail & transaction idempotency)
 SHEET_SCHEMAS[SHEET_NAMES.AUDIT_LOG] = [
   'audit_id', 'occurred_at', 'actor_id', 'actor_email', 'entity_type',
   'entity_id', 'action', 'before_summary', 'after_summary', 'request_id',
   'outcome', 'error_code'
 ];
 
+// Operational Tab: ImportBatches (Retired from active workflows after bulk-import removal; schema retained for spreadsheet compatibility)
 SHEET_SCHEMAS[SHEET_NAMES.IMPORT_BATCHES] = [
   'import_batch_id', 'source_name', 'source_spreadsheet_id',
   'source_tab_name', 'started_at', 'completed_at', 'import_status',
@@ -80,12 +82,14 @@ SHEET_SCHEMAS[SHEET_NAMES.IMPORT_BATCHES] = [
   'duplicate_rows', 'initiated_by', 'notes'
 ];
 
+// Operational Tab: ImportRowResults (Retired from active workflows after bulk-import removal; schema retained for spreadsheet compatibility)
 SHEET_SCHEMAS[SHEET_NAMES.IMPORT_ROW_RESULTS] = [
   'import_row_result_id', 'import_batch_id', 'source_row_reference',
   'target_entity_type', 'target_record_id', 'row_status',
   'source_fingerprint', 'message', 'processed_at'
 ];
 
+// Operational Tab: AppConfig (Active - runtime settings and schema version metadata)
 SHEET_SCHEMAS[SHEET_NAMES.APP_CONFIG] = [
   'config_key', 'config_value', 'description', 'updated_at'
 ];

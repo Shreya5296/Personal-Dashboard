@@ -342,3 +342,32 @@ NEXT ACTION
     - Strict TypeScript check passing with 0 errors.
     - Production Vite build clean in 752ms.
     - All Playwright test suites (accountDropdown, redesignScreensVisual, auth, reportsAndCrossCutting) passing 100%.
+- Earnings Calculations Fix & Operational Sheets Audit completed:
+  * 1. Earnings Calculations Fix:
+    - Root cause: ReportService.gs previously queried the deprecated FeeObligations sheet to compute totalBilled. In the finalized 6-sheet model, billing agreements reside in the Packages sheet (11 columns). Because FeeObligations was absent/empty on the canonical spreadsheet, totalBilled evaluated to 0, which forced totalOutstanding to Math.max(0, 0 - 166800) = 0.
+    - Updated ReportService.gs (Reports_getFinancialSummary and Reports_getDashboardOverview):
+      * Primary Invoiced total derived from Packages.package_price (excluding void/cancelled packages), with backwards-compatible fallback to FeeObligations if packages are absent.
+      * Collected Earnings derived from Payments.amount / Payments.in_inr, excluding voided payments.
+      * Total Outstanding calculated per-student: sum of max(0, student_billed - student_paid). This prevents a student with an overpayment/credit balance from improperly offsetting another student's debt.
+      * Preserved currency without artificial FX conversions; preserved manual in_inr values.
+      * Added support for startDate and endDate date filters across both packages and payments.
+      * Updated Reports_getDashboardOverview to derive outstandingFeesTotal and overdueFeesTotal from the unified financial calculation.
+    - Canonical figures verified:
+      * Packages: Rehaan (₹1,00,000) + Vivaan (₹1,00,000) + Seerat (₹16,800) = ₹2,16,800 Total Invoiced / Package Value.
+      * Payments: Rehaan (₹75,000) + Vivaan (₹75,000) + Seerat (₹16,800) = ₹1,66,800 Collected Earnings.
+      * Outstanding: ₹50,000 (Rehaan ₹25,000 + Vivaan ₹25,000 + Seerat ₹0).
+    - Frontend Updates:
+      * ReportsPage.tsx: updated metric labels to "Total Invoiced / Package Value", "Collected Earnings", and "Total Outstanding" with descriptive explanatory subtitles and CSV export.
+      * reportApi.ts: updated fetchFinancialSummary to accept filter parameters.
+      * mockDataStore.ts: updated mock reports.financialSummary and dashboard.overview to return ₹2,16,800 / ₹1,66,800 / ₹50,000.
+      * All modified frontend files strictly verified under 149-line limit (ReportsPage: 99 lines, reportApi: 24 lines, mockDataStore: 98 lines).
+  * 2. Operational Sheets Audit:
+    - AuditLog: RETAINED. Critical immutable audit trail for security and idempotency deduplication (PaymentService.gs checks AuditLog.request_id). Hidden in Google Sheets UI.
+    - AppConfig: RETAINED. Active configuration store for runtime metadata (schema_version = 2.0.0). Hidden in Google Sheets UI.
+    - ImportBatches & ImportRowResults: RETIRED FROM ACTIVE WORKFLOWS. Zero frontend or backend business workflows query or mutate these sheets following the removal of bulk imports. Retained as inert schema definitions in SheetRegistry.gs to preserve spreadsheet integrity without dropping production tabs.
+  * 3. Quality Gates & Verification:
+    - 135/135 Vitest tests passing across 26 test suites (added tests/domains/earningsCalculations.test.ts covering canonical data, multiple packages, partial payments, fully paid packages, overpayment credit insulation, date filters, inactive students, voided records, and empty sheets).
+    - Line limit policy strictly verified: 124/124 files in src/ and public/ <= 149 lines.
+    - Strict TypeScript check (tsc --noEmit) passing with 0 errors.
+    - Production Vite build clean in 972ms.
+    - 10/10 Playwright e2e tests passing in 20.2s.

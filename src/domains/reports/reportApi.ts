@@ -1,12 +1,17 @@
 import { sendApiRequest } from '../../api/apiClient';
-import { FinancialSummary } from './reportTypes';
+import { FinancialSummary, ReportFilter } from './reportTypes';
 
 export async function fetchFinancialSummary(
-  token?: string | null
+  token?: string | null,
+  filter?: ReportFilter
 ): Promise<FinancialSummary> {
+  const payload: Record<string, unknown> = {};
+  if (filter?.startDate) payload.startDate = filter.startDate;
+  if (filter?.endDate) payload.endDate = filter.endDate;
+
   const response = await sendApiRequest<Record<string, unknown>>(
     'reports.financialSummary',
-    {},
+    payload,
     { token }
   );
   const data = response.data || {};
