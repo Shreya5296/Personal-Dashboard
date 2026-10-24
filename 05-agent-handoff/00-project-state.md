@@ -38,16 +38,16 @@ The Git history and this file are the recovery sources of truth. Chat history an
 |---|---|
 | Project | Student Management Dashboard / Personal Dashboard |
 | Execution mode | Autonomous, sequential implementation |
-| Current phase | Blank Screen Startup Recovery |
+| Current phase | Student Manager UI, Permanent IDs, and Registration Workflow |
 | Current phase status | PASSED |
-| Last completed phase | Blank Screen Startup Recovery |
+| Last completed phase | Student Manager UI, Permanent IDs, and Registration Workflow |
 | Current Git branch | main |
-| Last full regression run | 167 Vitest tests passed (32 test files) + line-limit check passing (141 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build (511ms) + Playwright suites passing (16/16) |
+| Last full regression run | 179 Vitest tests passed (34 test files) + line-limit check passing (152 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build (802ms) + Playwright suites passing (28 passed, 1 skipped) |
 | Canonical Spreadsheet | `Private Class Dashboard` (ID: `1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8`, Owner: `ashreya0502@gmail.com`) — 6 approved business tables + 1 AuditLog operational table |
 | Backup Spreadsheet | `Master Backup (Pre-Launch 2026-10-21T12-13-40-537Z)` (ID: `1kIFYmI81DfNIAqb-ZHsTifiKE6JxhfQrXqpfphrw9eU`) — Verified accessible and preserved intact |
 | Apps Script Project | `1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL` — ConfigService implemented; ReportService per-student package deduplication & numeric in_inr parsing pushed |
 | Web App Deployment | Active at version `@25` (`AKfycbx4d_VG4CsZIEAomX_OjNMuej06ktTYmKLME5ennLsI7mx3Fn5b-YBu9CRqe7NwrUVH3w`) — Deployment ID preserved; updated in-place to version 25 |
-| Last state update | Resolved unhandled RangeError: Invalid time value in DashboardCalendar caused by space-padded ISO hour strings from live Google Sheet data ("T 4:38:00.000Z"); implemented parseIsoDate and parseClassDate with safe string normalization; wrapped root React tree in ErrorBoundary to prevent application unmounting; deduplicated React child keys across calendar day cards and upcoming follow-ups. 141 files <= 149 lines, 167 Vitest tests and 16 Playwright tests passing. |
+| Last state update | Implemented single SearchableStudentSelect and placeholder-only inputs for Record Payment; enforced immutable permanent sequential student IDs (STU_001...); redesigned Meeting Links table (removed Open button, preserved Copy & badges) and centered modal; aligned Students Directory table with Active/Inactive/Archived semantic badge tones; implemented 4-section Add Student registration workflow with weekly recurring schedule builder; documented ClassSchedules persistence migration plan. 152 micro-files <= 149 lines, 179 Vitest tests passing, 28/29 Playwright tests passing (1 gracefully skipped). |
 
 ## 5. Phase Register
 
@@ -75,7 +75,8 @@ The Git history and this file are the recovery sources of truth. Chat history an
 | 19 | Unified Finances Consolidation & Ledger Single Source | PASSED | 20ebd6a | Consolidated Fees & Payments and Earnings into unified Finances page with 3 summary cards, Payment History + Student Balances tables, search, date filtering, and CSV export. 147 Vitest tests, 129 micro-files <= 149 lines, 14/14 Playwright tests passing. |
 | 20 | Finances & Meeting Links Refinements | PASSED | 538fb1c | Refined Finances summary labels, 4-column ascending history table, Received status wording; enhanced Meeting Links with platform identification (Google Meet, Zoom, Other), columnar card layout, slot-targeted Add Meeting Link for missing slots. 159 Vitest tests, 134 files <= 149 lines, 16/16 Playwright tests passing. |
 | 21 | Finances Workflow & Meeting Links Table Redesign | PASSED | 8e93c34 | Made Student Balances default first tab on Finances; added Add Payment action with popup modal, validation, and ledger updates; redesigned Meeting Links as compact table with popup form for add/edit. 165 Vitest tests, 140 files <= 149 lines, 16/16 Playwright tests passing. |
-| 22 | Blank Screen Startup Recovery | PASSED | HEAD | Resolved unhandled RangeError in DashboardCalendar caused by space-padded ISO date strings from live Google Sheet; added parseIsoDate helper; deduplicated React keys; added ErrorBoundary around React root. 167 Vitest tests, 141 files <= 149 lines, 16/16 Playwright tests passing. |
+| 22 | Blank Screen Startup Recovery | PASSED | 2aef912 | Resolved unhandled RangeError in DashboardCalendar caused by space-padded ISO date strings from live Google Sheet; added parseIsoDate helper; deduplicated React keys; added ErrorBoundary around React root. 167 Vitest tests, 141 files <= 149 lines, 16/16 Playwright tests passing. |
+| 23 | Student Manager UI, Permanent IDs & Registration | PASSED | HEAD | Implemented single SearchableStudentSelect, permanent sequential IDs (STU_001), aligned Meeting Links table & centered modal, aligned Students Directory with red inactive badge, 4-section registration workflow, recurring schedule data model & migration plan. 152 micro-files <= 149 lines, 179 Vitest tests, 28/29 Playwright tests. |
 
 ## 6. Live Infrastructure Inspection & Modification Boundary
 

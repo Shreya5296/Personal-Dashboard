@@ -1,0 +1,92 @@
+import { RegistrationFormData, RegistrationErrors } from './registrationTypes';
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+export function validateRegistrationForm(data: RegistrationFormData): {
+  isValid: boolean;
+  errors: RegistrationErrors;
+} {
+  const errors: RegistrationErrors = {};
+  let valid = true;
+
+  // 1. Student Details
+  const studentErrors: Record<string, string> = {};
+  if (!data.student.student_name.trim()) {
+    studentErrors.student_name = 'Student name is required.';
+    valid = false;
+  }
+  if (data.student.student_email.trim() && !EMAIL_REGEX.test(data.student.student_email.trim())) {
+    studentErrors.student_email = 'Invalid student email format.';
+    valid = false;
+  }
+  if (Object.keys(studentErrors).length > 0) errors.student = studentErrors;
+
+  // 2. Parent Details
+  const parentErrors: Record<string, string> = {};
+  if (!data.parent.parent_name.trim()) {
+    parentErrors.parent_name = 'Parent name is required.';
+    valid = false;
+  }
+  if (!data.parent.parent_phone.trim()) {
+    parentErrors.parent_phone = 'Parent phone is required.';
+    valid = false;
+  }
+  if (data.parent.parent_email.trim() && !EMAIL_REGEX.test(data.parent.parent_email.trim())) {
+    parentErrors.parent_email = 'Invalid parent email format.';
+    valid = false;
+  }
+  if (Object.keys(parentErrors).length > 0) errors.parent = parentErrors;
+
+  // 3. Package Details (optional, but validated if populated)
+  const pkgErrors: Record<string, string> = {};
+  const hasPkgInput = data.pkg.package_price.trim() || data.pkg.per_class.trim() || data.pkg.classes_purchased.trim();
+  if (hasPkgInput) {
+    if (data.pkg.package_price.trim()) {
+      const p = Number(data.pkg.package_price);
+      if (isNaN(p) || p < 0) {
+        pkgErrors.package_price = 'Package price must be a non-negative number.';
+        valid = false;
+      }
+    }
+    if (data.pkg.per_class.trim()) {
+      const pc = Number(data.pkg.per_class);
+      if (isNaN(pc) || pc < 0) {
+        pkgErrors.per_class = 'Per class rate must be a non-negative number.';
+        valid = false;
+      }
+    }
+    if (data.pkg.classes_purchased.trim()) {
+      const cp = Number(data.pkg.classes_purchased);
+      if (isNaN(cp) || cp <= 0 || !Number.isInteger(cp)) {
+        pkgErrors.classes_purchased = 'Purchased classes must be a positive whole number.';
+        valid = false;
+      }
+    }
+  }
+  if (Object.keys(pkgErrors).length > 0) errors.pkg = pkgErrors;
+
+  // 4. Class Schedules
+  const scheduleErrors: Record<string, string> = {};
+  data.schedules.forEach((entry) => {
+    if (!entry.day_of_week) {
+      scheduleErrors[`entry_${entry.id}_day`] = 'Select a day of the week.';
+      valid = false;
+    }
+    if (!TIME_REGEX.test(entry.start_time)) {
+      scheduleErrors[`entry_${entry.id}_start`] = 'Valid start time required (HH:MM).';
+      valid = false;
+    }
+    if (!TIME_REGEX.test(entry.end_time)) {
+      scheduleErrors[`entry_${entry.id}_end`] = 'Valid end time required (HH:MM).';
+      valid = false;
+    }
+    if (TIME_REGEX.test(entry.start_time) && TIME_REGEX.test(entry.end_time) && entry.end_time <= entry.start_time) {
+      scheduleErrors[`entry_${entry.id}_time`] = 'End time must be after start time.';
+      valid = false;
+    }
+  });
+  if (Object.keys(scheduleErrors).length > 0) errors.schedules = scheduleErrors;
+
+  return { isValid: valid, errors };
+}

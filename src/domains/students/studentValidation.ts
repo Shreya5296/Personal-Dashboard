@@ -8,7 +8,7 @@ export interface ValidationResult {
 export function validateStudentInput(input: Partial<StudentInput>): ValidationResult {
   const errors: Record<string, string> = {};
 
-  const name = (input.student_name || input.full_name || '').trim();
+  const name = String(input.student_name || input.full_name || '').trim();
   if (!name) {
     errors.student_name = 'Student name is required.';
     errors.full_name = 'Full name is required.';
@@ -17,36 +17,36 @@ export function validateStudentInput(input: Partial<StudentInput>): ValidationRe
     errors.full_name = 'Student name cannot exceed 100 characters.';
   }
 
-  if (input.parent_name !== undefined && !input.parent_name.trim()) {
+  const pName = input.parent_name !== undefined ? String(input.parent_name).trim() : null;
+  if (pName !== null && !pName) {
     errors.parent_name = 'Parent name is required.';
   }
 
-  if (input.parent_phone !== undefined && !input.parent_phone.trim()) {
+  const pPhone = input.parent_phone !== undefined ? String(input.parent_phone).trim() : (input.phone !== undefined ? String(input.phone).trim() : null);
+  if (pPhone !== null && !pPhone) {
     errors.parent_phone = 'Parent phone is required.';
     errors.phone = 'Parent phone is required.';
   }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  if (input.parent_email && input.parent_email.trim()) {
-    if (!emailRegex.test(input.parent_email.trim())) {
-      errors.parent_email = 'Invalid parent email address format.';
-    }
+  const pEmail = input.parent_email !== undefined ? String(input.parent_email).trim() : '';
+  if (pEmail && !emailRegex.test(pEmail)) {
+    errors.parent_email = 'Invalid parent email address format.';
   }
 
-  if (input.student_email && input.student_email.trim()) {
-    if (!emailRegex.test(input.student_email.trim())) {
-      errors.student_email = 'Invalid student email address format.';
-    }
+  const sEmail = input.student_email !== undefined ? String(input.student_email).trim() : '';
+  if (sEmail && !emailRegex.test(sEmail)) {
+    errors.student_email = 'Invalid student email address format.';
   }
 
-  if (input.email && input.email.trim()) {
-    if (!emailRegex.test(input.email.trim())) {
-      errors.email = 'Invalid email address format.';
-    }
+  const email = input.email !== undefined ? String(input.email).trim() : '';
+  if (email && !emailRegex.test(email)) {
+    errors.email = 'Invalid email address format.';
   }
 
-  if (input.subject && input.subject.trim().length > 100) {
+  const subj = input.subject !== undefined ? String(input.subject).trim() : '';
+  if (subj && subj.length > 100) {
     errors.subject = 'Subject cannot exceed 100 characters.';
   }
 

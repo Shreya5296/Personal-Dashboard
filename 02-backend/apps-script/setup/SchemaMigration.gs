@@ -340,9 +340,30 @@ function runApprovedSchemaMigration(spreadsheet) {
   }
 }
 
+function runRecurringSchedulesMigration(spreadsheet) {
+  var ss = spreadsheet || (typeof SpreadsheetApp !== 'undefined' ? SpreadsheetApp.getActiveSpreadsheet() : null);
+  if (!ss) return { success: false, message: 'Spreadsheet not available' };
+  var tabName = 'ClassSchedules';
+  var headers = ['schedule_id', 'student_id', 'day_of_week', 'start_time', 'end_time', 'is_active', 'created_at', 'updated_at'];
+  var sheet = ss.getSheetByName(tabName);
+  var created = false;
+  if (!sheet) {
+    sheet = ss.insertSheet(tabName);
+    sheet.appendRow(headers);
+    created = true;
+  }
+  return {
+    success: true,
+    tabName: tabName,
+    created: created,
+    headers: headers
+  };
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     runApprovedSchemaMigration: runApprovedSchemaMigration,
+    runRecurringSchedulesMigration: runRecurringSchedulesMigration,
     TARGET_SCHEMAS: TARGET_SCHEMAS,
     FORBIDDEN_OBSOLETE_COLUMNS: FORBIDDEN_OBSOLETE_COLUMNS,
     CANONICAL_SPREADSHEET_ID: CANONICAL_SPREADSHEET_ID,

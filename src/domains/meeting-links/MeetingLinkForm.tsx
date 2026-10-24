@@ -26,25 +26,17 @@ export const MeetingLinkForm: React.FC<MeetingLinkFormProps> = ({
   isLoading = false,
 }) => {
   const { token } = useAuth();
-  const [selectedStudentId, setSelectedStudentId] = useState(
-    initialLink?.student_id || initialStudentId || ''
-  );
+  const [selectedStudentId, setSelectedStudentId] = useState(initialLink?.student_id || initialStudentId || '');
   const [students, setStudents] = useState<Student[]>([]);
-  const [primaryUrl, setPrimaryUrl] = useState(
-    initialLink?.meeting_link_1 || initialLink?.meeting_url || ''
-  );
-  const [secondaryUrl, setSecondaryUrl] = useState(
-    initialLink?.meeting_link_2 || ''
-  );
+  const [primaryUrl, setPrimaryUrl] = useState(initialLink?.meeting_link_1 || initialLink?.meeting_url || '');
+  const [secondaryUrl, setSecondaryUrl] = useState(initialLink?.meeting_link_2 || '');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!initialStudentId && !initialLink?.student_id) {
       fetchStudents({}, token).then((data) => {
         setStudents(data);
-        if (data.length > 0 && !selectedStudentId) {
-          setSelectedStudentId(data[0].student_id);
-        }
+        if (data.length > 0 && !selectedStudentId) setSelectedStudentId(data[0].student_id);
       });
     }
   }, [initialStudentId, initialLink, token]);
@@ -53,31 +45,20 @@ export const MeetingLinkForm: React.FC<MeetingLinkFormProps> = ({
     e.preventDefault();
     const pTrim = primaryUrl.trim();
     const sTrim = secondaryUrl.trim();
+    if (targetSlot === 'primary' && !pTrim) { setError('Primary Meeting Link is required.'); return; }
+    if (targetSlot === 'secondary' && !sTrim) { setError('Secondary Meeting Link is required.'); return; }
+    if (!targetSlot && !pTrim && !sTrim) { setError('At least one meeting link is required.'); return; }
+    if (pTrim && !isValidHttpsUrl(pTrim)) { setError('Primary Meeting Link must be a valid HTTPS URL.'); return; }
+    if (sTrim && !isValidHttpsUrl(sTrim)) { setError('Secondary Meeting Link must be a valid HTTPS URL.'); return; }
 
-    if (!pTrim && !sTrim) {
-      setError('At least one meeting link (Primary or Secondary) is required.');
-      return;
-    }
-
-    if (pTrim && !isValidHttpsUrl(pTrim)) {
-      setError('Primary Meeting Link must be a valid HTTPS URL (e.g. https://meet.google.com/...)');
-      return;
-    }
-
-    if (sTrim && !isValidHttpsUrl(sTrim)) {
-      setError('Secondary Meeting Link must be a valid HTTPS URL if provided.');
-      return;
-    }
-
-    const provider = pTrim.includes('zoom.us') ? 'ZOOM' : 'GOOGLE_MEET';
-
+    const provider = (pTrim || sTrim).includes('zoom.us') ? 'ZOOM' : 'GOOGLE_MEET';
     try {
       await onSubmit({
         student_id: selectedStudentId || initialStudentId || undefined,
         provider,
         meeting_url: pTrim || sTrim,
-        meeting_link_1: pTrim,
-        meeting_link_2: sTrim,
+        meeting_link_1: targetSlot === 'secondary' ? (initialLink?.meeting_link_1 || '') : pTrim,
+        meeting_link_2: targetSlot === 'primary' ? (initialLink?.meeting_link_2 || '') : sTrim,
         link_label: 'Class Meeting Link',
         is_preferred: true,
       });
@@ -86,22 +67,20 @@ export const MeetingLinkForm: React.FC<MeetingLinkFormProps> = ({
     }
   };
 
-  const slotHeading = targetSlot === 'primary'
-    ? 'Add Primary Meeting Link'
-    : targetSlot === 'secondary'
-    ? 'Add Secondary Meeting Link'
-    : initialLink
-    ? 'Edit Meeting Links'
-    : 'Register Student Meeting Link';
+  const studentName = initialLink?.student_name || students.find(s => s.student_id === selectedStudentId)?.student_name || '';
+  const studentId = initialLink?.student_id || selectedStudentId;
 
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border-subtle)', paddingBottom: 'var(--space-2)' }}>
-        <h4 style={{ margin: 0, fontSize: 'var(--font-size-base)', fontWeight: 600 }}>{slotHeading}</h4>
-        {initialLink && (
-          <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-primary)', fontWeight: 600 }}>
-            {initialLink.student_name || initialLink.student_id}
-          </span>
+      <div style={{ textAlign: 'center', borderBottom: '1px solid var(--color-border-subtle)', paddingBottom: 'var(--space-2)' }}>
+        <h3 style={{ margin: 0, fontSize: 'var(--font-size-base)', fontWeight: 600 }}>Edit Meeting Links</h3>
+        {(studentName || studentId) && (
+          <div style={{ textAlign: 'left', marginTop: 'var(--space-2)' }}>
+            <span style={{ fontSize: '17px', fontWeight: 600, color: 'var(--color-text-main)', display: 'block' }}>
+              {studentName || studentId}
+            </span>
+            {studentId && <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-subtle)', fontFamily: 'monospace' }}>{studentId}</span>}
+          </div>
         )}
       </div>
 
@@ -109,22 +88,20 @@ export const MeetingLinkForm: React.FC<MeetingLinkFormProps> = ({
         <FormField label="Assign to Student" required>
           <select className={formStyles.select} value={selectedStudentId} onChange={(e) => setSelectedStudentId(e.target.value)}>
             {students.map((s) => (
-              <option key={s.student_id} value={s.student_id}>
-                {s.student_name || s.student_id} ({s.subject || 'General'})
-              </option>
+              <option key={s.student_id} value={s.student_id}>{s.student_name || s.student_id} ({s.subject || 'General'})</option>
             ))}
           </select>
         </FormField>
       )}
 
       {(!targetSlot || targetSlot === 'primary') && (
-        <FormField label="Primary Meeting Link (HTTPS)" required={targetSlot === 'primary'} error={error && !secondaryUrl ? error : undefined}>
+        <FormField label="Primary Meeting Link" required={targetSlot === 'primary'} error={error && !secondaryUrl ? error : undefined}>
           <input className={formStyles.input} type="url" value={primaryUrl} onChange={(e) => { setPrimaryUrl(e.target.value); setError(null); }} placeholder="https://meet.google.com/abc-defg-hij" autoFocus={targetSlot === 'primary'} />
         </FormField>
       )}
 
       {(!targetSlot || targetSlot === 'secondary') && (
-        <FormField label="Secondary Meeting Link (HTTPS)" required={targetSlot === 'secondary'} error={error && !primaryUrl ? error : undefined}>
+        <FormField label="Secondary Meeting Link (Optional)" required={targetSlot === 'secondary'} error={error && !primaryUrl ? error : undefined}>
           <input className={formStyles.input} type="url" value={secondaryUrl} onChange={(e) => { setSecondaryUrl(e.target.value); setError(null); }} placeholder="https://zoom.us/j/987654321" autoFocus={targetSlot === 'secondary'} />
         </FormField>
       )}

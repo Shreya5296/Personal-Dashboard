@@ -531,3 +531,40 @@ NEXT ACTION
     - Strict TypeScript check (tsc --noEmit): 0 errors.
     - Production Vite build: clean build, 0 warnings.
     - Playwright E2E suites: 16/16 passed.
+- Student Manager UI, Permanent Student IDs, and Student Registration Workflow completed:
+  * 1. Record Student Payment Form Refinements:
+    - Replaced duplicate filter and dropdown with a single SearchableStudentSelect component (133 lines).
+    - Supports searching by student name and permanent student ID with format 'Rehaan — STU_002'.
+    - Removed visible field labels from AddPaymentModal, replacing them with clean placeholders ('Select or search student...', 'Payment date', 'Currency', 'Amount in INR', 'Amount in original currency') and accessible aria-label attributes.
+    - Added consistent right padding (2.5rem) to student selector and currency dropdowns preventing text overlap with indicators.
+    - Preserved payment integrity: validated student selection, date, currency, amount, manual INR conversion, disabled submit during submission, and refreshed ledger on backend confirmation.
+  * 2. Permanent Sequential Student IDs:
+    - Authoritative backend generator in IdGenerator.gs formats new IDs as STU_001, STU_002, ..., STU_999, STU_1000.
+    - Case-sensitive regex (/^STU_(\d+)$/) prevents collision with legacy stu_xxx random hex IDs.
+    - StudentService.gs wraps creation in Apps Script withLock(10000), checks existing IDs, detects highest sequence number, avoids collisions, and returns persisted student_id.
+    - Existing student IDs are never mutated or regenerated on edit, status update, archiving, package allocation, schedule update, or payment.
+  * 3. Meeting Links Page Alignment and Actions:
+    - Aligned compact tabular layout with fixed column widths (Student: 24%, Primary: 33%, Secondary: 33%, Actions: 10%), text truncation with ellipsis, and responsive table container.
+    - Removed 'Open ↗' actions per prompt specification; retained only the 'Copy' action with clipboard feedback.
+    - Retained platform badge detection (Google Meet, Zoom, Other) based on URL.
+    - Corrected modal header: centered 'Edit Meeting Links' title with prominent left-aligned student name (17px bold).
+    - Removed '(HTTPS)' UI wording from labels ('Primary Meeting Link', 'Secondary Meeting Link (Optional)') while preserving validation.
+    - Preserved link updates: explicit clearing supported for secondary links, leaving secondary empty is valid, editing one link preserves the other.
+  * 4. Students Directory Alignment & Status Colors:
+    - Aligned directory table columns (Student: 22%, Subject: 16%, Parent Contact: 20%, Student Email: 18%, Status: 10%, Actions: 14%).
+    - Status badge styling updated: ACTIVE -> green (success), INACTIVE -> red (danger), ARCHIVED -> neutral grey.
+    - Subject and email cells truncated cleanly with text-overflow: ellipsis.
+  * 5. 4-Section Student Registration Workflow:
+    - Implemented unified StudentRegistrationForm with 4 distinct sections: 1. Student Details, 2. Parent Details, 3. Package Details, 4. Class Schedule.
+    - Added weekly recurring schedule entry with Day of Week, Start Time, End Time, + Add Schedule entry, and remove action.
+    - Safe sequential persistence: student created first; on partial failure (package/schedule save failure), persisted student state is retained to prevent duplicate student creation on retry.
+  * 6. Recurring Schedule Data Model & Migration Plan:
+    - Designed ClassSchedules schema (schedule_id, student_id, day_of_week, start_time, end_time, is_active, created_at, updated_at).
+    - Created detailed migration plan in docs/prelaunch/recurring-schedules-migration-plan.md.
+    - Added ClassScheduleService.gs and ClassScheduleHandlers.gs with graceful fallback to Script Cache when the ClassSchedules sheet is not yet physically created in the canonical spreadsheet.
+  * 7. Quality Gates & Test Verification:
+    - Line limit check: 152/152 files in src/ and public/ strictly <= 149 lines (PASS).
+    - TypeScript strict check (tsc --noEmit): 0 errors (PASS).
+    - Vitest unit/integration suite: 179/179 tests passing across 34 test files (PASS).
+    - Production Vite build: clean build in 802ms (PASS).
+    - Playwright E2E suites: 28 passed, 1 skipped (0 failures) (PASS).

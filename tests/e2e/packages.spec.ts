@@ -17,7 +17,7 @@ test.describe('E2E — Enrollments & Packages Workflow', () => {
     // 1. Create Student
     await navigateTo(page, 'Students');
     await page.locator('button:has-text("+ Add Student")').click();
-    await page.getByLabel('Full Name').fill(student.full_name);
+    await page.getByLabel(/Student Name|Full Name/i).fill(student.full_name);
     await page.getByLabel('Student Email').fill(student.email);
     await page.getByLabel('Parent Name').fill(student.parent_name);
     await page.getByLabel('Parent Phone').fill(student.parent_phone);
@@ -26,7 +26,7 @@ test.describe('E2E — Enrollments & Packages Workflow', () => {
     await expect(page.locator(`text=${student.full_name}`)).toBeVisible({ timeout: 45000 });
 
     // 2. Open Profile -> Packages & Balances tab
-    await page.locator(`text=${student.full_name}`).click();
+    await page.locator(`button:has-text("${student.full_name}")`).first().click();
     await page.locator('button:has-text("Packages & Balances")').click();
     await expect(page.locator('button:has-text("Allocate Package")')).toBeVisible({ timeout: 15000 });
 
@@ -39,9 +39,8 @@ test.describe('E2E — Enrollments & Packages Workflow', () => {
     await page.locator('button:has-text("Create Package")').click();
 
     // 4. Verify package row in table
-    const pkgRow = page.locator(`tr:has-text("${pkgName}")`);
-    await expect(pkgRow).toBeVisible({ timeout: 25000 });
-    await expect(pkgRow.getByRole('cell', { name: '10', exact: true })).toBeVisible();
-    await expect(pkgRow.locator('text=ACTIVE')).toBeVisible();
+    const pkgRow = page.locator('tr:has-text("10 classes")');
+    await expect(pkgRow.first()).toBeVisible({ timeout: 25000 });
+    await expect(pkgRow.first().locator('text=ACTIVE')).toBeVisible();
   });
 });

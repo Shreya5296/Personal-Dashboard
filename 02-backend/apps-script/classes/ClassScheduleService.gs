@@ -1,0 +1,119 @@
+/**
+ * ClassScheduleService: Manages recurring weekly class schedules per student.
+ * Schema (ClassSchedules): schedule_id, student_id, day_of_week, start_time, end_time, is_active, created_at, updated_at
+ */
+
+var _schedIdGen = typeof generateId === 'function' ? { generateId: generateId } : (typeof require !== 'undefined' ? require('../shared/IdGenerator.gs') : null);
+var _schedStuRepo = typeof Students_getById === 'function' ? { Students_getById: Students_getById } : (typeof require !== 'undefined' ? require('../students/StudentRepository.gs') : null);
+
+var VALID_DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+var TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+var _memorySchedules = typeof globalThis !== 'undefined' && globalThis.__recurringSchedules ? globalThis.__recurringSchedules : {};
+if (typeof globalThis !== 'undefined') globalThis.__recurringSchedules = _memorySchedules;
+
+function validateScheduleEntry(entry) {
+  if (!entry || typeof entry !== 'object') return { valid: false, message: 'Invalid schedule entry' };
+  var day = String(entry.day_of_week || '').trim().toUpperCase();
+  if (VALID_DAYS.indexOf(day) === -1) {
+    return { valid: false, message: 'Invalid day of week: ' + entry.day_of_week };
+  }
+  var start = String(entry.start_time || '').trim();
+  var end = String(entry.end_time || '').trim();
+  if (!TIME_REGEX.test(start)) {
+    return { valid: false, message: 'Start time must be in HH:MM format (e.g. 17:00)' };
+  }
+  if (!TIME_REGEX.test(end)) {
+    return { valid: false, message: 'End time must be in HH:MM format (e.g. 18:00)' };
+  }
+  if (end <= start) {
+    return { valid: false, message: 'End time must be after start time' };
+  }
+  return { valid: true, day: day, start: start, end: end };
+}
+
+function Schedules_list(spreadsheet, studentId) {
+  var sid = String(studentId || '').trim();
+  if (!sid) return { success: true, data: [] };
+
+  var sheet = spreadsheet && spreadsheet.getSheetByName ? spreadsheet.getSheetByName('ClassSchedules') : null;
+  if (!sheet) {
+    return { success: true, data: _memorySchedules[sid] || [], meta: { persistentSheet: false } };
+  }
+
+  var data = sheet.getDataRange ? sheet.getDataRange().getValues() : [];
+  if (data.length <= 1) return { success: true, data: [] };
+
+  var headers = data[0];
+  var stuIdx = headers.indexOf('student_id');
+  var results = [];
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    if (stuIdx !== -1 && String(row[stuIdx]).trim() === sid) {
+      var item = {};
+      for (var h = 0; h < headers.length; h++) item[headers[h]] = row[h];
+      if (item.is_active !== false && item.is_active !== 'FALSE') {
+        results.push(item);
+      }
+    }
+  }
+  return { success: true, data: results, meta: { persistentSheet: true } };
+}
+
+function Schedules_save(spreadsheet, studentId, entries, actor) {
+  var sid = String(studentId || '').trim();
+  if (!sid) return { success: false, code: 'VALIDATION_ERROR', message: 'Student ID is required' };
+
+  var list = entries || [];
+  var validated = [];
+  for (var i = 0; i < list.length; i++) {
+    var check = validateScheduleEntry(list[i]);
+    if (!check.valid) {
+      return { success: false, code: 'VALIDATION_ERROR', message: check.message };
+    }
+    validated.push({
+      schedule_id: list[i].schedule_id || (_schedIdGen ? _schedIdGen.generateId('csch_') : 'csch_' + Date.now() + '_' + i),
+      student_id: sid,
+      day_of_week: check.day,
+      start_time: check.start,
+      end_time: check.end,
+      is_active: true,
+      created_at: list[i].created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    });
+  }
+
+  var sheet = spreadsheet && spreadsheet.getSheetByName ? spreadsheet.getSheetByName('ClassSchedules') : null;
+  if (!sheet) {
+    _memorySchedules[sid] = validated;
+    return {
+      success: true,
+      data: validated,
+      meta: { persistentSheet: false, notice: 'ClassSchedules sheet not yet created in spreadsheet; stored in session cache' }
+    };
+  }
+
+  var data = sheet.getDataRange().getValues();
+  var headers = data[0];
+  var stuIdx = headers.indexOf('student_id');
+  for (var r = data.length - 1; r >= 1; r--) {
+    if (stuIdx !== -1 && String(data[r][stuIdx]).trim() === sid) {
+      sheet.deleteRow(r + 1);
+    }
+  }
+  for (var v = 0; v < validated.length; v++) {
+    var rec = validated[v];
+    var rowData = headers.map(function(h) { return rec[h] !== undefined ? rec[h] : ''; });
+    sheet.appendRow(rowData);
+  }
+
+  return { success: true, data: validated, meta: { persistentSheet: true } };
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    validateScheduleEntry: validateScheduleEntry,
+    Schedules_list: Schedules_list,
+    Schedules_save: Schedules_save
+  };
+}

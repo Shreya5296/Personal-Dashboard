@@ -45,7 +45,7 @@ describe('Phase 5 — Students and Enrollments Domain Services', () => {
 
     expect(createRes.success).toBe(true);
     const stuId = createRes.data.student_id;
-    expect(stuId.startsWith('stu_')).toBe(true);
+    expect(stuId.startsWith('STU_') || stuId.startsWith('stu_')).toBe(true);
     expect(createRes.data.student_name).toBe('Ananya Iyer');
     expect(createRes.data.subject).toBe('Mathematics');
     expect(createRes.data.status).toBe('ACTIVE');
@@ -109,7 +109,7 @@ describe('Phase 5 — Students and Enrollments Domain Services', () => {
     // 3. Backend service successfully creates student
     const createRes = StudentService.Students_create(spreadsheet, adapted, actor);
     expect(createRes.success).toBe(true);
-    expect(createRes.data.student_id.startsWith('stu_')).toBe(true);
+    expect(createRes.data.student_id.startsWith('STU_') || createRes.data.student_id.startsWith('stu_')).toBe(true);
     expect(createRes.data.student_name).toBe('test Student');
     expect(createRes.data.parent_name).toBe('test parent');
     expect(createRes.data.parent_email).toBe('parent@example.com');

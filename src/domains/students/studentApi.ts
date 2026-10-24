@@ -26,14 +26,14 @@ export function formatSubjectAndNotes(subject?: string | null, notes?: string | 
 }
 
 export function adaptStudentInput(input: Partial<StudentInput>): Record<string, unknown> {
-  const name = (input.student_name || input.full_name || '').trim();
-  const parentName = (input.parent_name || '').trim();
-  const parentPhone = (input.parent_phone || input.phone || '').trim();
-  const studentPhone = (input.student_phone || '').trim();
-  const parentEmail = (input.parent_email || '').trim();
-  const studentEmail = (input.student_email || input.email || '').trim();
-  const subject = (input.subject || '').trim();
-  const notes = (input.notes || '').trim();
+  const name = String(input.student_name || input.full_name || '').trim();
+  const parentName = String(input.parent_name || '').trim();
+  const parentPhone = String(input.parent_phone || input.phone || '').trim();
+  const studentPhone = String(input.student_phone || '').trim();
+  const parentEmail = String(input.parent_email || '').trim();
+  const studentEmail = String(input.student_email || input.email || '').trim();
+  const subject = String(input.subject || '').trim();
+  const notes = String(input.notes || '').trim();
   const status = input.status || 'ACTIVE';
 
   return {
@@ -55,9 +55,9 @@ export function adaptStudentInput(input: Partial<StudentInput>): Record<string, 
 
 export function enrichStudentData(student: Student): Student {
   if (!student) return student;
-  const name = student.student_name || student.full_name || '';
-  let subject = student.subject || '';
-  let notes = student.notes || '';
+  const name = String(student.student_name || student.full_name || '');
+  let subject = String(student.subject || '');
+  let notes = String(student.notes || '');
   if (!subject && notes) {
     const parsed = parseSubjectAndNotes(notes);
     if (parsed.subject) {
@@ -69,11 +69,11 @@ export function enrichStudentData(student: Student): Student {
     ...student,
     student_name: name,
     full_name: name,
-    parent_name: student.parent_name || '',
-    parent_phone: student.parent_phone || student.phone || '',
-    student_phone: student.student_phone || '',
-    parent_email: student.parent_email || student.email || '',
-    student_email: student.student_email || '',
+    parent_name: String(student.parent_name || ''),
+    parent_phone: String(student.parent_phone || student.phone || ''),
+    student_phone: String(student.student_phone || ''),
+    parent_email: String(student.parent_email || student.email || ''),
+    student_email: String(student.student_email || ''),
     subject,
     status: student.status || 'ACTIVE',
     notes,

@@ -11,6 +11,7 @@ var _stuRepo = typeof Students_getAll === 'function' ? {
   Students_update: typeof Students_repoUpdate === 'function' ? Students_repoUpdate : Students_update
 } : (typeof require !== 'undefined' ? require('./StudentRepository.gs') : null);
 var _stuAudit = typeof recordAuditEvent === 'function' ? { recordAuditEvent: recordAuditEvent } : (typeof require !== 'undefined' ? require('../audit/AuditService.gs') : null);
+var _stuLock = typeof withLock === 'function' ? { withLock: withLock } : (typeof require !== 'undefined' ? require('../sheets/LockManager.gs') : null);
 var _stuReg = {
   get SHEET_NAMES() {
     if (typeof SHEET_NAMES !== 'undefined' && SHEET_NAMES) return SHEET_NAMES;
@@ -73,37 +74,56 @@ function Students_create(spreadsheet, data, actor) {
   }
 
   var now = new Date().toISOString();
-  var studentId = _stuIdGen.generateStudentId();
+  var lockFn = _stuLock && _stuLock.withLock ? _stuLock.withLock : function(timeout, fn) { return { success: true, result: fn() }; };
+  var lockRes = lockFn(10000, function() {
+    var existingStudents = _stuRepo.Students_getAll(spreadsheet) || [];
+    var existingIds = existingStudents.map(function(s) { return s.student_id; });
+    var studentId = _stuIdGen.generateStudentId(existingIds);
 
-  var record = {
-    student_id: studentId,
-    student_name: normalized.student_name,
-    parent_name: normalized.parent_name,
-    parent_phone: normalized.parent_phone,
-    student_phone: normalized.student_phone,
-    parent_email: normalized.parent_email,
-    student_email: normalized.student_email,
-    subject: normalized.subject,
-    status: normalized.status,
-    notes: normalized.notes,
-    created_at: now,
-    updated_at: now,
-    archived_at: ''
-  };
+    if (_stuRepo.Students_getById(spreadsheet, studentId)) {
+      throw new Error('Collision detected for student ID: ' + studentId);
+    }
 
-  _stuRepo.Students_insert(spreadsheet, record);
+    var record = {
+      student_id: studentId,
+      student_name: normalized.student_name,
+      parent_name: normalized.parent_name,
+      parent_phone: normalized.parent_phone,
+      student_phone: normalized.student_phone,
+      parent_email: normalized.parent_email,
+      student_email: normalized.student_email,
+      subject: normalized.subject,
+      status: normalized.status,
+      notes: normalized.notes,
+      created_at: now,
+      updated_at: now,
+      archived_at: ''
+    };
 
-  _stuAudit.recordAuditEvent(spreadsheet, _stuReg, _stuMap, {
-    actor_id: actor.actorId,
-    actor_email: actor.email,
-    entity_type: 'STUDENT',
-    entity_id: studentId,
-    action: 'CREATE',
-    after_summary: { student_id: studentId, name: record.student_name },
-    request_id: actor.requestId
+    _stuRepo.Students_insert(spreadsheet, record);
+
+    _stuAudit.recordAuditEvent(spreadsheet, _stuReg, _stuMap, {
+      actor_id: actor.actorId,
+      actor_email: actor.email,
+      entity_type: 'STUDENT',
+      entity_id: studentId,
+      action: 'CREATE',
+      after_summary: { student_id: studentId, name: record.student_name },
+      request_id: actor.requestId
+    });
+
+    return { success: true, data: Students_enrich(record) };
   });
 
-  return { success: true, data: Students_enrich(record) };
+  if (!lockRes.success) {
+    return {
+      success: false,
+      code: lockRes.code || 'CONFLICT',
+      message: lockRes.message || 'Could not acquire lock to create student'
+    };
+  }
+
+  return lockRes.result;
 }
 
 function Students_update(spreadsheet, studentId, updates, actor) {
@@ -259,6 +279,7 @@ if (typeof module !== 'undefined' && module.exports) {
     Students_update: Students_update,
     Students_archive: Students_archive,
     Students_reactivate: Students_reactivate,
+    Students_getById: function(spreadsheet, id) { return _stuRepo.Students_getById(spreadsheet, id); },
     Students_list: Students_list
   };
 }

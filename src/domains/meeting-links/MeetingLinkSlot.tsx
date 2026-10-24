@@ -2,7 +2,7 @@ import React from 'react';
 import { detectMeetingPlatform } from './platformDetector';
 import { MeetingPlatformBadge } from './MeetingPlatformBadge';
 import { Button } from '../../components/buttons/Button';
-import { CopyIcon, ExternalLinkIcon } from '../../components/icons/ActionIcons';
+import { CopyIcon } from '../../components/icons/ActionIcons';
 
 export interface MeetingLinkSlotProps {
   slotTitle: 'Primary Meeting Link' | 'Secondary Meeting Link';
@@ -71,29 +71,9 @@ export const MeetingLinkSlot: React.FC<MeetingLinkSlotProps> = ({
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: '4px' }}>
         {exists ? (
-          <>
-            <Button variant="ghost" size="sm" onClick={() => onCopy(cleanUrl)}>
-              <CopyIcon size={12} /> {isCopied ? 'Copied' : 'Copy'}
-            </Button>
-            <a
-              href={cleanUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: 'var(--font-size-xs)',
-                color: 'var(--color-primary)',
-                fontWeight: 600,
-                textDecoration: 'none',
-                padding: '4px 8px',
-                borderRadius: 'var(--radius-md)',
-              }}
-            >
-              <ExternalLinkIcon size={12} /> Open ↗
-            </a>
-          </>
+          <Button variant="ghost" size="sm" onClick={() => onCopy(cleanUrl)}>
+            <CopyIcon size={12} /> {isCopied ? 'Copied' : 'Copy'}
+          </Button>
         ) : (
           <Button variant="secondary" size="sm" onClick={onAdd}>
             Add Meeting Link

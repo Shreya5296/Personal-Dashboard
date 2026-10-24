@@ -24,7 +24,46 @@ function generateId(prefix) {
   return p + timeHex + randHex;
 }
 
-function generateStudentId() { return generateId(ID_PREFIXES.STUDENT); }
+function formatStudentId(num) {
+  var n = Number(num);
+  if (isNaN(n) || n < 1) n = 1;
+  if (n < 10) return 'STU_00' + n;
+  if (n < 100) return 'STU_0' + n;
+  return 'STU_' + n;
+}
+
+function generateSequentialStudentId(existingIds) {
+  var idSet = {};
+  var maxNum = 0;
+  var list = existingIds || [];
+  for (var i = 0; i < list.length; i++) {
+    var rawId = list[i];
+    if (rawId === undefined || rawId === null) continue;
+    var idStr = String(rawId).trim();
+    if (!idStr) continue;
+    idSet[idStr.toUpperCase()] = true;
+
+    var match = idStr.match(/^STU_(\d+)$/);
+    if (match) {
+      var num = parseInt(match[1], 10);
+      if (!isNaN(num) && num > maxNum) {
+        maxNum = num;
+      }
+    }
+  }
+
+  var nextNum = maxNum + 1;
+  var candidate = formatStudentId(nextNum);
+  while (idSet[candidate.toUpperCase()]) {
+    nextNum++;
+    candidate = formatStudentId(nextNum);
+  }
+  return candidate;
+}
+
+function generateStudentId(existingIds) {
+  return generateSequentialStudentId(existingIds || []);
+}
 function generateEnrollmentId() { return generateId(ID_PREFIXES.ENROLLMENT); }
 function generatePackageId() { return generateId(ID_PREFIXES.PACKAGE); }
 function generateFeeObligationId() { return generateId(ID_PREFIXES.FEE_OBLIGATION); }
@@ -40,6 +79,8 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     ID_PREFIXES: ID_PREFIXES,
     generateId: generateId,
+    formatStudentId: formatStudentId,
+    generateSequentialStudentId: generateSequentialStudentId,
     generateStudentId: generateStudentId,
     generateEnrollmentId: generateEnrollmentId,
     generatePackageId: generatePackageId,

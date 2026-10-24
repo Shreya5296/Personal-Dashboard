@@ -15,6 +15,7 @@ const { registerClassOperations } = require('../../02-backend/apps-script/classe
 const { registerReportOperations } = require('../../02-backend/apps-script/reports/ReportHandlers.gs');
 const { registerNoteOperations } = require('../../02-backend/apps-script/notes/NoteHandlers.gs');
 const { registerMeetingLinkOperations } = require('../../02-backend/apps-script/meeting-links/MeetingLinkHandlers.gs');
+const { registerClassScheduleOperations } = require('../../02-backend/apps-script/classes/ClassScheduleHandlers.gs');
 
 describe('Backend Operation Adapters and Compatibility', () => {
   let spreadsheet: any;
@@ -36,6 +37,7 @@ describe('Backend Operation Adapters and Compatibility', () => {
     registerReportOperations(mockRouter);
     registerNoteOperations(mockRouter);
     registerMeetingLinkOperations(mockRouter);
+    registerClassScheduleOperations(mockRouter);
   });
 
   it('adapts student creation with full_name, phone, parent_name and enriches output', () => {
@@ -279,5 +281,31 @@ describe('Backend Operation Adapters and Compatibility', () => {
     expect(linkList.success).toBe(true);
     expect(linkList.data).toHaveLength(1);
     expect(linkList.data[0].meeting_url).toBe('https://meet.google.com/test-link');
+
+    // 6. Save recurring weekly class schedules
+    const saveSchedRes = registry['schedules.save']({
+      spreadsheet,
+      payload: {
+        student_id: studentId,
+        schedules: [
+          { day_of_week: 'MONDAY', start_time: '17:00', end_time: '18:00' },
+          { day_of_week: 'WEDNESDAY', start_time: '17:30', end_time: '18:30' },
+        ],
+      },
+      actorId: 'usr_test',
+      verifiedEmail: 'ashreya0502@gmail.com',
+      requestId: 'req_sched_save',
+    });
+    expect(saveSchedRes.success).toBe(true);
+    expect(saveSchedRes.data).toHaveLength(2);
+
+    // 7. List recurring schedules
+    const schedList = registry['schedules.list']({
+      spreadsheet,
+      payload: { student_id: studentId },
+    });
+    expect(schedList.success).toBe(true);
+    expect(schedList.data).toHaveLength(2);
+    expect(schedList.data[0].day_of_week).toBe('MONDAY');
   });
 });

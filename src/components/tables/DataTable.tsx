@@ -4,6 +4,7 @@ import styles from './tables.module.css';
 export interface Column<T> {
   key: string;
   header: string;
+  width?: string;
   render?: (row: T) => React.ReactNode;
 }
 
@@ -20,7 +21,9 @@ export function DataTable<T>({ columns, data, keyExtractor }: DataTableProps<T>)
         <thead>
           <tr>
             {columns.map((col) => (
-              <th key={col.key}>{col.header}</th>
+              <th key={col.key} style={col.width ? { width: col.width } : undefined}>
+                {col.header}
+              </th>
             ))}
           </tr>
         </thead>
@@ -28,7 +31,7 @@ export function DataTable<T>({ columns, data, keyExtractor }: DataTableProps<T>)
           {data.map((row) => (
             <tr key={keyExtractor(row)}>
               {columns.map((col) => (
-                <td key={col.key}>
+                <td key={col.key} style={col.width ? { width: col.width } : undefined}>
                   {col.render ? col.render(row) : (row as Record<string, unknown>)[col.key] as React.ReactNode}
                 </td>
               ))}

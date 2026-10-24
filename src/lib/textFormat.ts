@@ -16,15 +16,19 @@ export function formatStatusBadge(status: string | null | undefined): { label: s
       return { label: upper, tone: 'success' };
     case 'RECORDED':
       return { label: 'Received', tone: 'neutral' };
+    case 'ARCHIVED':
+      return { label: 'ARCHIVED', tone: 'neutral' };
     case 'PARTIALLY_PAID':
+      return { label: 'PARTIALLY PAID', tone: 'warning' };
     case 'SCHEDULED':
     case 'PENDING':
       return { label: upper.replace('_', ' '), tone: 'warning' };
+    case 'INACTIVE':
+      return { label: 'INACTIVE', tone: 'danger' };
     case 'OVERDUE':
     case 'CANCELLED':
     case 'VOID':
     case 'NO_SHOW':
-    case 'ARCHIVED':
       return { label: upper.replace('_', ' '), tone: 'danger' };
     default:
       return { label: upper, tone: 'neutral' };

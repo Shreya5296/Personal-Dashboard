@@ -67,9 +67,9 @@ test.describe('E2E — Finances Refinements & Meeting Links Management', () => {
     await expect(page.locator('text=Google Meet').first()).toBeVisible();
     await expect(page.locator('text=Zoom').first()).toBeVisible();
 
-    // 3. For existing links, Copy and Open controls exist
+    // 3. For existing links, Copy control exists; Open control is completely removed
     await expect(page.locator('button:has-text("Copy")').first()).toBeVisible();
-    await expect(page.locator('a:has-text("Open ↗")').first()).toBeVisible();
+    await expect(page.locator('a:has-text("Open ↗")')).toHaveCount(0);
 
     // 4. Missing link behavior: "Add Meeting Link" button is shown for empty slot
     const addSlotBtn = page.locator('button:has-text("Add Meeting Link")').first();

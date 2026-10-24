@@ -17,7 +17,7 @@ test.describe('E2E — Meeting Links and Student Notes Workflow', () => {
     // 1. Create a student for this workflow
     await navigateTo(page, 'Students');
     await page.locator('button:has-text("+ Add Student")').click();
-    await page.getByLabel('Full Name').fill(student.full_name);
+    await page.getByLabel(/Student Name|Full Name/i).fill(student.full_name);
     await page.getByLabel('Student Email').fill(student.email);
     await page.getByLabel('Parent Name').fill(student.parent_name);
     await page.getByLabel('Parent Phone').fill(student.parent_phone);
@@ -26,20 +26,19 @@ test.describe('E2E — Meeting Links and Student Notes Workflow', () => {
     await expect(page.locator(`text=${student.full_name}`)).toBeVisible({ timeout: 45000 });
 
     // 2. Open Student Profile -> Meeting Links tab
-    await page.locator(`text=${student.full_name}`).click();
+    await page.locator(`button:has-text("${student.full_name}")`).first().click();
     await page.locator('main button:has-text("Meeting Links")').click();
     await expect(page.locator('button:has-text("+ Add Meeting Link")')).toBeVisible({ timeout: 15000 });
 
     // 3. Create Meeting Link
     await page.locator('button:has-text("+ Add Meeting Link")').click();
-    await page.locator('input[placeholder*="Physics"]').fill(`Tutoring Call ${testId}`);
-    await page.locator('input[placeholder*="meet.google.com"]').fill('https://meet.google.com/test-room-123');
-    await page.locator('button:has-text("Save Link")').click();
-    await expect(page.locator('button:has-text("Save Link")')).toBeHidden({ timeout: 35000 });
+    await page.getByLabel('Primary Meeting Link').fill('https://meet.google.com/test-room-123');
+    await page.locator('button:has-text("Save Meeting Link")').click();
+    await expect(page.locator('button:has-text("Save Meeting Link")')).toBeHidden({ timeout: 35000 });
 
     // Verify Meeting Link in list
-    await expect(page.locator(`text=Tutoring Call ${testId}`)).toBeVisible({ timeout: 35000 });
-    await expect(page.locator('a:has-text("Open Link")')).toBeVisible();
+    await expect(page.locator('text=meet.google.com/test-room-123').first()).toBeVisible({ timeout: 35000 });
+    await expect(page.locator('button:has-text("Copy")').first()).toBeVisible();
 
     // 4. Switch to Student Notes tab
     await page.locator('main button:has-text("Student Notes")').click();
@@ -58,12 +57,12 @@ test.describe('E2E — Meeting Links and Student Notes Workflow', () => {
     // 6. Refresh persistence check
     await page.reload();
     await navigateTo(page, 'Students');
-    await page.locator(`text=${student.full_name}`).click();
+    await page.locator(`button:has-text("${student.full_name}")`).first().click();
 
     await page.locator('main button:has-text("Student Notes")').click();
     await expect(page.locator(`p:has-text("${noteText}")`)).toBeVisible({ timeout: 35000 });
 
     await page.locator('main button:has-text("Meeting Links")').click();
-    await expect(page.locator(`text=Tutoring Call ${testId}`)).toBeVisible({ timeout: 35000 });
+    await expect(page.locator('text=meet.google.com/test-room-123').first()).toBeVisible({ timeout: 35000 });
   });
 });

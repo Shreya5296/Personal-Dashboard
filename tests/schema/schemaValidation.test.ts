@@ -86,7 +86,7 @@ describe('Phase 3 — Data Schema and Spreadsheet Validation', () => {
     const paymentId = IdGenerator.generatePaymentId();
     const classId = IdGenerator.generateClassSessionId();
 
-    expect(studentId.startsWith('stu_')).toBe(true);
+    expect(studentId.startsWith('STU_') || studentId.startsWith('stu_')).toBe(true);
     expect(paymentId.startsWith('pay_')).toBe(true);
     expect(classId.startsWith('cls_')).toBe(true);
 

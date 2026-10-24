@@ -2,6 +2,7 @@ import { Student } from './studentTypes';
 import { Column } from '../../components/tables/DataTable';
 import { formatStatusBadge } from '../../lib/textFormat';
 import { Button } from '../../components/buttons/Button';
+import { StudentCell } from './StudentCell';
 
 export interface StudentColumnHandlers {
   onSelectStudent: (student: Student) => void;
@@ -13,59 +14,16 @@ export function getStudentColumns({ onSelectStudent, onEditStudent }: StudentCol
     {
       key: 'student_name',
       header: 'Student',
-      render: (s) => {
-        const name = s.student_name || s.full_name || 'Unnamed Student';
-        const initial = name.charAt(0).toUpperCase();
-        return (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-            <div
-              style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: 'var(--radius-full)',
-                backgroundColor: 'var(--color-primary-bg)',
-                color: 'var(--color-primary)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 'var(--font-size-xs)',
-                fontWeight: 700,
-                border: '1px solid var(--color-primary-border)',
-                flexShrink: 0,
-              }}
-            >
-              {initial}
-            </div>
-            <div>
-              <button
-                type="button"
-                onClick={() => onSelectStudent(s)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--color-primary)',
-                  fontWeight: 600,
-                  fontSize: 'var(--font-size-sm)',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  padding: 0,
-                }}
-              >
-                {name}
-              </button>
-              <span style={{ fontSize: '11px', color: 'var(--color-text-subtle)', display: 'block' }}>
-                {s.student_id}
-              </span>
-            </div>
-          </div>
-        );
-      },
+      width: '24%',
+      render: (s) => <StudentCell student={s} onSelect={onSelectStudent} />,
     },
     {
       key: 'subject',
       header: 'Subject',
+      width: '18%',
       render: (s) => (
         <span
+          title={s.subject || 'General'}
           style={{
             fontSize: 'var(--font-size-xs)',
             fontWeight: 500,
@@ -74,6 +32,11 @@ export function getStudentColumns({ onSelectStudent, onEditStudent }: StudentCol
             backgroundColor: 'var(--color-bg-subtle)',
             color: 'var(--color-text-muted)',
             border: '1px solid var(--color-border-subtle)',
+            maxWidth: '150px',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            display: 'inline-block',
           }}
         >
           {s.subject || 'General'}
@@ -83,6 +46,7 @@ export function getStudentColumns({ onSelectStudent, onEditStudent }: StudentCol
     {
       key: 'parent_contact',
       header: 'Parent Contact',
+      width: '20%',
       render: (s) => (
         <div>
           <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-main)', display: 'block' }}>
@@ -97,8 +61,20 @@ export function getStudentColumns({ onSelectStudent, onEditStudent }: StudentCol
     {
       key: 'student_email',
       header: 'Student Email',
+      width: '18%',
       render: (s) => (
-        <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)' }}>
+        <span
+          title={s.student_email || s.email || '—'}
+          style={{
+            fontSize: 'var(--font-size-sm)',
+            color: 'var(--color-text-muted)',
+            maxWidth: '160px',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            display: 'inline-block',
+          }}
+        >
           {s.student_email || s.email || '—'}
         </span>
       ),
@@ -106,9 +82,15 @@ export function getStudentColumns({ onSelectStudent, onEditStudent }: StudentCol
     {
       key: 'status',
       header: 'Status',
+      width: '10%',
       render: (s) => {
         const badge = formatStatusBadge(s.status);
         const isSuccess = badge.tone === 'success';
+        const isDanger = badge.tone === 'danger';
+        const bg = isSuccess ? 'var(--color-success-bg)' : isDanger ? 'var(--color-danger-bg)' : 'var(--color-bg-subtle)';
+        const color = isSuccess ? 'var(--color-success-text)' : isDanger ? 'var(--color-danger-text)' : 'var(--color-text-muted)';
+        const border = isSuccess ? 'var(--color-success-border)' : isDanger ? 'var(--color-danger-border)' : 'var(--color-border)';
+
         return (
           <span
             style={{
@@ -116,9 +98,10 @@ export function getStudentColumns({ onSelectStudent, onEditStudent }: StudentCol
               borderRadius: 'var(--radius-full)',
               fontSize: 'var(--font-size-xs)',
               fontWeight: 600,
-              backgroundColor: isSuccess ? 'var(--color-success-bg)' : 'var(--color-bg-subtle)',
-              color: isSuccess ? 'var(--color-success-text)' : 'var(--color-text-muted)',
-              border: `1px solid ${isSuccess ? 'var(--color-success-border)' : 'var(--color-border)'}`,
+              backgroundColor: bg,
+              color: color,
+              border: `1px solid ${border}`,
+              display: 'inline-block',
             }}
           >
             {badge.label}
@@ -129,8 +112,9 @@ export function getStudentColumns({ onSelectStudent, onEditStudent }: StudentCol
     {
       key: 'actions',
       header: 'Actions',
+      width: '10%',
       render: (s) => (
-        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
           <Button variant="secondary" size="sm" onClick={() => onSelectStudent(s)}>
             View
           </Button>

@@ -14,7 +14,7 @@ test.describe('E2E — Concurrency, Validation, and Responsive Layouts', () => {
     await page.locator('button:has-text("+ Add Student")').click();
 
     // Fill valid data
-    await page.getByLabel('Full Name').fill('Concurrency Test Student');
+    await page.getByLabel(/Student Name|Full Name/i).fill('Concurrency Test Student');
     await page.getByLabel('Parent Name').fill('Parent Concurrency');
     await page.getByLabel('Parent Phone').fill('+919876543299');
 
@@ -30,10 +30,10 @@ test.describe('E2E — Concurrency, Validation, and Responsive Layouts', () => {
   });
 
   test('validates required fields across forms without submitting invalid data', async ({ page }) => {
-    // 1. Fee form validation
-    await navigateTo(page, 'Fees & Payments');
-    await page.locator('button:has-text("Payment Ledger")').click();
-    await expect(page.locator('text=Loading payment transactions…')).toBeHidden({ timeout: 35000 });
+    // 1. Finances validation
+    await navigateTo(page, 'Finances');
+    await page.locator('#tab-history').click();
+    await expect(page.locator('table thead th:has-text("Student ID")')).toBeVisible({ timeout: 25000 });
 
     // 2. Profile & Preferences validation via account menu
     await page.locator('button[aria-label="Account menu"]').click();

@@ -46,7 +46,7 @@ function Packages_create(spreadsheet, data, actor) {
     student_name: studentName,
     plan_name: planName,
     plan_type: data.plan_type || 'PACKAGE',
-    currency: 'INR',
+    currency: data.currency ? String(data.currency).trim().toUpperCase() : 'INR',
     package_price: rawPrice,
     per_class: rawPerClass,
     classes_purchased: rawQty !== undefined && rawQty !== '' ? Number(rawQty) : 0,

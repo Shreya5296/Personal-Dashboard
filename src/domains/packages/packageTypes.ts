@@ -35,7 +35,9 @@ export interface PackageInput {
   price?: number;
   package_price?: number;
   per_class?: number;
+  currency?: string;
   start_date: string;
+  end_date?: string;
   expiry_date?: string;
   next_due_date?: string;
   notes?: string;

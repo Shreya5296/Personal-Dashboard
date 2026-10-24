@@ -38,7 +38,6 @@ export const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
   onSuccess,
 }) => {
   const [students, setStudents] = useState<Student[]>([]);
-  const [studentSearch, setStudentSearch] = useState('');
   const [values, setValues] = useState<PaymentFormValues>({
     student_id: '',
     payment_date: toInputDateFormat(),
@@ -121,10 +120,9 @@ export const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
             values={values}
             errors={errors}
             students={students}
-            studentSearch={studentSearch}
-            onStudentSearchChange={setStudentSearch}
             onStudentChange={handleStudentChange}
             onValuesChange={setValues}
+            disabled={isSubmitting}
           />
           <div style={actionRowStyle}>
             <Button variant="secondary" type="button" onClick={onClose} disabled={isSubmitting}>Cancel</Button>

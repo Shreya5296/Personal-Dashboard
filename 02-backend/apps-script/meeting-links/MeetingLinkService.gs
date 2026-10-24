@@ -26,16 +26,19 @@ function MeetingLinks_create(spreadsheet, data, actor) {
   var student = _mlStuRepo.Students_getById(spreadsheet, data.student_id);
   var studentName = data.student_name || (student ? (student.student_name || student.full_name || '') : '');
 
-  var l1 = data.meeting_link_1 !== undefined ? String(data.meeting_link_1).trim() : (data.meeting_url ? String(data.meeting_url).trim() : '');
-  var l2 = data.meeting_link_2 !== undefined ? String(data.meeting_link_2).trim() : '';
+  var l1 = data.meeting_link_1 !== undefined ? String(data.meeting_link_1).trim() : (data.meeting_url !== undefined ? String(data.meeting_url).trim() : undefined);
+  var l2 = data.meeting_link_2 !== undefined ? String(data.meeting_link_2).trim() : undefined;
 
   var existing = _mlRepo.MeetingLinks_getByStudentId(spreadsheet, data.student_id);
+
+  var finalL1 = l1 !== undefined ? l1 : (existing ? (existing.meeting_link_1 || existing.meeting_url || '') : '');
+  var finalL2 = l2 !== undefined ? l2 : (existing ? (existing.meeting_link_2 || '') : '');
 
   var record = {
     student_id: data.student_id,
     student_name: studentName,
-    meeting_link_1: l1 || (existing ? existing.meeting_link_1 : ''),
-    meeting_link_2: l2 || (existing ? existing.meeting_link_2 : '')
+    meeting_link_1: finalL1,
+    meeting_link_2: finalL2
   };
 
   if (existing) {

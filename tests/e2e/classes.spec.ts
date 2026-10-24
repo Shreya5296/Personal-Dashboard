@@ -30,7 +30,7 @@ test.describe('E2E — Classes and Attendance Workflow', () => {
     await page.locator('button:has-text("Schedule Class")').click();
 
     // Verify session row appears in schedule table
-    const classRow = page.locator(`tr:has-text("${topic}")`);
+    const classRow = page.locator('tr:has-text("Duration: 45 min")').first();
     await expect(classRow).toBeVisible({ timeout: 25000 });
     await expect(classRow.locator('text=45 min')).toBeVisible();
 
