@@ -9,7 +9,7 @@ test.describe('E2E — Finances Refinements & Meeting Links Management', () => {
     }
   });
 
-  test('Finances: verifies exact card labels and 4-column ascending history table', async ({ page }) => {
+  test('Finances: verifies Student Balances default tab, Add Payment modal, and 4-column history', async ({ page }) => {
     await navigateTo(page, 'Finances');
     await expect(page.locator('h1:has-text("Finances")')).toBeVisible({ timeout: 15000 });
 
@@ -21,7 +21,27 @@ test.describe('E2E — Finances Refinements & Meeting Links Management', () => {
     await expect(page.locator('text=Total Outstanding')).toBeVisible();
     await expect(page.locator('text=Uncollected Balance')).toBeVisible();
 
-    // 2. Verify Payment History Table Headers
+    // 2. Verify Student Balances is the first tab and selected by default
+    const balancesTab = page.locator('#tab-balances');
+    const historyTab = page.locator('#tab-history');
+    await expect(balancesTab).toBeVisible();
+    await expect(historyTab).toBeVisible();
+    await expect(balancesTab).toHaveAttribute('aria-selected', 'true');
+    await expect(historyTab).toHaveAttribute('aria-selected', 'false');
+
+    // 3. Verify Add Payment button opens popup form and cancels cleanly
+    const addPaymentBtn = page.locator('button:has-text("Add Payment")');
+    await expect(addPaymentBtn).toBeVisible();
+    await addPaymentBtn.click();
+    await expect(page.locator('h3:has-text("Record Student Payment")')).toBeVisible();
+    await page.locator('button:has-text("Cancel")').click();
+    await expect(page.locator('h3:has-text("Record Student Payment")')).not.toBeVisible();
+
+    // 4. Switch to Payment History tab and verify 4-column headers
+    await historyTab.click();
+    await expect(historyTab).toHaveAttribute('aria-selected', 'true');
+    await expect(balancesTab).toHaveAttribute('aria-selected', 'false');
+
     const headers = page.locator('table thead th');
     await expect(headers).toHaveCount(4);
     await expect(headers.nth(0)).toHaveText('Student ID');
@@ -35,7 +55,7 @@ test.describe('E2E — Finances Refinements & Meeting Links Management', () => {
     await expect(page.locator('table thead th:has-text("Actions")')).toHaveCount(0);
   });
 
-  test('Meeting Links: verifies platform badges, distinct columns, and missing link behavior', async ({ page }) => {
+  test('Meeting Links: verifies compact table, platform badges, distinct columns, and modal behavior', async ({ page }) => {
     await navigateTo(page, 'Meeting Links');
     await expect(page.locator('h1:has-text("Meeting Links Directory")')).toBeVisible({ timeout: 15000 });
 
@@ -55,13 +75,13 @@ test.describe('E2E — Finances Refinements & Meeting Links Management', () => {
     const addSlotBtn = page.locator('button:has-text("Add Meeting Link")').first();
     await expect(addSlotBtn).toBeVisible();
 
-    // Click "Add Meeting Link" and verify slot preselection in form
+    // Click "Add Meeting Link" and verify modal popup is shown
     await addSlotBtn.click();
-    await expect(page.locator('form')).toBeVisible();
+    await expect(page.locator('div[role="dialog"]')).toBeVisible();
     await expect(page.locator('button:has-text("Save Meeting Link")')).toBeVisible();
 
     // Cancel form
     await page.locator('button:has-text("Cancel")').click();
-    await expect(page.locator('form')).not.toBeVisible();
+    await expect(page.locator('div[role="dialog"]')).not.toBeVisible();
   });
 });

@@ -51,9 +51,20 @@ export function formatTimeOnly(isoString: string | null | undefined, timeZone?: 
   }
 }
 
-export function toInputDateFormat(date: Date = new Date()): string {
-  const pad = (n: number) => n.toString().padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+export function toInputDateFormat(date: Date = new Date(), timeZone?: string): string {
+  try {
+    const tz = timeZone || getSavedTimezone();
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    return formatter.format(date);
+  } catch {
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  }
 }
 
 export function isPastDate(dateString: string): boolean {

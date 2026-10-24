@@ -6,6 +6,7 @@ export interface FinanceToolbarProps {
   filter: FinanceFilter;
   onFilterChange: (newFilter: FinanceFilter) => void;
   onExportCsv: () => void;
+  onAddPayment?: () => void;
   onRecordPayment?: () => void;
   isExporting?: boolean;
 }
@@ -14,6 +15,7 @@ export const FinanceToolbar: React.FC<FinanceToolbarProps> = ({
   filter,
   onFilterChange,
   onExportCsv,
+  onAddPayment,
   onRecordPayment,
   isExporting = false,
 }) => {
@@ -87,9 +89,9 @@ export const FinanceToolbar: React.FC<FinanceToolbarProps> = ({
           </svg>
           <span>Export Finances CSV</span>
         </Button>
-        {onRecordPayment && (
-          <Button variant="primary" size="sm" onClick={onRecordPayment}>
-            + Record Payment
+        {(onAddPayment || onRecordPayment) && (
+          <Button variant="primary" size="sm" onClick={onAddPayment || onRecordPayment}>
+            + Add Payment
           </Button>
         )}
       </div>

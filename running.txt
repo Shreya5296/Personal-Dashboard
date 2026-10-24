@@ -484,3 +484,29 @@ NEXT ACTION
     - TypeScript strict check: 0 errors.
     - Production Vite build: 503ms clean build.
     - Playwright E2E suites: 16/16 passed in 29.8s.
+- Finances Workflow & Meeting Links Table Redesign completed:
+  * 1. Student Balances as Default Tab:
+    - Reordered Finances page tabs to 1. Student Balances, 2. Payment History.
+    - Set Student Balances as the active default tab upon page visit without stale local storage persistence.
+    - Added WAI-ARIA tab semantics (role="tablist", role="tab", aria-selected, aria-controls, tabIndex, role="tabpanel").
+  * 2. Add Payment Action & Popup Modal:
+    - Added visible "+ Add Payment" button in FinanceToolbar next to Export Finances CSV.
+    - Built AddPaymentModal with backdrop, keyboard escape handling, and student searchable filter.
+    - Preselected package currency when unambiguous per student, defaulting to INR otherwise.
+    - Defaulted payment date to today in application timezone (Asia/Kolkata).
+    - Required positive amount and manual in_inr equivalent for foreign currency payments without silent conversions.
+    - Validated all fields inline and prevented duplicate submission while saving.
+    - Integrated with recordPayment backend API and triggered full ledger/summary refresh with success feedback banner.
+  * 3. Meeting Links Compact Table & Popup Modal:
+    - Redesigned Meeting Links page into a compact, responsive DataTable with columns for Student, Primary Meeting Link, Secondary Meeting Link, and Actions.
+    - Displayed platform badge (Google Meet, Zoom, Other), truncated URL, 1-click Copy, and Open ↗ controls for configured links.
+    - Displayed "No link configured" and slot-targeted "Add Meeting Link" button for empty slots.
+    - Built MeetingLinkModal to open Add / Edit link in a clean popup form instead of in-page expansion.
+  * 4. Testing and Quality Gates:
+    - Added tests/frontend/financesWorkflowAndMeetingLinksTable.test.ts (6 unit tests) covering currency resolution, validations, timezone date formatting, and platform detection.
+    - Updated tests/e2e/meetingLinksAndFinancesRefinements.spec.ts to verify Student Balances default selection, Add Payment modal, 4-column history, and Meeting Links table modal behavior.
+    - Unit tests: 165/165 passing across 31 test files (Vitest).
+    - Line limit policy strictly verified: 140/140 files in src/ and public/ <= 149 lines (PASS).
+    - Strict TypeScript check (tsc --noEmit): 0 errors.
+    - Production Vite build: 511ms clean build, 0 warnings.
+    - Playwright E2E suites: 16/16 passed in 30.4s.

@@ -9,16 +9,20 @@ import { FinanceSummaryCards } from './FinanceSummaryCards';
 import { FinanceToolbar } from './FinanceToolbar';
 import { FinancialHistoryTable } from './FinancialHistoryTable';
 import { StudentBalanceTable } from './StudentBalanceTable';
+import { AddPaymentModal } from './AddPaymentModal';
 import { useFinancesData } from './useFinancesData';
 import { exportFinancesCsv } from './financeCsvExport';
 
 export const FinancesPage: React.FC = () => {
   usePageTitle('Finances');
   const { token } = useAuth();
-  const [activeTab, setActiveTab] = useState<FinanceTab>('history');
+  const [activeTab, setActiveTab] = useState<FinanceTab>('balances');
+  const [isAddPaymentOpen, setIsAddPaymentOpen] = useState(false);
+  const [successBanner, setSuccessBanner] = useState<string | null>(null);
 
   const {
     summary,
+    packages,
     filteredPayments,
     studentBalances,
     loading,
@@ -28,14 +32,18 @@ export const FinancesPage: React.FC = () => {
     setVoidingId,
     isVoiding,
     handleConfirmVoid,
+    refresh,
   } = useFinancesData(token);
 
   if (loading && !summary) {
     return <LoadingState message="Loading financial records…" />;
   }
 
-  const handleExport = () => {
-    exportFinancesCsv(summary, filteredPayments);
+  const handlePaymentSuccess = async (msg: string) => {
+    setIsAddPaymentOpen(false);
+    setSuccessBanner(msg);
+    setTimeout(() => setSuccessBanner(null), 5000);
+    await refresh();
   };
 
   return (
@@ -44,40 +52,59 @@ export const FinancesPage: React.FC = () => {
         title="Finances"
         subtitle="Unified ledger of agreed packages, received tuition, pending balances, and student payment history."
       />
-
+      {successBanner && <div style={successBannerStyle}>✓ {successBanner}</div>}
       <FinanceSummaryCards summary={summary} />
-
       <FinanceToolbar
         filter={filter}
         onFilterChange={setFilter}
-        onExportCsv={handleExport}
+        onExportCsv={() => exportFinancesCsv(summary, filteredPayments)}
+        onAddPayment={() => setIsAddPaymentOpen(true)}
       />
 
-      <div style={tabContainerStyle}>
+      <div role="tablist" aria-label="Finances ledger views" style={tabContainerStyle}>
         <button
           type="button"
-          onClick={() => setActiveTab('history')}
-          style={getTabButtonStyle(activeTab === 'history')}
-        >
-          Payment History ({filteredPayments.length})
-        </button>
-        <button
-          type="button"
+          role="tab"
+          id="tab-balances"
+          aria-selected={activeTab === 'balances'}
+          aria-controls="panel-balances"
+          tabIndex={activeTab === 'balances' ? 0 : -1}
           onClick={() => setActiveTab('balances')}
           style={getTabButtonStyle(activeTab === 'balances')}
         >
           Student Balances ({studentBalances.length})
         </button>
+        <button
+          type="button"
+          role="tab"
+          id="tab-history"
+          aria-selected={activeTab === 'history'}
+          aria-controls="panel-history"
+          tabIndex={activeTab === 'history' ? 0 : -1}
+          onClick={() => setActiveTab('history')}
+          style={getTabButtonStyle(activeTab === 'history')}
+        >
+          Payment History ({filteredPayments.length})
+        </button>
       </div>
 
-      {activeTab === 'history' ? (
-        <FinancialHistoryTable
-          payments={filteredPayments}
-          onVoid={setVoidingId}
-        />
+      {activeTab === 'balances' ? (
+        <div id="panel-balances" role="tabpanel" aria-labelledby="tab-balances">
+          <StudentBalanceTable records={studentBalances} />
+        </div>
       ) : (
-        <StudentBalanceTable records={studentBalances} />
+        <div id="panel-history" role="tabpanel" aria-labelledby="tab-history">
+          <FinancialHistoryTable payments={filteredPayments} onVoid={setVoidingId} />
+        </div>
       )}
+
+      <AddPaymentModal
+        isOpen={isAddPaymentOpen}
+        token={token}
+        packages={packages}
+        onClose={() => setIsAddPaymentOpen(false)}
+        onSuccess={handlePaymentSuccess}
+      />
 
       <ConfirmDialog
         isOpen={Boolean(voidingId)}
@@ -94,22 +121,20 @@ export const FinancesPage: React.FC = () => {
 };
 
 const tabContainerStyle: React.CSSProperties = {
-  display: 'flex',
-  gap: 'var(--space-2)',
-  borderBottom: '1px solid var(--color-border-subtle)',
-  marginBottom: 'var(--space-4)',
+  display: 'flex', gap: 'var(--space-2)', borderBottom: '1px solid var(--color-border-subtle)', marginBottom: 'var(--space-4)',
+};
+
+const successBannerStyle: React.CSSProperties = {
+  padding: '10px 14px', backgroundColor: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0',
+  borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)', fontSize: 'var(--font-size-sm)', fontWeight: 500,
 };
 
 function getTabButtonStyle(isActive: boolean): React.CSSProperties {
   return {
-    padding: '0.625rem 1rem',
-    border: 'none',
-    background: 'none',
-    fontWeight: isActive ? 600 : 500,
-    fontSize: 'var(--font-size-sm)',
+    padding: '0.625rem 1rem', border: 'none', background: 'none',
+    fontWeight: isActive ? 600 : 500, fontSize: 'var(--font-size-sm)',
     color: isActive ? 'var(--color-primary)' : 'var(--color-text-muted)',
     borderBottom: isActive ? '2px solid var(--color-primary)' : '2px solid transparent',
-    cursor: 'pointer',
-    transition: 'color 120ms ease, border-color 120ms ease',
+    cursor: 'pointer', transition: 'color 120ms ease, border-color 120ms ease',
   };
 }

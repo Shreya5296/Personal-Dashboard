@@ -6,6 +6,7 @@ export interface Payment {
   fee_obligation_id?: string;
   amount: number;
   currency?: string;
+  in_inr?: number;
   payment_date: string;
   payment_method: 'UPI' | 'BANK_TRANSFER' | 'CASH' | 'CHEQUE' | string;
   reference_number?: string;
@@ -26,6 +27,8 @@ export interface PaymentInput {
   fee_id?: string;
   fee_obligation_id?: string;
   amount: number;
+  currency?: string;
+  in_inr?: number;
   payment_date: string;
   payment_method: string;
   reference_number?: string;

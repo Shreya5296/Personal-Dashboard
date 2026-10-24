@@ -120,6 +120,7 @@ export function useFinancesData(token?: string | null) {
 
   return {
     summary,
+    packages,
     filteredPayments,
     studentBalances,
     loading,

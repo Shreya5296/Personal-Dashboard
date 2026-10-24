@@ -91,6 +91,29 @@ export function handleMockApiRequest<T>(operation: string, payload: Record<strin
       meta
     };
   }
+  if (operation === 'payments.record') {
+    const sid = String(payload.student_id || '');
+    const stu = MOCK_STUDENTS.find((s) => s.student_id === sid);
+    const sname = stu ? stu.student_name : String(payload.student_name || sid);
+    const cur = String(payload.currency || 'INR').toUpperCase();
+    const amt = Number(payload.amount) || 0;
+    const inInr = payload.in_inr !== undefined && payload.in_inr !== null
+      ? Number(payload.in_inr)
+      : (cur === 'INR' ? amt : 0);
+    const newPay = {
+      payment_id: `pay_${Date.now()}`,
+      student_id: sid,
+      student_name: sname,
+      amount: amt,
+      currency: cur,
+      in_inr: inInr,
+      payment_date: String(payload.payment_date || new Date().toISOString().slice(0, 10)),
+      status: 'RECORDED',
+      payment_status: 'RECORDED',
+    };
+    MOCK_PAYMENTS.push(newPay as any);
+    return { ok: true, data: newPay as T, meta };
+  }
   if (operation === 'system.health') {
     return { ok: true, data: { appsScriptConnected: true, schemaVersion: 2, appEnv: 'mock', activeSpreadsheetTabs: 7 } as T, meta };
   }

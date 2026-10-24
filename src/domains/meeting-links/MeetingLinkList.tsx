@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { MeetingLink, MeetingLinkInput } from './meetingLinkTypes';
 import { fetchMeetingLinks, createMeetingLink } from './meetingLinkApi';
-import { MeetingLinkForm } from './MeetingLinkForm';
-import { MeetingLinkCard } from './MeetingLinkCard';
+import { MeetingLinkTable } from './MeetingLinkTable';
+import { MeetingLinkModal } from './MeetingLinkModal';
 import { Button } from '../../components/buttons/Button';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { EmptyState } from '../../components/feedback/EmptyState';
@@ -12,7 +12,7 @@ export const MeetingLinkList: React.FC<{ studentId?: string }> = ({ studentId })
   const { token } = useAuth();
   const [links, setLinks] = useState<MeetingLink[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<MeetingLink | null>(null);
   const [targetSlot, setTargetSlot] = useState<'primary' | 'secondary' | null>(null);
   const [formLoading, setFormLoading] = useState(false);
@@ -35,7 +35,7 @@ export const MeetingLinkList: React.FC<{ studentId?: string }> = ({ studentId })
     setFormLoading(true);
     try {
       await createMeetingLink(input, token);
-      setIsFormOpen(false);
+      setIsModalOpen(false);
       setEditingLink(null);
       setTargetSlot(null);
       setFeedback('Meeting link saved successfully.');
@@ -55,19 +55,19 @@ export const MeetingLinkList: React.FC<{ studentId?: string }> = ({ studentId })
   const openAddSlot = (link: MeetingLink, slot: 'primary' | 'secondary') => {
     setEditingLink(link);
     setTargetSlot(slot);
-    setIsFormOpen(true);
+    setIsModalOpen(true);
   };
 
   const openEdit = (link: MeetingLink) => {
     setEditingLink(link);
     setTargetSlot(null);
-    setIsFormOpen(true);
+    setIsModalOpen(true);
   };
 
   const openAddNew = () => {
     setEditingLink(null);
     setTargetSlot(null);
-    setIsFormOpen(!isFormOpen);
+    setIsModalOpen(true);
   };
 
   return (
@@ -75,7 +75,7 @@ export const MeetingLinkList: React.FC<{ studentId?: string }> = ({ studentId })
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
         <h3 style={{ margin: 0, fontSize: 'var(--font-size-base)', fontWeight: 600 }}>Registered Meeting Links</h3>
         <Button variant="secondary" size="sm" onClick={openAddNew}>
-          {isFormOpen ? 'Close Form' : '+ Add Meeting Link'}
+          + Add Meeting Link
         </Button>
       </div>
 
@@ -85,21 +85,33 @@ export const MeetingLinkList: React.FC<{ studentId?: string }> = ({ studentId })
         </div>
       )}
 
-      {isFormOpen && (
-        <div style={{ padding: '1.25rem', backgroundColor: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', marginBottom: 'var(--space-5)', boxShadow: 'var(--shadow-sm)' }}>
-          <MeetingLinkForm studentId={studentId} initialLink={editingLink} targetSlot={targetSlot} onSubmit={handleSave} onCancel={() => { setIsFormOpen(false); setEditingLink(null); setTargetSlot(null); }} isLoading={formLoading} />
-        </div>
+      {loading && <LoadingState message="Loading meeting links…" />}
+      {!loading && links.length === 0 && (
+        <EmptyState title="No meeting links configured" description="Add Google Meet or Zoom links to quickly connect with students during classes." />
+      )}
+      {!loading && links.length > 0 && (
+        <MeetingLinkTable
+          links={links}
+          onEdit={openEdit}
+          onAddSlot={openAddSlot}
+          onCopy={handleCopy}
+          copiedKey={copiedKey}
+        />
       )}
 
-      {loading && <LoadingState message="Loading meeting links…" />}
-      {!loading && links.length === 0 && <EmptyState title="No meeting links configured" description="Add Google Meet or Zoom links to quickly connect with students during classes." />}
-      {!loading && links.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-          {links.map((link) => (
-            <MeetingLinkCard key={link.meeting_link_id || link.student_id} link={link} onEdit={openEdit} onAddSlot={openAddSlot} onCopy={handleCopy} copiedKey={copiedKey} />
-          ))}
-        </div>
-      )}
+      <MeetingLinkModal
+        isOpen={isModalOpen}
+        studentId={studentId}
+        initialLink={editingLink}
+        targetSlot={targetSlot}
+        onSubmit={handleSave}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingLink(null);
+          setTargetSlot(null);
+        }}
+        isLoading={formLoading}
+      />
     </div>
   );
 };
