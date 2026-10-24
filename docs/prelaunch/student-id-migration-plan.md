@@ -61,22 +61,47 @@ The 22 legacy random IDs will be migrated sequentially starting from `STU_004` t
    - Running the migration multiple times has no additional effect (`migratedCount: 0`) because all IDs match `STU_\d+`.
 4. **Immutability of Standard IDs**:
    - Existing standard IDs (`STU_001`, `STU_002`, `STU_003`) are detected and left unchanged.
-5. **No Data Deletion**:
+5. **Reversible Rollback Engine**:
+   - `rollbackStudentIdMigration(spreadsheet)` in `setup/StudentIdVerification.gs` reads `StudentId_Migration_Backup` and restores the original IDs across all business sheets.
+6. **Read-Only Verification Function**:
+   - `verifyStudentIdReferentialIntegrity(spreadsheet)` in `setup/StudentIdVerification.gs` performs a non-destructive read-only scan of all tables to confirm clean referential integrity before and after migration without modifying any data.
+7. **No Data Deletion**:
    - No student records, transactions, or historical data are deleted.
 
 ---
 
 ## 4. Owner Action Required for Live Execution
 
-In accordance with project safety rules, the automated assistant did not modify live spreadsheet rows. To execute the migration on the live Google Spreadsheet:
+In accordance with project safety rules, the automated assistant did not modify live spreadsheet rows. To audit, execute, and verify the migration on the live Google Spreadsheet:
 
+### Step 1: Pre-Execution Read-Only Verification
 1. Open the Google Spreadsheet: `Private Class Dashboard` (ID: `1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8`).
 2. Go to **Extensions > Apps Script**.
-3. Locate `setup/StudentIdMigration.gs`.
-4. Select the function `runStudentIdMigration` from the function dropdown.
-5. Click **Run**.
-6. The migration will:
-   - Create the `StudentId_Migration_Backup` tab.
-   - Update rows 4 through 25 to `STU_004` ... `STU_025`.
-   - Update dependent records in `Packages`, `MeetingLinks`, and `StudentNotes`.
-   - Return `{ success: true, migratedCount: 22 }`.
+3. Open `setup/StudentIdVerification.gs`.
+4. Select `verifyStudentIdReferentialIntegrity` and click **Run**.
+5. Check the Execution log. It will report:
+   - `totalStudents: 25`
+   - `standardStudentCount: 3`
+   - `nonStandardStudentIds: 22` (`stu_...`)
+   - `danglingReferences: {}` (confirms no broken foreign keys currently exist).
+
+### Step 2: Live Migration Execution
+1. Open `setup/StudentIdMigration.gs`.
+2. Select `runStudentIdMigration` and click **Run**.
+3. Check the Execution log:
+   - Creates the `StudentId_Migration_Backup` tab.
+   - Updates rows 4 through 25 to `STU_004` ... `STU_025`.
+   - Updates dependent records in `Packages` (3), `MeetingLinks` (3), and `StudentNotes` (3).
+   - Returns `{ success: true, migratedCount: 22 }`.
+
+### Step 3: Post-Execution Verification
+1. Open `setup/StudentIdVerification.gs`.
+2. Select `verifyStudentIdReferentialIntegrity` and click **Run**.
+3. Execution log will confirm:
+   - `isValid: true`
+   - `standardStudentCount: 25`
+   - `nonStandardStudentIds: []`
+   - `danglingReferences: {}`
+
+### Optional Rollback Step (Emergency Recovery)
+If needed, select `rollbackStudentIdMigration` in `setup/StudentIdVerification.gs` and click **Run** to restore original legacy IDs across all sheets.

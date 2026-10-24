@@ -585,9 +585,22 @@ NEXT ACTION
     - In accordance with Critical Rules 1 & 2, no deployment to Apps Script/Vercel was executed and no live spreadsheet data was modified.
     - Full migration plan, mapping table, and step-by-step owner execution instructions documented in docs/prelaunch/student-id-migration-plan.md.
   * 5. Testing and Quality Gates:
-    - Added tests/backend/studentIdMigration.test.ts (4 tests) covering mapping calculation, gap handling, 7-table foreign-key cascading, and idempotency.
-    - 35 test files passed, 183 tests passed in Vitest.
+    - Added tests/backend/studentIdMigration.test.ts (6 tests) covering mapping calculation, gap handling, 7-table foreign-key cascading, idempotency, read-only integrity verification, and rollback engine.
+    - 35 test files passed, 185 tests passed in Vitest.
     - Line limit check: 152 files in src/ and public/ <= 149 lines (PASS).
     - Strict TypeScript check: 0 errors (PASS).
-    - Production Vite build: 784ms (PASS).
+    - Production Vite build: 919ms (PASS).
     - Playwright students e2e test: 2/2 passed.
+- Student ID Migration Read-Only Safety Audit & Verification Tooling completed:
+  * 1. Safety Audit:
+    - Strictly maintained read-only access boundary; zero modifications, creations, deletions, or schema changes performed on live canonical sheet (ID: 1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8).
+    - Verified 25 students (3 standard STU_001-003, 22 legacy synthetic records). All foreign-key relationships across Packages (3), MeetingLinks (3), and StudentNotes (3) point cleanly to existing student records with zero dangling or broken references.
+  * 2. Verification & Rollback Tooling:
+    - Created 02-backend/apps-script/setup/StudentIdVerification.gs (113 lines) containing verifyStudentIdReferentialIntegrity() and rollbackStudentIdMigration().
+    - verifyStudentIdReferentialIntegrity() performs non-mutating deep audit checking for unmapped legacy IDs, non-sequential STU_ identifiers, duplicate student IDs, and orphaned foreign-key references across all 7 business tables.
+    - rollbackStudentIdMigration() safely inverts the StudentId_Migration_Backup mapping to restore all tables to their exact pre-migration state if an operational abort is ever required.
+  * 3. Hardened Migration Script:
+    - Hardened 02-backend/apps-script/setup/StudentIdMigration.gs (119 lines) with duplicate student ID skip guards and empty sheet column boundary protection.
+  * 4. Documentation & Tests:
+    - Updated docs/prelaunch/student-id-migration-plan.md with verification and rollback runbooks.
+    - 185/185 unit & integration tests passing across 35 test suites. All quality gates green.

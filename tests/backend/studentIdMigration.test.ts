@@ -156,4 +156,70 @@ describe('Student ID Migration Engine', () => {
     expect(result.migratedCount).toBe(0);
     expect(result.message).toContain('No legacy student IDs found');
   });
+
+  it('performs read-only referential integrity verification and detects dangling references', async () => {
+    const { verifyStudentIdReferentialIntegrity } = await import('../../02-backend/apps-script/setup/StudentIdVerification.gs');
+    const sheets = {
+      Students: createMockSheet('Students', ['student_id', 'student_name'], [
+        ['STU_001', 'Seerat'],
+        ['stu_legacy_x', 'Legacy Student'],
+      ]),
+      Packages: createMockSheet('Packages', ['package_id', 'student_id'], [
+        ['pkg_1', 'STU_001'],
+        ['pkg_dangling', 'STU_999_NONEXISTENT'],
+      ]),
+    };
+    const ss = createMockSpreadsheet(sheets);
+    const audit = verifyStudentIdReferentialIntegrity(ss as unknown as GoogleAppsScript.Spreadsheet.Spreadsheet);
+
+    expect(audit.success).toBe(true);
+    expect(audit.isValid).toBe(false);
+    expect(audit.totalStudents).toBe(2);
+    expect(audit.nonStandardStudentIds).toEqual(['stu_legacy_x']);
+    expect(audit.danglingReferences.Packages).toHaveLength(1);
+    expect(audit.danglingReferences.Packages[0].student_id).toBe('STU_999_NONEXISTENT');
+  });
+
+  it('safely rolls back migrations restoring original IDs across all tables', async () => {
+    const { rollbackStudentIdMigration, verifyStudentIdReferentialIntegrity } = await import('../../02-backend/apps-script/setup/StudentIdVerification.gs');
+    const sheets = {
+      Students: createMockSheet('Students', ['student_id', 'student_name'], [
+        ['STU_001', 'Seerat'],
+        ['stu_legacy_1', 'Synthetic Learner'],
+      ]),
+      Packages: createMockSheet('Packages', ['package_id', 'student_id'], [
+        ['pkg_1', 'stu_legacy_1'],
+      ]),
+      MeetingLinks: createMockSheet('MeetingLinks', ['meeting_link_id', 'student_id'], [
+        ['ml_1', 'stu_legacy_1'],
+      ]),
+      AuditLog: createMockSheet('AuditLog', ['audit_id', 'entity_type', 'entity_id'], [
+        ['aud_1', 'STUDENT', 'stu_legacy_1'],
+      ]),
+    };
+    const ss = createMockSpreadsheet(sheets);
+
+    // 1. Run migration
+    const migRes = runStudentIdMigration(ss as unknown as GoogleAppsScript.Spreadsheet.Spreadsheet);
+    expect(migRes.success).toBe(true);
+    expect(sheets.Students._getRawData()[2][0]).toBe('STU_002');
+    expect(sheets.Packages._getRawData()[1][1]).toBe('STU_002');
+    expect(sheets.MeetingLinks._getRawData()[1][1]).toBe('STU_002');
+    expect(sheets.AuditLog._getRawData()[1][2]).toBe('STU_002');
+
+    // 2. Verify all are standard now
+    const preRollbackAudit = verifyStudentIdReferentialIntegrity(ss as unknown as GoogleAppsScript.Spreadsheet.Spreadsheet);
+    expect(preRollbackAudit.nonStandardStudentIds).toHaveLength(0);
+
+    // 3. Rollback
+    const rollbackRes = rollbackStudentIdMigration(ss as unknown as GoogleAppsScript.Spreadsheet.Spreadsheet);
+    expect(rollbackRes.success).toBe(true);
+    expect(rollbackRes.rolledBackCount).toBe(1);
+
+    // 4. Verify original IDs restored
+    expect(sheets.Students._getRawData()[2][0]).toBe('stu_legacy_1');
+    expect(sheets.Packages._getRawData()[1][1]).toBe('stu_legacy_1');
+    expect(sheets.MeetingLinks._getRawData()[1][1]).toBe('stu_legacy_1');
+    expect(sheets.AuditLog._getRawData()[1][2]).toBe('stu_legacy_1');
+  });
 });

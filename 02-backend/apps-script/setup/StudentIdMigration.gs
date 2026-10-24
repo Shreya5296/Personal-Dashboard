@@ -24,7 +24,7 @@ function buildStudentIdMigrationMap(students) {
   var nextNum = maxNum + 1;
   for (var j = 0; j < list.length; j++) {
     var sid = String(list[j].student_id || list[j].id || '').trim();
-    if (!sid || /^STU_\d+$/.test(sid)) continue;
+    if (!sid || /^STU_\d+$/.test(sid) || mapping[sid]) continue;
     var cand = nextNum < 10 ? 'STU_00' + nextNum : (nextNum < 100 ? 'STU_0' + nextNum : 'STU_' + nextNum);
     while (idSet[cand.toUpperCase()]) {
       nextNum++;
@@ -56,7 +56,7 @@ function updateColumnWithMap(sheet, colIndex, mapping) {
 }
 
 function findColIndex(sheet, colName) {
-  if (!sheet || sheet.getLastRow() < 1) return -1;
+  if (!sheet || sheet.getLastRow() < 1 || sheet.getLastColumn() < 1) return -1;
   var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   for (var c = 0; c < headers.length; c++) {
     if (String(headers[c] || '').trim().toLowerCase() === colName.toLowerCase()) return c + 1;
