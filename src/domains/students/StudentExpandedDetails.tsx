@@ -1,4 +1,5 @@
 import React from 'react';
+import styles from './studentExpandedDetails.module.css';
 import { Student } from './studentTypes';
 import { MeetingLink } from '../meeting-links/meetingLinkTypes';
 import { Package } from '../packages/packageTypes';
@@ -18,23 +19,7 @@ export interface StudentExpandedDetailsProps {
   schedule?: WeeklyScheduleEntry[];
   onEditStudent: (student: Student) => void;
   onSelectStudent: (student: Student) => void;
-  onAutoSchedule?: (student: Student) => void;
 }
-
-const headingStyle: React.CSSProperties = {
-  fontWeight: 600,
-  fontSize: '11px',
-  color: 'var(--color-text-muted)',
-  textTransform: 'uppercase',
-  letterSpacing: '0.05em',
-  marginBottom: '6px',
-};
-
-const textWrapStyle: React.CSSProperties = {
-  overflowWrap: 'anywhere',
-  wordBreak: 'break-word',
-  color: 'var(--color-text-muted)',
-};
 
 export const StudentExpandedDetails: React.FC<StudentExpandedDetailsProps> = ({
   student,
@@ -44,7 +29,6 @@ export const StudentExpandedDetails: React.FC<StudentExpandedDetailsProps> = ({
   schedule = [],
   onEditStudent,
   onSelectStudent,
-  onAutoSchedule,
 }) => {
   const primaryUrl = meetingLink?.meeting_link_1 || meetingLink?.meeting_url || '';
   const secondaryUrl = meetingLink?.meeting_link_2 || '';
@@ -53,35 +37,27 @@ export const StudentExpandedDetails: React.FC<StudentExpandedDetailsProps> = ({
   const scheduleText = formatWeeklySchedule(schedule);
 
   return (
-    <div
-      onClick={(e) => e.stopPropagation()}
-      style={{
-        padding: 'var(--space-4) var(--space-5)',
-        backgroundColor: '#f8fafc',
-        borderTop: '1px solid var(--color-border-subtle)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 'var(--space-4)',
-        fontSize: 'var(--font-size-xs)',
-      }}
-    >
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--space-4)' }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={headingStyle}>Parent / Guardian</div>
+    <div className={styles.container} onClick={(e) => e.stopPropagation()}>
+      <div className={styles.detailsGrid}>
+        {/* Row 1 - Col 1: Parent / Guardian */}
+        <div className={styles.card}>
+          <div className={styles.heading}>Parent / Guardian</div>
           <div style={{ color: 'var(--color-text-main)', fontWeight: 600 }}>{student.parent_name || '—'}</div>
-          <div style={textWrapStyle}>Phone: {student.parent_phone || student.phone || '—'}</div>
-          <div style={textWrapStyle}>Email: {student.parent_email || '—'}</div>
+          <div className={styles.textWrap}>Phone: {student.parent_phone || student.phone || '—'}</div>
+          <div className={styles.textWrap}>Email: {student.parent_email || '—'}</div>
         </div>
 
-        <div style={{ minWidth: 0 }}>
-          <div style={headingStyle}>Student Contact</div>
-          <div style={textWrapStyle}>Email: <strong style={{ color: 'var(--color-text-main)' }}>{student.student_email || '—'}</strong></div>
-          <div style={textWrapStyle}>Phone: <strong style={{ color: 'var(--color-text-main)' }}>{student.student_phone || '—'}</strong></div>
+        {/* Row 1 - Col 2: Student Contact */}
+        <div className={styles.card}>
+          <div className={styles.heading}>Student Contact</div>
+          <div className={styles.textWrap}>Email: <strong style={{ color: 'var(--color-text-main)' }}>{student.student_email || '—'}</strong></div>
+          <div className={styles.textWrap}>Phone: <strong style={{ color: 'var(--color-text-main)' }}>{student.student_phone || '—'}</strong></div>
           <div style={{ color: 'var(--color-text-subtle)', marginTop: '2px' }}>ID: <code>{student.student_id}</code></div>
         </div>
 
-        <div style={{ minWidth: 0 }}>
-          <div style={headingStyle}>Class Schedule</div>
+        {/* Row 1 - Col 3: Class Schedule */}
+        <div className={styles.card}>
+          <div className={styles.heading}>Class Schedule</div>
           <div style={{ color: schedule.length > 0 ? 'var(--color-text-main)' : 'var(--color-text-subtle)', fontStyle: schedule.length > 0 ? 'normal' : 'italic', fontWeight: 500 }}>
             {scheduleText}
           </div>
@@ -92,8 +68,9 @@ export const StudentExpandedDetails: React.FC<StudentExpandedDetailsProps> = ({
           )}
         </div>
 
-        <div style={{ minWidth: 0 }}>
-          <div style={headingStyle}>Meeting Links</div>
+        {/* Row 2 - Col 1: Meeting Links (Placed in second row) */}
+        <div className={styles.card}>
+          <div className={styles.heading}>Meeting Links</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <div style={{ minWidth: 0 }}>
               <span style={{ color: 'var(--color-text-subtle)', marginRight: '6px', fontSize: '11px' }}>Primary:</span>
@@ -106,31 +83,28 @@ export const StudentExpandedDetails: React.FC<StudentExpandedDetailsProps> = ({
           </div>
         </div>
 
-        <div style={{ minWidth: 0 }}>
-          <div style={headingStyle}>Package & Balance</div>
+        {/* Row 2 - Col 2: Package & Balance */}
+        <div className={styles.card}>
+          <div className={styles.heading}>Package & Balance</div>
           <div style={{ color: 'var(--color-text-main)', fontWeight: 600 }}>{primaryPkg?.package_name || primaryPkg?.plan_type || 'No active plan'}</div>
           <div style={{ color: remaining > 0 ? 'var(--color-success-text)' : 'var(--color-danger-text)', fontWeight: 600, marginTop: '2px' }}>
             {remaining} classes remaining
           </div>
-          {primaryPkg?.end_date && <div style={textWrapStyle}>Expires: {formatDate(primaryPkg.end_date)}</div>}
+          {primaryPkg?.end_date && <div className={styles.textWrap}>Expires: {formatDate(primaryPkg.end_date)}</div>}
         </div>
 
-        <div style={{ minWidth: 0 }}>
-          <div style={headingStyle}>Financial Overview</div>
-          <div style={textWrapStyle}>Agreed: <strong style={{ color: 'var(--color-text-main)' }}>{formatCurrency(financials.totalInvoiced, true, financials.currency)}</strong></div>
-          <div style={textWrapStyle}>Received: <strong style={{ color: '#059669' }}>{formatCurrency(financials.totalPaid, true, financials.currency)}</strong></div>
+        {/* Row 2 - Col 3: Financial Overview */}
+        <div className={styles.card}>
+          <div className={styles.heading}>Financial Overview</div>
+          <div className={styles.textWrap}>Agreed: <strong style={{ color: 'var(--color-text-main)' }}>{formatCurrency(financials.totalInvoiced, true, financials.currency)}</strong></div>
+          <div className={styles.textWrap}>Received: <strong style={{ color: '#059669' }}>{formatCurrency(financials.totalPaid, true, financials.currency)}</strong></div>
           <div style={{ color: financials.outstanding > 0 ? '#dc2626' : '#059669', fontWeight: 600, marginTop: '2px' }}>
             {financials.outstanding > 0 ? `Uncollected: ${formatCurrency(financials.outstanding, true, financials.currency)}` : 'Balance: Paid in full'}
           </div>
         </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)', paddingTop: 'var(--space-2)', borderTop: '1px solid var(--color-border-subtle)', flexWrap: 'wrap' }}>
-        {onAutoSchedule && schedule.length > 0 && remaining > 0 && (
-          <Button variant="secondary" size="sm" onClick={() => onAutoSchedule(student)}>
-            🗓 Auto-Schedule Classes
-          </Button>
-        )}
+      <div className={styles.actionsRow}>
         <Button variant="secondary" size="sm" onClick={() => onSelectStudent(student)}>
           View Full Profile
         </Button>

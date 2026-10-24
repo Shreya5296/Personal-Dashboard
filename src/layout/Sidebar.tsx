@@ -3,6 +3,7 @@ import styles from './layout.module.css';
 import { APP_NAME } from '../config/publicConfig';
 import {
   DashboardIcon,
+  CalendarIcon,
   StudentsIcon,
   FeesIcon,
   ClassesIcon,
@@ -12,6 +13,7 @@ import { CloseIcon } from '../components/icons/ActionIcons';
 
 export type NavSection =
   | 'dashboard'
+  | 'calendar'
   | 'students'
   | 'finances'
   | 'classes'
@@ -29,6 +31,7 @@ export interface SidebarProps {
 
 const navItems = [
   { id: 'dashboard' as NavSection, label: 'Dashboard', Icon: DashboardIcon },
+  { id: 'calendar' as NavSection, label: 'Calendar', Icon: CalendarIcon },
   { id: 'students' as NavSection, label: 'Students', Icon: StudentsIcon },
   { id: 'classes' as NavSection, label: 'Class Schedule', Icon: ClassesIcon },
   { id: 'finances' as NavSection, label: 'Finances', Icon: FeesIcon },

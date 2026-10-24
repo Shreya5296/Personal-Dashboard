@@ -1,27 +1,34 @@
 import React from 'react';
 import { ScheduleItem } from './registrationTypes';
+import { ScheduleItemRow } from './ScheduleItemRow';
 import { Button } from '../../components/buttons/Button';
 import formStyles from '../../components/forms/forms.module.css';
-
-const DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 
 export interface ScheduleDetailsSectionProps {
   schedules: ScheduleItem[];
   classDuration?: number | string;
+  firstClassDate?: string;
+  autoSchedule?: boolean;
   errors?: Record<string, string>;
   onAdd: () => void;
   onRemove: (id: string) => void;
   onChange: (id: string, field: 'day_of_week' | 'start_time' | 'end_time', value: string) => void;
+  onFirstClassDateChange?: (date: string) => void;
+  onAutoScheduleChange?: (enabled: boolean) => void;
   disabled?: boolean;
 }
 
 export const ScheduleDetailsSection: React.FC<ScheduleDetailsSectionProps> = ({
   schedules,
   classDuration,
+  firstClassDate = '',
+  autoSchedule = false,
   errors = {},
   onAdd,
   onRemove,
   onChange,
+  onFirstClassDateChange,
+  onAutoScheduleChange,
   disabled = false,
 }) => {
   const dur = Number(classDuration) || 0;
@@ -31,7 +38,7 @@ export const ScheduleDetailsSection: React.FC<ScheduleDetailsSectionProps> = ({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border-subtle)', paddingBottom: '6px' }}>
         <div>
           <h4 style={{ margin: 0, fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--color-text-main)' }}>
-            4. Class Schedule (Recurring Weekly)
+            4. Class Schedule & Auto-Scheduling
           </h4>
           <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
             {dur > 0 ? `Duration: ${dur} min (end time calculated automatically)` : 'Duration: Not configured'}
@@ -54,93 +61,55 @@ export const ScheduleDetailsSection: React.FC<ScheduleDetailsSectionProps> = ({
         </p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-          {schedules.map((entry, idx) => {
-            const dayErr = errors[`entry_${entry.id}_day`];
-            const startErr = errors[`entry_${entry.id}_start`];
-            const endErr = errors[`entry_${entry.id}_end`];
-            const timeErr = errors[`entry_${entry.id}_time`];
+          {schedules.map((entry, idx) => (
+            <ScheduleItemRow
+              key={entry.id}
+              entry={entry}
+              idx={idx}
+              errors={errors}
+              onChange={onChange}
+              onRemove={onRemove}
+              disabled={disabled}
+            />
+          ))}
+        </div>
+      )}
 
-            return (
-              <div
-                key={entry.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 'var(--space-3)',
-                  padding: '8px 12px',
-                  backgroundColor: 'var(--color-bg-subtle)',
-                  borderRadius: 'var(--radius-md)',
-                  flexWrap: 'wrap',
-                }}
-              >
-                <div style={{ flex: '1 1 140px' }}>
-                  <select
-                    className={formStyles.select}
-                    style={{ paddingRight: '2.5rem' }}
-                    value={entry.day_of_week}
-                    onChange={(e) => onChange(entry.id, 'day_of_week', e.target.value)}
-                    disabled={disabled}
-                    aria-label={`Schedule entry ${idx + 1} day`}
-                  >
-                    {DAYS.map((d) => (
-                      <option key={d} value={d}>
-                        {d.charAt(0) + d.slice(1).toLowerCase()}
-                      </option>
-                    ))}
-                  </select>
-                  {dayErr && <span style={{ fontSize: '11px', color: 'var(--color-danger)' }}>{dayErr}</span>}
-                </div>
+      {schedules.length > 0 && onFirstClassDateChange && (
+        <div style={{ marginTop: 'var(--space-2)', padding: '10px 14px', backgroundColor: 'var(--color-bg-subtle)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+            <label style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, color: 'var(--color-text-main)' }}>
+              First Class Date:
+            </label>
+            <input
+              type="date"
+              className={formStyles.input}
+              style={{ maxWidth: '200px' }}
+              value={firstClassDate}
+              onChange={(e) => onFirstClassDateChange(e.target.value)}
+              disabled={disabled}
+            />
+          </div>
 
-                <div style={{ flex: '1 1 120px' }}>
-                  <input
-                    type="time"
-                    className={formStyles.input}
-                    value={entry.start_time}
-                    onChange={(e) => onChange(entry.id, 'start_time', e.target.value)}
-                    disabled={disabled}
-                    aria-label={`Schedule entry ${idx + 1} start time`}
-                  />
-                  {startErr && <span style={{ fontSize: '11px', color: 'var(--color-danger)' }}>{startErr}</span>}
-                </div>
+          {onAutoScheduleChange && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: 'var(--font-size-xs)', color: 'var(--color-text-main)' }}>
+              <input
+                type="checkbox"
+                checked={autoSchedule}
+                onChange={(e) => onAutoScheduleChange(e.target.checked)}
+                disabled={disabled || !firstClassDate}
+              />
+              <span style={{ fontWeight: 500 }}>
+                Automatically schedule classes according to package
+              </span>
+            </label>
+          )}
 
-                <div style={{ flex: '1 1 130px' }}>
-                  <div
-                    style={{
-                      padding: '0.45rem 0.65rem',
-                      backgroundColor: 'var(--color-bg-surface)',
-                      border: '1px solid var(--color-border)',
-                      borderRadius: 'var(--radius-md)',
-                      fontSize: 'var(--font-size-sm)',
-                      color: entry.end_time ? 'var(--color-text-main)' : 'var(--color-text-muted)',
-                      lineHeight: '1.25rem',
-                      whiteSpace: 'nowrap',
-                    }}
-                    title="End time is automatically calculated from duration"
-                  >
-                    {entry.end_time ? `End: ${entry.end_time}` : 'End: --:--'}
-                  </div>
-                  {endErr && <span style={{ fontSize: '11px', color: 'var(--color-danger)' }}>{endErr}</span>}
-                </div>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  type="button"
-                  onClick={() => onRemove(entry.id)}
-                  disabled={disabled}
-                  aria-label={`Remove schedule entry ${idx + 1}`}
-                >
-                  ✕ Remove
-                </Button>
-
-                {timeErr && (
-                  <div style={{ width: '100%', fontSize: '11px', color: 'var(--color-danger)' }}>
-                    {timeErr}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {autoSchedule && (
+            <p style={{ margin: 0, fontSize: '11px', color: 'var(--color-text-muted)' }}>
+              Generates dated class sessions from the selected first class date matching the remaining package classes.
+            </p>
+          )}
         </div>
       )}
     </div>

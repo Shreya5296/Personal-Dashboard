@@ -6,10 +6,9 @@ import { Student } from './studentTypes';
 import { fetchStudents } from './studentApi';
 import { StudentSearch } from './StudentSearch';
 import { StudentList } from './StudentList';
-import { EditStudentForm } from './EditStudentForm';
+import { EditStudentModal } from './EditStudentModal';
 import { StudentRegistrationForm } from './StudentRegistrationForm';
 import { StudentProfilePage } from './StudentProfilePage';
-import { AutoScheduleModal } from '../classes/AutoScheduleModal';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { Button } from '../../components/buttons/Button';
@@ -29,7 +28,6 @@ export const StudentsPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
-  const [autoScheduleStudent, setAutoScheduleStudent] = useState<Student | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
   const loadStudents = async () => {
@@ -64,14 +62,7 @@ export const StudentsPage: React.FC = () => {
     await loadStudents();
   };
 
-  const handleAutoScheduleSuccess = async (cnt: number) => {
-    setFeedback(`Successfully generated and scheduled ${cnt} class session(s).`);
-    setRefreshKey((k) => k + 1);
-    setTimeout(() => setFeedback(null), 4000);
-    await loadStudents();
-  };
-
-  if (selectedStudent && !editingStudent) {
+  if (selectedStudent) {
     return (
       <div>
         {feedback && (
@@ -85,6 +76,13 @@ export const StudentsPage: React.FC = () => {
           onEdit={() => setEditingStudent(selectedStudent)}
           onUpdate={(updated) => setSelectedStudent(updated)}
         />
+        {editingStudent && (
+          <EditStudentModal
+            student={editingStudent}
+            onSuccess={handleEditSuccess}
+            onClose={() => setEditingStudent(null)}
+          />
+        )}
       </div>
     );
   }
@@ -118,17 +116,10 @@ export const StudentsPage: React.FC = () => {
       )}
 
       {editingStudent && (
-        <div style={{ backgroundColor: 'var(--color-bg-surface)', padding: '1.5rem', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-subtle)', marginBottom: 'var(--space-6)', boxShadow: 'var(--shadow-sm)' }}>
-          <h3 style={{ margin: '0 0 var(--space-4)', fontSize: 'var(--font-size-base)', fontWeight: 600 }}>Edit Student Details</h3>
-          <EditStudentForm student={editingStudent} onSuccess={handleEditSuccess} onCancel={() => setEditingStudent(null)} />
-        </div>
-      )}
-
-      {autoScheduleStudent && (
-        <AutoScheduleModal
-          student={autoScheduleStudent}
-          onClose={() => setAutoScheduleStudent(null)}
-          onSuccess={handleAutoScheduleSuccess}
+        <EditStudentModal
+          student={editingStudent}
+          onSuccess={handleEditSuccess}
+          onClose={() => setEditingStudent(null)}
         />
       )}
 
@@ -140,7 +131,6 @@ export const StudentsPage: React.FC = () => {
           students={students}
           onSelectStudent={setSelectedStudent}
           onEditStudent={setEditingStudent}
-          onAutoSchedule={setAutoScheduleStudent}
         />
       )}
     </div>

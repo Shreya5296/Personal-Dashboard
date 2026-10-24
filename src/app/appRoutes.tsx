@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavSection } from '../layout/Sidebar';
 import { DashboardPage } from '../domains/dashboard/DashboardPage';
+import { CalendarPage } from '../domains/calendar/CalendarPage';
 import { StudentsPage } from '../domains/students/StudentsPage';
 import { FinancesPage } from '../domains/finances/FinancesPage';
 import { ClassesPage } from '../domains/classes/ClassesPage';
@@ -16,6 +17,8 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({ activeSection, onNavigate 
   switch (activeSection) {
     case 'dashboard':
       return <DashboardPage onNavigate={onNavigate} />;
+    case 'calendar':
+      return <CalendarPage />;
     case 'students':
       return <StudentsPage />;
     case 'finances':

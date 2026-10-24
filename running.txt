@@ -844,3 +844,45 @@ NEXT ACTION
     - Line limit check: 170/170 files in src/ and public/ strictly <= 149 lines (PASS).
     - Strict TypeScript check (tsc --noEmit): 0 errors (PASS).
     - Clean Vite production build in 1.13s (PASS).
+- Student Manager UX, Scheduling & Calendar Batch completed & verified:
+  * 1. Global Application Header:
+    - Aligned topBar height and padding (1rem 1.25rem, 58px) to match the sidebar's brand row.
+    - Updated greeting to `Welcome Back <Username>!` using authenticated user's display name.
+    - Added live ticking date and 12-hour AM/PM time in Asia/Kolkata (`useLiveHeaderTime.ts`).
+    - Responsive layout prevents date/time from colliding with user menu on narrow viewports.
+  * 2. Dashboard — Things That Need Attention:
+    - Added dedicated section (`ThingsThatNeedAttention.tsx`, `attentionAlerts.ts`) identifying actionable issues for active students:
+      * Missing meeting link configured.
+      * Missing class schedule configured.
+      * Four or fewer classes remaining based on package class limits and consumed balance.
+    - Avoids duplicate alerts; excludes inactive/archived students; surfaces error states rather than silent empty list.
+  * 3. Dashboard — Today's Classes:
+    - Added `TodayClassesSection.tsx` showing classes for current date in Asia/Kolkata.
+    - Displays student name, 12-hour time range, session status, and `Join Class ↗` button when valid meeting link is available.
+    - Prevents duplicates between recurring templates and dated sessions.
+  * 4. Student Information Layout:
+    - Redesigned `StudentExpandedDetails.tsx` to 3 columns on desktop, 2 on tablet, 1 on mobile.
+    - Moved Meeting Links to the first slot of Row 2.
+    - Preserved all actions and details.
+  * 5. Student Edit Form Modal:
+    - Encapsulated Edit Student form in `EditStudentModal.tsx` dialog over directory and profile views.
+    - Added background scroll lock, internal dialog scrolling (maxHeight: 90vh), escape/cancel handlers.
+    - Preserved status normalization and schedule persistence without losing unsaved edits on error.
+  * 6. Scheduling and Auto-Scheduling Workflow:
+    - Removed standalone "Auto-Schedule Classes" button from student detail view.
+    - Integrated First Class Date and "Automatically schedule classes according to package" into `ScheduleDetailsSection.tsx` and `EditStudentForm.tsx`.
+    - `autoScheduleHelper.ts` and `editStudentSubmitter.ts` generate dated sessions from first class date, respecting package balance and expiry, skipping exact duplicates, and reporting created vs skipped counts.
+  * 7 & 8. Class Schedule Page Enhancements:
+    - Added student filter dropdown to `ClassesPage.tsx` with "All Students" and clear filter action.
+    - Enhanced `ClassSchedule.tsx` with 12-hour AM/PM date/time ranges, recurring slot indicators, consumed/purchased class counts, and today's `Join Class ↗` button.
+  * 9. New Weekly Calendar Navigation Page:
+    - Added `Calendar` item to sidebar navigation (`NavIcons.tsx`, `Sidebar.tsx`, `routeAccess.ts`, `appRoutes.tsx`).
+    - Created `CalendarPage.tsx`, `WeeklyTimeGrid.tsx`, `calendarGridBuilder.ts` with 7-day Google Calendar style time-grid (7:00 AM - 10:00 PM in 12-hour format).
+    - Rendered booked slots in green, visually distinguishing confirmed sessions (solid green) from recurring templates (dashed green).
+    - Full week navigation (‹ Prev Week, This Week, Next Week ›) in Asia/Kolkata.
+  * 10. Quality Gates & Verification:
+    - 249/249 Vitest unit/integration tests passing across 43 test suites (+12 new tests in `tests/frontend/uxSchedulingAndCalendarBatch.test.ts`).
+    - Strict line limit check: all 188 files in src/ and public/ strictly <= 149 lines (PASS).
+    - Strict TypeScript check (tsc --noEmit): 0 errors (PASS).
+    - Clean Vite production build in 586ms (PASS).
+    - Playwright live tests passing (auth, cross-cutting responsiveness, visual layout).

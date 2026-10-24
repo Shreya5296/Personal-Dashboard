@@ -1,4 +1,5 @@
 import { WeeklyScheduleEntry } from '../classes/scheduleApi';
+import { formatTimeTo12Hour } from '../../lib/time12Format';
 
 const DAY_ABBR: Record<string, string> = {
   MONDAY: 'Mon',
@@ -11,8 +12,8 @@ const DAY_ABBR: Record<string, string> = {
 };
 
 /**
- * Formats one or more weekly recurring schedule entries into a readable, compact string.
- * Example: 'Mon, Thu 16:00–17:00' or 'Mon 16:00–17:00, Fri 18:00–19:00'.
+ * Formats one or more weekly recurring schedule entries into a readable, compact string using 12-hour AM/PM clock.
+ * Example: 'Mon, Thu 4:00 PM – 5:00 PM' or 'Mon 4:00 PM – 5:00 PM; Fri 6:00 PM – 7:30 PM'.
  */
 export function formatWeeklySchedule(entries?: WeeklyScheduleEntry[] | null): string {
   if (!entries || !Array.isArray(entries) || entries.length === 0) {
@@ -25,11 +26,13 @@ export function formatWeeklySchedule(entries?: WeeklyScheduleEntry[] | null): st
     return 'No configured schedule';
   }
 
-  // Group by time range: `${start_time}–${end_time}`
+  // Group by 12-hour time range
   const byTime = new Map<string, string[]>();
   for (const entry of valid) {
     const day = DAY_ABBR[entry.day_of_week.toUpperCase()] || entry.day_of_week;
-    const timeKey = entry.end_time ? `${entry.start_time}–${entry.end_time}` : entry.start_time;
+    const start12 = formatTimeTo12Hour(entry.start_time);
+    const end12 = entry.end_time ? formatTimeTo12Hour(entry.end_time) : '';
+    const timeKey = end12 ? `${start12} – ${end12}` : start12;
 
     const list = byTime.get(timeKey) || [];
     if (!list.includes(day)) {

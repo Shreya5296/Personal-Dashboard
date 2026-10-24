@@ -14,6 +14,12 @@ export const ROUTE_CONFIGS: Record<NavSection, RouteConfig> = {
     subtitle: 'Operational summary of active students, upcoming classes, and financial metrics.',
     requiresAdmin: true,
   },
+  calendar: {
+    id: 'calendar',
+    title: 'Weekly Calendar',
+    subtitle: 'Interactive schedule grid with booked class slots and recurring weekly timetables.',
+    requiresAdmin: true,
+  },
   students: {
     id: 'students',
     title: 'Student Directory',

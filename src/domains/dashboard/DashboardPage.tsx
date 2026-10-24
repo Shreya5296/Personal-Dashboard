@@ -1,23 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { usePageTitle } from '../../hooks/usePageTitle';
-import { fetchDashboardOverview } from './dashboardApi';
-import { fetchClasses } from '../classes/classApi';
-import { fetchSchedules, WeeklyScheduleEntry } from '../classes/scheduleApi';
-import { fetchStudents } from '../students/studentApi';
-import { Student } from '../students/studentTypes';
-import { fetchFeeObligations } from '../fees/feeApi';
+import { useDashboardData } from './useDashboardData';
+import { generateAttentionAlerts } from './attentionAlerts';
+import { ThingsThatNeedAttention } from './ThingsThatNeedAttention';
+import { TodayClassesSection } from './TodayClassesSection';
 import { DashboardSummary } from './DashboardSummary';
 import { DashboardFollowUps } from './DashboardFollowUps';
 import { DashboardCalendar } from './DashboardCalendar';
-import { ClassSession } from '../classes/classTypes';
-import { FeeObligation } from '../fees/feeTypes';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { Button } from '../../components/buttons/Button';
 import { PageHeader } from '../../layout/PageHeader';
 import { NavSection } from '../../layout/Sidebar';
-import { DashboardOverviewData } from './dashboardTypes';
 
 export interface DashboardPageProps {
   onNavigate: (section: NavSection) => void;
@@ -26,47 +21,25 @@ export interface DashboardPageProps {
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   usePageTitle('Dashboard');
   const { token } = useAuth();
-  const [overview, setOverview] = useState<DashboardOverviewData | null>(null);
-  const [classes, setClasses] = useState<ClassSession[]>([]);
-  const [schedules, setSchedules] = useState<WeeklyScheduleEntry[]>([]);
-  const [students, setStudents] = useState<Student[]>([]);
-  const [fees, setFees] = useState<FeeObligation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const loadData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [ov, cls, schedList, stuList, feeList] = await Promise.all([
-        fetchDashboardOverview(token),
-        fetchClasses(undefined, token).catch(() => []),
-        fetchSchedules(undefined, token).catch(() => []),
-        fetchStudents({}, token).catch(() => []),
-        fetchFeeObligations(undefined, token).catch(() => []),
-      ]);
-      setOverview(ov);
-      setClasses(cls);
-      setSchedules(schedList);
-      setStudents(stuList);
-      setFees(feeList);
-    } catch (err: unknown) {
-      setError((err as Error).message || 'Failed to load dashboard metrics');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadData();
-  }, [token]);
+  const {
+    overview,
+    classes,
+    schedules,
+    students,
+    fees,
+    packages,
+    meetingLinks,
+    loading,
+    error,
+    refreshData,
+  } = useDashboardData(token);
 
   if (loading && !overview) {
     return <LoadingState message="Loading dashboard metrics…" />;
   }
 
   if (error && !overview) {
-    return <ErrorState message={error} onRetry={loadData} />;
+    return <ErrorState message={error} onRetry={refreshData} />;
   }
 
   const defaultOverview = overview || {
@@ -75,6 +48,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
     outstandingFeesTotal: 0,
     currency: 'INR',
   };
+
+  const attentionAlerts = generateAttentionAlerts({
+    students,
+    schedules,
+    meetingLinks,
+    packages,
+  });
 
   return (
     <div>
@@ -107,14 +87,30 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           <Button variant="secondary" onClick={() => onNavigate('finances')}>
             Review Finances
           </Button>
+          <Button variant="secondary" onClick={() => onNavigate('calendar')}>
+            View Calendar
+          </Button>
         </div>
       </div>
+
+      <ThingsThatNeedAttention
+        alerts={attentionAlerts}
+        onNavigate={onNavigate}
+        error={error}
+      />
+
+      <TodayClassesSection
+        classes={classes}
+        schedules={schedules}
+        students={students}
+        meetingLinks={meetingLinks}
+      />
 
       <DashboardCalendar
         classes={classes}
         schedules={schedules}
         students={students}
-        onRefresh={loadData}
+        onRefresh={refreshData}
       />
 
       <DashboardFollowUps classes={classes} fees={fees} onNavigate={onNavigate} />

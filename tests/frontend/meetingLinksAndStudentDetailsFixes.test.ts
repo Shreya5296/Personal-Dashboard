@@ -82,25 +82,25 @@ describe('Meeting Links and Student Details UI Fixes', () => {
   });
 
   describe('Fix 4: Schedule Formatter', () => {
-    it('formats a single weekly schedule entry', () => {
+    it('formats a single weekly schedule entry in 12-hour clock with AM/PM', () => {
       const schedule = [{ day_of_week: 'MONDAY', start_time: '16:00', end_time: '17:00' }];
-      expect(formatWeeklySchedule(schedule)).toBe('Mon 16:00–17:00');
+      expect(formatWeeklySchedule(schedule)).toBe('Mon 4:00 PM – 5:00 PM');
     });
 
-    it('groups multiple schedules with the same time range', () => {
+    it('groups multiple schedules with the same time range in 12-hour clock', () => {
       const schedule = [
         { day_of_week: 'MONDAY', start_time: '16:00', end_time: '17:00' },
         { day_of_week: 'THURSDAY', start_time: '16:00', end_time: '17:00' },
       ];
-      expect(formatWeeklySchedule(schedule)).toBe('Mon, Thu 16:00–17:00');
+      expect(formatWeeklySchedule(schedule)).toBe('Mon, Thu 4:00 PM – 5:00 PM');
     });
 
-    it('formats multiple schedules with different time ranges', () => {
+    it('formats multiple schedules with different time ranges in 12-hour clock', () => {
       const schedule = [
         { day_of_week: 'MONDAY', start_time: '16:00', end_time: '17:00' },
         { day_of_week: 'FRIDAY', start_time: '18:00', end_time: '19:30' },
       ];
-      expect(formatWeeklySchedule(schedule)).toBe('Mon 16:00–17:00; Fri 18:00–19:30');
+      expect(formatWeeklySchedule(schedule)).toBe('Mon 4:00 PM – 5:00 PM; Fri 6:00 PM – 7:30 PM');
     });
 
     it('returns readable fallback when no schedule is configured', () => {

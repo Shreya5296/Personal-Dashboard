@@ -12,14 +12,12 @@ export interface StudentListProps {
   students: Student[];
   onSelectStudent: (student: Student) => void;
   onEditStudent: (student: Student) => void;
-  onAutoSchedule?: (student: Student) => void;
 }
 
 export const StudentList: React.FC<StudentListProps> = ({
   students,
   onSelectStudent,
   onEditStudent,
-  onAutoSchedule,
 }) => {
   const { token } = useAuth();
   const [activeTab, setActiveTab] = useState<StudentStatusTab>('ALL');
@@ -84,7 +82,6 @@ export const StudentList: React.FC<StudentListProps> = ({
                   onToggleExpand={handleToggleExpand}
                   onSelectStudent={onSelectStudent}
                   onEditStudent={onEditStudent}
-                  onAutoSchedule={onAutoSchedule}
                   schedule={getStudentSchedule(student.student_id)}
                   balance={getStudentBalance(student.student_id)}
                   financials={getStudentFinancials(student.student_id)}

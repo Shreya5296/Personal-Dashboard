@@ -1,0 +1,140 @@
+.calendarOuter {
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.scrollContainer {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 720px;
+  position: relative;
+}
+
+.gridTable {
+  display: flex;
+  min-width: 840px;
+  width: 100%;
+}
+
+.timeAxis {
+  width: 70px;
+  min-width: 70px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--color-border-subtle);
+  background-color: var(--color-bg-surface);
+  position: sticky;
+  left: 0;
+  z-index: 20;
+}
+
+.timeAxisHeader {
+  height: 52px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  background-color: var(--color-bg-subtle);
+}
+
+.timeSlot {
+  height: 56px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding: 4px 6px 0 0;
+  text-align: right;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  box-sizing: border-box;
+}
+
+.dayColumnsWrapper {
+  display: flex;
+  flex: 1;
+}
+
+.dayColumn {
+  flex: 1;
+  min-width: 110px;
+  border-right: 1px solid var(--color-border-subtle);
+  display: flex;
+  flex-direction: column;
+}
+.dayColumn:last-child { border-right: none; }
+
+.dayHeader {
+  height: 52px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  background-color: var(--color-bg-surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.dayHeaderToday {
+  background-color: var(--color-primary-bg);
+  border-bottom-color: var(--color-primary-border);
+}
+.dayHeaderName { font-size: 11px; font-weight: 600; color: var(--color-text-muted); text-transform: uppercase; }
+.dayHeaderNumber { font-size: var(--font-size-sm); font-weight: 700; color: var(--color-text-main); }
+.dayHeaderToday .dayHeaderNumber { color: var(--color-primary); }
+
+.dayBody {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  flex: 1;
+  min-height: 896px;
+  background-size: 100% 56px;
+  background-image: linear-gradient(to bottom, var(--color-border-subtle) 1px, transparent 1px);
+}
+.dayBodyToday { background-color: rgba(37, 99, 235, 0.02); }
+
+.eventCard {
+  margin: 2px 4px;
+  padding: 6px 8px;
+  border-radius: var(--radius-md);
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+  position: relative;
+  box-sizing: border-box;
+}
+.eventCard:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+
+/* Booked slots rendered in green */
+.sessionCard {
+  background-color: #ecfdf5;
+  border: 1px solid #10b981;
+  border-left: 3px solid #059669;
+  color: #065f46;
+}
+.recurringCard {
+  background-color: #f0fdf4;
+  border: 1px dashed #34d399;
+  border-left: 3px solid #10b981;
+  color: #047857;
+}
+
+.eventTime { font-weight: 700; font-size: 10.5px; line-height: 1.2; }
+.eventStudent { font-weight: 600; font-size: 11.5px; color: var(--color-text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.eventTopic { font-size: 10.5px; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.badge {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 1px 4px;
+  border-radius: var(--radius-sm);
+  margin-top: 2px;
+}
+.badgeSession { background-color: #059669; color: #ffffff; }
+.badgeRecurring { background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
