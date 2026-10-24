@@ -25,11 +25,14 @@ test.describe('Frontend UI/UX Redesign — Screen & Viewport Coverage', () => {
       }));
     }, { token: MOCK_JWT });
     await page.goto('/');
-    await expect(page.locator('button:has-text("Sign Out")')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('button[aria-label="Account menu"]')).toBeVisible({ timeout: 10000 });
   });
 
-  test('verifies all 7 active screens at Desktop (1440px)', async ({ page }) => {
+  test('verifies all active screens and account dropdown profile at Desktop (1440px)', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
+
+    // Verify Settings is absent from the sidebar
+    await expect(page.locator('aside button:has-text("Settings")')).toHaveCount(0);
 
     // 1. Dashboard
     await navigate(page, 'Dashboard');
@@ -70,11 +73,14 @@ test.describe('Frontend UI/UX Redesign — Screen & Viewport Coverage', () => {
     await expect(page.locator('text=Total Outstanding')).toBeVisible();
     await expect(page.locator('text=Collection Performance')).toBeVisible();
 
-    // 7. Settings
-    await navigate(page, 'Settings');
-    await expect(page.locator('h1:has-text("Settings & System Health")')).toBeVisible();
-    await expect(page.locator('text=Administrator Identity')).toBeVisible();
-    await expect(page.locator('text=Backend & Spreadsheet Service')).toBeVisible();
+    // 7. Profile & Preferences (via Account dropdown)
+    await page.locator('button[aria-label="Account menu"]').click();
+    const profileItem = page.locator('button[role="menuitem"]:has-text("Profile")');
+    await expect(profileItem).toBeVisible();
+    await profileItem.click();
+    await expect(page.locator('h1:has-text("Profile & Preferences")')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Administrator Profile' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Regional Defaults' })).toBeVisible();
   });
 
   test('verifies desktop 1280px layout without horizontal overflow', async ({ page }) => {

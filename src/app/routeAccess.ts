@@ -46,8 +46,8 @@ export const ROUTE_CONFIGS: Record<NavSection, RouteConfig> = {
   },
   settings: {
     id: 'settings',
-    title: 'System Settings',
-    subtitle: 'Inspect backend connectivity, active environment, and schema version.',
+    title: 'Profile & Preferences',
+    subtitle: 'Administrator identity details, display preferences, and regional defaults.',
     requiresAdmin: true,
   },
 };

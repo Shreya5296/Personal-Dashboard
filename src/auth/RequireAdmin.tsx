@@ -3,6 +3,7 @@ import { useAuth } from './AuthProvider';
 import { getRuntimeConfig } from '../config/runtimeConfig';
 import { sendApiRequest } from '../api/apiClient';
 import { AuthUser } from './authState';
+import { resolveDisplayName } from './userProfileStorage';
 import { Button } from '../components/buttons/Button';
 import formStyles from '../components/forms/forms.module.css';
 
@@ -31,9 +32,10 @@ export const RequireAdmin: React.FC<{ children: React.ReactNode }> = ({ children
 
       try {
         if (config.useMockData || (!config.appsScriptUrl && config.enableMockAuth)) {
+          const email = 'ashreya0502@gmail.com';
           signInWithToken('mock_admin_token', {
-            email: 'ashreya0502@gmail.com',
-            name: 'Authorized Administrator',
+            email,
+            name: resolveDisplayName('Authorized Administrator', email),
             isAdmin: true,
           });
           return;
@@ -44,7 +46,11 @@ export const RequireAdmin: React.FC<{ children: React.ReactNode }> = ({ children
         });
 
         if (res.ok && res.data) {
-          signInWithToken(res.data.token, res.data.user);
+          const resolvedUser: AuthUser = {
+            ...res.data.user,
+            name: resolveDisplayName(res.data.user.name, res.data.user.email),
+          };
+          signInWithToken(res.data.token, resolvedUser);
         } else {
           setLoginError(res.error?.message || 'Invalid administrator access key');
         }

@@ -25,7 +25,10 @@ export const AppShell: React.FC<AppShellProps> = ({
         onClose={() => setMobileMenuOpen(false)}
       />
       <div className={styles.mainArea}>
-        <TopBar onToggleMenu={() => setMobileMenuOpen((open) => !open)} />
+        <TopBar
+          onToggleMenu={() => setMobileMenuOpen((open) => !open)}
+          onNavigate={onNavigate}
+        />
         <main className={styles.content}>{children}</main>
       </div>
     </div>

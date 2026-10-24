@@ -1,0 +1,135 @@
+.container {
+  position: relative;
+  display: inline-block;
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 4px 8px;
+  background-color: transparent;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  color: var(--color-text-main);
+  transition: all 120ms ease;
+  min-height: 40px;
+}
+
+.trigger:hover,
+.trigger:focus-visible {
+  background-color: var(--color-bg-subtle);
+  border-color: var(--color-border-strong);
+  outline: none;
+}
+
+.trigger[aria-expanded="true"] {
+  background-color: var(--color-bg-subtle);
+  border-color: var(--color-primary-border);
+}
+
+.avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-primary-bg);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  border: 1px solid var(--color-primary-border);
+  flex-shrink: 0;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  line-height: 1.25;
+  max-width: 160px;
+}
+
+.primaryName {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.secondaryEmail {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chevron {
+  color: var(--color-text-muted);
+  transition: transform 150ms ease;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 200px;
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 100;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: transparent;
+  color: var(--color-text-main);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: all 100ms ease;
+}
+
+.menuItem:hover,
+.menuItem:focus-visible {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-text-main);
+  outline: none;
+}
+
+.menuItem:active {
+  background-color: var(--color-primary-bg);
+}
+
+@media (max-width: 600px) {
+  .info {
+    max-width: 110px;
+  }
+  .secondaryEmail {
+    display: none;
+  }
+}

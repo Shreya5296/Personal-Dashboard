@@ -22,13 +22,13 @@ export async function loginAsAdmin(page: Page, key?: string): Promise<boolean> {
     }, { token: cachedSessionToken, user: cachedSessionUser });
     await page.goto('/');
 
-    const isReady = await page.locator('button:has-text("Sign Out")').isVisible({ timeout: 5000 }).catch(() => false);
+    const isReady = await page.locator('button[aria-label="Account menu"], button:has-text("Sign Out")').isVisible({ timeout: 5000 }).catch(() => false);
     if (isReady) return true;
   }
 
   await page.goto('/');
 
-  const isAlreadyLoggedIn = await page.locator('button:has-text("Sign Out")').isVisible().catch(() => false);
+  const isAlreadyLoggedIn = await page.locator('button[aria-label="Account menu"], button:has-text("Sign Out")').isVisible().catch(() => false);
   if (isAlreadyLoggedIn) {
     return true;
   }
@@ -40,7 +40,7 @@ export async function loginAsAdmin(page: Page, key?: string): Promise<boolean> {
   const submitBtn = page.locator('button[type="submit"]');
   await submitBtn.click();
 
-  await expect(page.locator('button:has-text("Sign Out")')).toBeVisible({ timeout: 35000 });
+  await expect(page.locator('button[aria-label="Account menu"], button:has-text("Sign Out")')).toBeVisible({ timeout: 35000 });
 
   // Cache token in memory for all subsequent tests
   const session = await page.evaluate(() => ({

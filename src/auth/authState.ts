@@ -16,4 +16,5 @@ export interface AuthContextValue extends AuthState {
   signInWithToken: (token: string, user: AuthUser) => void;
   signOut: () => void;
   setError: (msg: string) => void;
+  updateDisplayName: (newName: string) => void;
 }

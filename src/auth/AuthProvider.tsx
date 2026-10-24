@@ -3,6 +3,7 @@ import { AuthState, AuthUser, AuthContextValue } from './authState';
 import { getStoredToken } from './identityToken';
 import { handleSuccessfulSignIn } from './signIn';
 import { handleSignOut } from './signOut';
+import { saveDisplayName } from './userProfileStorage';
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -68,12 +69,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setState((prev) => ({ ...prev, errorMessage: msg }));
   };
 
+  const updateDisplayName = (newName: string) => {
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    saveDisplayName(trimmed);
+    setState((prev) => {
+      if (!prev.user) return prev;
+      return {
+        ...prev,
+        user: {
+          ...prev.user,
+          name: trimmed,
+        },
+      };
+    });
+  };
+
   const contextValue = useMemo<AuthContextValue>(
     () => ({
       ...state,
       signInWithToken,
       signOut,
       setError,
+      updateDisplayName,
     }),
     [state]
   );

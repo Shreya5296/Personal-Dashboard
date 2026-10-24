@@ -66,7 +66,8 @@ test.describe('E2E — Authentication and Security Gateway', () => {
     await page.locator('button[type="submit"]').click();
 
     // Wait for Dashboard to appear
-    await expect(page.locator('button:has-text("Sign Out")')).toBeVisible({ timeout: 30000 });
+    const accountTrigger = page.locator('button[aria-label="Account menu"]');
+    await expect(accountTrigger).toBeVisible({ timeout: 30000 });
 
     // Verify token was stored in sessionStorage only
     const storedToken = await page.evaluate(() => sessionStorage.getItem('smd_auth_token'));
@@ -76,9 +77,11 @@ test.describe('E2E — Authentication and Security Gateway', () => {
     const localToken = await page.evaluate(() => localStorage.getItem('smd_auth_token'));
     expect(localToken).toBeNull();
 
-    // Sign out
-    const signOutBtn = page.locator('button:has-text("Sign Out")');
-    await signOutBtn.click();
+    // Sign out via Account Dropdown Logout option
+    await accountTrigger.click();
+    const logoutBtn = page.locator('button[role="menuitem"]:has-text("Logout")');
+    await expect(logoutBtn).toBeVisible({ timeout: 5000 });
+    await logoutBtn.click();
     await expect(page.locator('input[type="password"]')).toBeVisible({ timeout: 10000 });
     const clearedToken = await page.evaluate(() => sessionStorage.getItem('smd_auth_token'));
     expect(clearedToken).toBeNull();

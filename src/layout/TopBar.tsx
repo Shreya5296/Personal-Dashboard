@@ -1,12 +1,14 @@
 import React from 'react';
 import styles from './layout.module.css';
 import { useAuth } from '../auth/AuthProvider';
-import { Button } from '../components/buttons/Button';
 import { getRuntimeConfig } from '../config/runtimeConfig';
 import { MenuIcon } from '../components/icons/ActionIcons';
+import { AccountDropdown } from './AccountDropdown';
+import { NavSection } from './Sidebar';
 
 export interface TopBarProps {
   onToggleMenu?: () => void;
+  onNavigate?: (section: NavSection) => void;
 }
 
 function getEnvBadge(): { label: string; color: string; bg: string } | null {
@@ -26,11 +28,9 @@ function getEnvBadge(): { label: string; color: string; bg: string } | null {
   return null;
 }
 
-export const TopBar: React.FC<TopBarProps> = ({ onToggleMenu }) => {
-  const { user, signOut } = useAuth();
+export const TopBar: React.FC<TopBarProps> = ({ onToggleMenu, onNavigate }) => {
+  const { user } = useAuth();
   const badge = getEnvBadge();
-
-  const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'A';
 
   return (
     <header className={styles.topBar}>
@@ -63,39 +63,8 @@ export const TopBar: React.FC<TopBarProps> = ({ onToggleMenu }) => {
         )}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-        {user && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-            <div
-              style={{
-                width: '30px',
-                height: '30px',
-                borderRadius: 'var(--radius-full)',
-                backgroundColor: 'var(--color-primary-bg)',
-                color: 'var(--color-primary)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 'var(--font-size-xs)',
-                fontWeight: 700,
-                border: '1px solid var(--color-primary-border)',
-              }}
-            >
-              {userInitial}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-              <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, color: 'var(--color-text-main)' }}>
-                {user.name}
-              </span>
-              <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
-                {user.email}
-              </span>
-            </div>
-          </div>
-        )}
-        <Button variant="outline" size="sm" onClick={signOut}>
-          Sign Out
-        </Button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+        {user && <AccountDropdown onNavigate={onNavigate} />}
       </div>
     </header>
   );

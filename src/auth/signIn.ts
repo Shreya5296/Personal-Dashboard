@@ -1,5 +1,6 @@
 import { AuthUser } from './authState';
 import { storeToken } from './identityToken';
+import { resolveDisplayName } from './userProfileStorage';
 
 export function parseJwtPayload(token: string): Record<string, unknown> | null {
   try {
@@ -28,7 +29,7 @@ export function buildUserFromToken(token: string): AuthUser {
         if (parsed && parsed.email) {
           return {
             email: parsed.email,
-            name: parsed.name || (parsed.email ? parsed.email.split('@')[0] : 'Administrator'),
+            name: resolveDisplayName(parsed.name, parsed.email),
             picture: parsed.picture,
             isAdmin: true,
           };
@@ -41,7 +42,7 @@ export function buildUserFromToken(token: string): AuthUser {
 
   const payload = parseJwtPayload(token);
   const email = (payload?.email as string) || 'ashreya0502@gmail.com';
-  const name = (payload?.name as string) || (payload?.email ? (payload.email as string).split('@')[0] : 'Administrator');
+  const name = resolveDisplayName(payload?.name as string | undefined, email);
   const picture = payload?.picture as string | undefined;
 
   return {

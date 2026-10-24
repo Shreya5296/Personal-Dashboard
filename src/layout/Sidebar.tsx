@@ -8,7 +8,6 @@ import {
   ClassesIcon,
   MeetingLinksIcon,
   ReportsIcon,
-  SettingsIcon,
 } from '../components/icons/NavIcons';
 import { CloseIcon } from '../components/icons/ActionIcons';
 
@@ -35,7 +34,6 @@ const navItems = [
   { id: 'classes' as NavSection, label: 'Classes', Icon: ClassesIcon },
   { id: 'meeting-links' as NavSection, label: 'Meeting Links', Icon: MeetingLinksIcon },
   { id: 'reports' as NavSection, label: 'Reports', Icon: ReportsIcon },
-  { id: 'settings' as NavSection, label: 'Settings', Icon: SettingsIcon },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({

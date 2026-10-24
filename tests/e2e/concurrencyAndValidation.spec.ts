@@ -35,10 +35,11 @@ test.describe('E2E — Concurrency, Validation, and Responsive Layouts', () => {
     await page.locator('button:has-text("Payment Ledger")').click();
     await expect(page.locator('text=Loading payment transactions…')).toBeHidden({ timeout: 35000 });
 
-    // 2. Settings page validation
-    await navigateTo(page, 'Settings');
-    await expect(page.locator('text=Administrator Identity')).toBeVisible({ timeout: 20000 });
-    await expect(page.locator('text=Backend & Spreadsheet Service')).toBeVisible();
+    // 2. Profile & Preferences validation via account menu
+    await page.locator('button[aria-label="Account menu"]').click();
+    await page.locator('button[role="menuitem"]:has-text("Profile")').click();
+    await expect(page.getByRole('heading', { name: 'Administrator Profile' })).toBeVisible({ timeout: 20000 });
+    await expect(page.getByRole('heading', { name: 'Regional Defaults' })).toBeVisible();
   });
 
   test('verifies responsive layouts across desktop, tablet, and mobile viewports', async ({ page }) => {
