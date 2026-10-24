@@ -51,7 +51,7 @@ test.describe('E2E — Students Domain Workflow', () => {
     await expect(page.locator(`text=${student.full_name}`)).toBeVisible();
 
     // 4. Expand row and open profile to verify tabs
-    await page.locator(`text=${student.full_name}`).first().click();
+    await page.locator('table').locator(`text=${student.full_name}`).first().click();
     await page.locator('button:has-text("View Full Profile")').click();
     await expect(page.locator('main button:has-text("Packages & Balances")')).toBeVisible();
     await expect(page.locator('main button:has-text("Fee Obligations")')).toBeVisible();

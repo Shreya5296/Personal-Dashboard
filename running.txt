@@ -670,3 +670,38 @@ NEXT ACTION
     - Strict TypeScript check (tsc --noEmit): 0 errors (PASS).
     - Production Vite build: clean build in 795ms (PASS).
     - Vitest unit/integration suite: 202/202 tests passing across 36 test files (added tests/frontend/meetingLinksAndStudentDetailsFixes.test.ts) (PASS).
+- Student Management — Editing, Scheduling, Active/Inactive Tabs completed & verified:
+  * 1. Edit Student (Requirement 1):
+    - Extended Edit Student form (EditStudentForm.tsx) to view, load, and edit recurring weekly schedules, meeting links, and package details.
+    - Loaded existing student records on edit via fetchMeetingLinks, fetchPackages, and fetchSchedules.
+    - Modularized into EditStudentPersonalSection, EditStudentLinksSection, and EditStudentPackageSection (all <= 149 lines).
+    - Added Packages_update in PackageService.gs and registered packages.update in PackageHandlers.gs with full audit tracking.
+    - Preserved payment history, completed attendance, and credit deductions without deleting or recreating package rows.
+    - Clearly distinguished editing existing package from assigning new package/purchasing additional classes.
+  * 2. New Student Form Class Schedule (Requirement 2):
+    - Preserved multi-entry recurring schedule in StudentRegistrationForm.tsx and ScheduleDetailsSection.tsx.
+    - Supported independent day of week, start time, and end time per entry (different days allow different times).
+    - Enforced start/end time validation (end_time > start_time) and day validation.
+    - Guaranteed schedule visibility in expanded details and edit forms.
+  * 3. Aligned Full Student Details (Requirement 3):
+    - Re-architected StudentExpandedDetails.tsx into a responsive grid with consistent headings, column spacing, and alignment.
+    - Enforced minWidth: 0 on all grid items and maxWidth: 100% on MeetingLinkButton to prevent link overflow or overlapping adjacent columns.
+    - Added overflowWrap: anywhere and wordBreak: break-word to long email addresses and phone lines.
+    - Maintained compact visual style and design language across desktop, tablet, and mobile.
+  * 4. Auto-Schedule Purchased Classes (Requirement 4):
+    - Built classGenerator.ts to calculate and distribute exact purchased class sessions chronologically from configured recurring schedules and starting date in Asia/Kolkata timezone.
+    - Created AutoScheduleModal.tsx and AutoSchedulePreviewTable.tsx providing unambiguous date selection, proposed dates preview, and conflict/duplicate detection against existing sessions.
+    - Required explicit acknowledgment before scheduling over conflicting sessions.
+    - Guaranteed that scheduling sessions does not consume classes (deduct_class: false, attendance_status: NOT_MARKED); only marking attendance as Present deducts a class.
+  * 5. Active and Inactive Tabs on Students Page (Requirement 5):
+    - Added WAI-ARIA accessible StudentTabs.tsx component above directory table with All Students, Active, and Inactive tabs and live counters.
+  * 6. Student Balance Classification Rules (Requirement 6):
+    - Implemented studentStatusClassifier.ts classifying learners into Active (> 0 remaining classes, not archived/inactive) and Inactive (0 remaining classes or archived/inactive).
+    - Filtered dynamically in StudentList.tsx without modifying, deleting, or archiving records in Google Sheets.
+  * 7. Testing & Quality Gates:
+    - Added tests/frontend/studentManagementEnhancements.test.ts (7 tests covering schedules, auto-scheduling math, conflict detection, and balance classification).
+    - 209/209 Vitest unit/integration tests passing across 37 test suites.
+    - Line limit policy strictly verified: 167/167 files under src/ and public/ <= 149 lines.
+    - Strict TypeScript check (tsc --noEmit): 0 errors.
+    - Clean Vite production build in 881ms.
+    - Playwright browser E2E tests passing 100% (students.spec.ts, notesAndLinks.spec.ts).

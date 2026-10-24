@@ -28,6 +28,19 @@ export async function createPackage(
   return response.data!;
 }
 
+export async function updatePackage(
+  packageId: string,
+  input: Partial<PackageInput>,
+  token?: string | null
+): Promise<Package> {
+  const response = await sendApiRequest<Package>(
+    'packages.update',
+    { package_id: packageId, ...input },
+    { token }
+  );
+  return response.data!;
+}
+
 export async function fetchPackageBalance(
   studentId: string,
   token?: string | null

@@ -9,6 +9,8 @@ import {
   MOCK_NOTES,
   MOCK_SCHEDULES,
   createMockStudent,
+  updateMockPackage,
+  scheduleMockClass,
 } from './mockDataInitial';
 
 export function handleMockApiRequest<T>(operation: string, payload: Record<string, unknown>, reqId: string): ApiResponse<T> {
@@ -45,6 +47,7 @@ export function handleMockApiRequest<T>(operation: string, payload: Record<strin
     const sid = payload.student_id as string | undefined;
     return { ok: true, data: (sid ? MOCK_CLASSES.filter(c => c.student_id === sid) : MOCK_CLASSES) as T, meta };
   }
+  if (operation === 'classes.schedule') return { ok: true, data: scheduleMockClass(payload) as T, meta };
   if (operation === 'meetingLinks.list') {
     const sid = payload.student_id as string | undefined;
     return { ok: true, data: (sid ? MOCK_LINKS.filter(l => l.student_id === sid) : MOCK_LINKS) as T, meta };
@@ -74,6 +77,7 @@ export function handleMockApiRequest<T>(operation: string, payload: Record<strin
     return { ok: true, data: ex as T, meta };
   }
   if (operation === 'packages.list') return { ok: true, data: MOCK_PACKAGES as T, meta };
+  if (operation === 'packages.update') return { ok: true, data: updateMockPackage(payload) as T, meta };
   if (operation === 'packages.create') {
     const newPkg = {
       package_id: `pkg_${Date.now()}`,

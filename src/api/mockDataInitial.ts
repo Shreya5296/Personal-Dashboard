@@ -63,3 +63,59 @@ export function createMockStudent(payload: Record<string, unknown>) {
   MOCK_STUDENTS.unshift(newStu);
   return newStu;
 }
+
+export function updateMockPackage(payload: Record<string, unknown>) {
+  const pkgId = String(payload.package_id || payload.packageId || '');
+  const sid = String(payload.student_id || '');
+  let ex = MOCK_PACKAGES.find(p => p.package_id === pkgId);
+  if (!ex && sid) ex = MOCK_PACKAGES.find(p => p.student_id === sid);
+  if (ex) {
+    if (payload.plan_type !== undefined) ex.plan_type = String(payload.plan_type);
+    if (payload.currency !== undefined) ex.currency = String(payload.currency).toUpperCase();
+    if (payload.package_price !== undefined) ex.package_price = Number(payload.package_price);
+    if (payload.price !== undefined) ex.price = Number(payload.price);
+    if (payload.per_class !== undefined) ex.per_class = Number(payload.per_class);
+    const rawQty = payload.classes_purchased !== undefined ? payload.classes_purchased : payload.total_classes;
+    if (rawQty !== undefined) {
+      ex.classes_purchased = Number(rawQty);
+      ex.total_classes = Number(rawQty);
+    }
+    if (payload.start_date !== undefined) ex.start_date = String(payload.start_date);
+    if (payload.end_date !== undefined) ex.end_date = String(payload.end_date);
+    if (payload.expiry_date !== undefined) ex.expiry_date = String(payload.expiry_date);
+    return ex;
+  }
+  return { ...payload, package_id: pkgId || `pkg_${Date.now()}` };
+}
+
+export function scheduleMockClass(payload: Record<string, unknown>) {
+  const sid = String(payload.student_id || '');
+  const start = String(payload.scheduled_start || payload.start_time || new Date().toISOString());
+  const dur = Number(payload.duration_minutes || 60);
+  let end = String(payload.scheduled_end || '');
+  if (!end && start) {
+    try { end = new Date(new Date(start).getTime() + dur * 60000).toISOString(); } catch (_) {}
+  }
+  const id = `cls_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+  const item = {
+    session_id: id,
+    class_session_id: id,
+    student_id: sid,
+    student_name: String(payload.student_name || ''),
+    package_id: String(payload.package_id || ''),
+    class_title: String(payload.class_title || payload.topic || 'Class session'),
+    topic: String(payload.class_title || payload.topic || 'Class session'),
+    start_time: start,
+    scheduled_start: start,
+    scheduled_end: end,
+    duration_minutes: dur,
+    status: 'SCHEDULED',
+    session_status: 'SCHEDULED',
+    attendance_status: 'NOT_MARKED',
+    meeting_url: String(payload.meeting_url || ''),
+    class_credit_effect: 'PENDING',
+    deduct_class: false,
+  };
+  MOCK_CLASSES.push(item);
+  return item;
+}

@@ -26,7 +26,7 @@ test.describe('E2E — Meeting Links and Student Notes Workflow', () => {
     await expect(page.locator(`text=${student.full_name}`)).toBeVisible({ timeout: 45000 });
 
     // 2. Open Student Profile -> Meeting Links tab
-    await page.locator(`text=${student.full_name}`).first().click();
+    await page.locator('table').locator(`text=${student.full_name}`).first().click();
     await page.locator('button:has-text("View Full Profile")').click();
     await page.locator('main button:has-text("Meeting Links")').click();
     await expect(page.locator('button:has-text("+ Add Meeting Link")')).toBeVisible({ timeout: 15000 });

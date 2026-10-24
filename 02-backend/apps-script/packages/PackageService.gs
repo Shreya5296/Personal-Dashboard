@@ -151,9 +151,51 @@ function Packages_enrichWithBalance(spreadsheet, pkgRecord) {
   return enriched;
 }
 
+function Packages_update(spreadsheet, packageId, data, actor) {
+  var existing = _pkgRepo.Packages_getById(spreadsheet, packageId);
+  if (!existing) {
+    return { success: false, code: 'RECORD_NOT_FOUND', message: 'Package not found: ' + packageId };
+  }
+  var updates = {};
+  if (data.plan_type !== undefined) updates.plan_type = String(data.plan_type).trim();
+  if (data.plan_name !== undefined) updates.plan_name = String(data.plan_name).trim();
+  if (data.package_name !== undefined) updates.plan_name = String(data.package_name).trim();
+  if (data.currency !== undefined) updates.currency = String(data.currency).trim().toUpperCase();
+  if (data.package_price !== undefined && data.package_price !== '') updates.package_price = Number(data.package_price);
+  else if (data.price !== undefined && data.price !== '') updates.package_price = Number(data.price);
+  if (data.per_class !== undefined && data.per_class !== '') updates.per_class = Number(data.per_class);
+  var rawQty = data.classes_purchased !== undefined ? data.classes_purchased : (data.purchased_classes !== undefined ? data.purchased_classes : data.total_classes);
+  if (rawQty !== undefined && rawQty !== '') updates.classes_purchased = Number(rawQty);
+  if (data.start_date !== undefined) updates.start_date = data.start_date;
+  if (data.end_date !== undefined) updates.end_date = data.end_date;
+  if (data.expiry_date !== undefined) updates.expiry_date = data.expiry_date;
+  if (data.next_due_date !== undefined) updates.next_due_date = data.next_due_date;
+  if (data.notes !== undefined) updates.notes = String(data.notes).trim();
+  if (data.package_status !== undefined) updates.package_status = data.package_status;
+  else if (data.status !== undefined) updates.package_status = data.status;
+  updates.updated_at = new Date().toISOString();
+
+  _pkgRepo.Packages_update(spreadsheet, packageId, updates);
+
+  if (_pkgAudit && _pkgAudit.recordAuditEvent) {
+    _pkgAudit.recordAuditEvent(spreadsheet, _pkgReg, _pkgMap, {
+      actor_id: actor ? actor.actorId : 'SYSTEM',
+      actor_email: actor ? actor.email : '',
+      entity_type: 'PACKAGE',
+      entity_id: packageId,
+      action: 'UPDATE',
+      after_summary: updates,
+      request_id: actor ? actor.requestId : ''
+    });
+  }
+
+  return { success: true, data: Packages_enrichWithBalance(spreadsheet, Object.assign({}, existing, updates)) };
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     Packages_create: Packages_create,
+    Packages_update: Packages_update,
     Packages_enrichWithBalance: Packages_enrichWithBalance
   };
 }

@@ -19,6 +19,7 @@ export interface StudentRowProps {
   balance: { totalPurchased: number; totalConsumed: number; packages: Package[] };
   financials: StudentFinancialInfo;
   meetingLink?: any;
+  onAutoSchedule?: (student: Student) => void;
 }
 
 const cellEllipsis: React.CSSProperties = {
@@ -40,6 +41,7 @@ export const StudentRow: React.FC<StudentRowProps> = ({
   balance,
   financials,
   meetingLink,
+  onAutoSchedule,
 }) => {
   const scheduleText = formatWeeklySchedule(schedule);
   const classBalanceText = formatClassBalance(balance.totalConsumed, balance.totalPurchased);
@@ -122,8 +124,10 @@ export const StudentRow: React.FC<StudentRowProps> = ({
               meetingLink={meetingLink}
               balance={balance}
               financials={financials}
+              schedule={schedule}
               onEditStudent={onEditStudent}
               onSelectStudent={onSelectStudent}
+              onAutoSchedule={onAutoSchedule}
             />
           </td>
         </tr>
