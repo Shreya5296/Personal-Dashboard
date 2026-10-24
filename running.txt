@@ -510,3 +510,24 @@ NEXT ACTION
     - Strict TypeScript check (tsc --noEmit): 0 errors.
     - Production Vite build: 511ms clean build, 0 warnings.
     - Playwright E2E suites: 16/16 passed in 30.4s.
+- Blank Screen Startup Recovery completed:
+  * 1. Diagnosis and Root Cause Identification:
+    - Reproduced startup failure on http://localhost:5173 using Playwright and Chromium.
+    - Captured uncaught exception: 'RangeError: Invalid time value at Date.toISOString (<anonymous>) at getDateKeyInTz (DashboardCalendar.tsx:35:14)'.
+    - Root cause: Live Google Sheet returned ISO timestamp strings with space-padded single-digit hours (e.g. '2026-10-24T 4:38:00.000Z'). Date constructor produced an Invalid Date, which caused Intl.DateTimeFormat to fail, and the catch fallback called d.toISOString(), throwing an uncaught RangeError.
+    - Absence of an ErrorBoundary caused React to unmount the entire component tree, leaving the user with a blank white page while keeping the browser tab title.
+  * 2. Resilient Date Parsing and Normalization:
+    - Added parseClassDate in DashboardCalendar.tsx and parseIsoDate helper in dateFormat.ts normalizing space-padded hours (/T\s+(\d:)/ -> 'T0$1') and returning null safely on invalid date values.
+    - Protected getDateKeyInTz against Invalid Date objects, avoiding unsafe .toISOString() calls.
+    - Deduplicated React child keys across calendar day cards and upcoming follow-ups using compound keys (${id}_${student_id}_${idx}).
+  * 3. Top-Level Error Boundary:
+    - Implemented ErrorBoundary.tsx (82 lines) with accessible fallback UI, diagnostic logging, and 'Reload Application' recovery button.
+    - Wrapped root React tree in ErrorBoundary in App.tsx.
+  * 4. Testing and Quality Gates:
+    - Added tests/frontend/dashboardCalendarSafety.test.ts (2 unit tests) verifying space-padded hours and invalid dates do not throw.
+    - Verified real browser startup at http://localhost:5173, confirming Administrative Dashboard rendered, calendar cards loaded, and page reloads cleanly.
+    - Unit tests: 167/167 passing across 32 test files (Vitest).
+    - Line limit policy strictly verified: 141/141 files in src/ and public/ <= 149 lines (PASS).
+    - Strict TypeScript check (tsc --noEmit): 0 errors.
+    - Production Vite build: clean build, 0 warnings.
+    - Playwright E2E suites: 16/16 passed.

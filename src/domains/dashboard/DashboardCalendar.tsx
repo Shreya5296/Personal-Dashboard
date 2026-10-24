@@ -18,11 +18,19 @@ function getMonday(d: Date): Date {
   return date;
 }
 
-function getDateKeyInTz(d: Date, timeZone: string): string {
+function parseClassDate(raw: string | null | undefined): Date | null {
+  if (!raw) return null;
+  const clean = String(raw).trim().replace(/T\s+(\d:)/, 'T0$1');
+  const d = new Date(clean);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function getDateKeyInTz(d: Date | null, timeZone: string): string {
+  if (!d || isNaN(d.getTime())) return '';
   try {
     return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
   } catch {
-    return d.toISOString().slice(0, 10);
+    return '';
   }
 }
 
@@ -75,8 +83,9 @@ export const DashboardCalendar: React.FC<DashboardCalendarProps> = ({ classes })
 
             const dayClasses = classes.filter((c) => {
               const start = c.start_time || c.scheduled_start;
-              if (!start) return false;
-              return getDateKeyInTz(new Date(start), activeTz) === dayKey;
+              const parsed = parseClassDate(start);
+              if (!parsed) return false;
+              return getDateKeyInTz(parsed, activeTz) === dayKey;
             });
 
             return (
@@ -89,13 +98,14 @@ export const DashboardCalendar: React.FC<DashboardCalendarProps> = ({ classes })
                   {dayClasses.length === 0 ? (
                     <span className={styles.emptyDay}>No classes</span>
                   ) : (
-                    dayClasses.map((c) => {
+                    dayClasses.map((c, idx) => {
                       const startTime = c.start_time || c.scheduled_start;
                       const timeStr = formatTimeOnly(startTime, activeTz);
                       const studentName = c.student_name || c.student_id;
                       const topic = c.topic || c.class_title || 'Class Session';
+                      const cardKey = `${c.session_id || c.class_session_id || 'cls'}_${c.student_id || idx}_${idx}`;
                       return (
-                        <div key={c.session_id || c.class_session_id || Math.random()} className={styles.classCard}>
+                        <div key={cardKey} className={styles.classCard}>
                           <span className={styles.classTime}>
                             {timeStr} ({c.duration_minutes || 60}m)
                           </span>

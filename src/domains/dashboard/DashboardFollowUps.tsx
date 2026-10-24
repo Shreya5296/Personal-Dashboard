@@ -49,8 +49,8 @@ export const DashboardFollowUps: React.FC<DashboardFollowUpsProps> = ({
           </p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-            {upcomingClasses.map((c) => (
-              <div key={c.session_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid var(--color-border-subtle)' }}>
+            {upcomingClasses.map((c, idx) => (
+              <div key={`${c.session_id || 'cls'}_${c.student_id || ''}_${idx}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid var(--color-border-subtle)' }}>
                 <div>
                   <span style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)', display: 'block', color: 'var(--color-text-main)' }}>
                     {c.topic || 'Class Session'}
@@ -81,10 +81,10 @@ export const DashboardFollowUps: React.FC<DashboardFollowUpsProps> = ({
           </p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-            {pendingFees.map((f) => {
+            {pendingFees.map((f, idx) => {
               const badge = formatStatusBadge(f.status);
               return (
-                <div key={f.fee_id || f.fee_obligation_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid var(--color-border-subtle)' }}>
+                <div key={`${f.fee_id || f.fee_obligation_id || 'fee'}_${f.student_id || ''}_${idx}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid var(--color-border-subtle)' }}>
                   <div>
                     <span style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)', display: 'block', color: 'var(--color-text-main)' }}>
                       {f.description}

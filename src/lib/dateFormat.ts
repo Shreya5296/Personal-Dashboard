@@ -1,10 +1,16 @@
 import { getSavedTimezone } from './userPreferences';
 
+function parseIsoDate(isoString: string | null | undefined): Date | null {
+  if (!isoString) return null;
+  const clean = String(isoString).trim().replace(/T\s+(\d:)/, 'T0$1');
+  const d = new Date(clean);
+  return isNaN(d.getTime()) ? null : d;
+}
+
 export function formatDate(isoString: string | null | undefined, timeZone?: string): string {
-  if (!isoString) return '—';
+  const date = parseIsoDate(isoString);
+  if (!date) return '—';
   try {
-    const date = new Date(isoString);
-    if (isNaN(date.getTime())) return '—';
     return new Intl.DateTimeFormat('en-IN', {
       timeZone: timeZone || getSavedTimezone(),
       day: '2-digit',
@@ -17,10 +23,9 @@ export function formatDate(isoString: string | null | undefined, timeZone?: stri
 }
 
 export function formatDateTime(isoString: string | null | undefined, timeZone?: string): string {
-  if (!isoString) return '—';
+  const date = parseIsoDate(isoString);
+  if (!date) return '—';
   try {
-    const date = new Date(isoString);
-    if (isNaN(date.getTime())) return '—';
     return new Intl.DateTimeFormat('en-IN', {
       timeZone: timeZone || getSavedTimezone(),
       day: '2-digit',
@@ -36,10 +41,9 @@ export function formatDateTime(isoString: string | null | undefined, timeZone?: 
 }
 
 export function formatTimeOnly(isoString: string | null | undefined, timeZone?: string): string {
-  if (!isoString) return '—';
+  const date = parseIsoDate(isoString);
+  if (!date) return '—';
   try {
-    const date = new Date(isoString);
-    if (isNaN(date.getTime())) return '—';
     return new Intl.DateTimeFormat('en-IN', {
       timeZone: timeZone || getSavedTimezone(),
       hour: '2-digit',
