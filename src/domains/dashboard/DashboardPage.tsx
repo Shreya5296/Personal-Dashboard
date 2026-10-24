@@ -6,7 +6,6 @@ import { generateAttentionAlerts } from './attentionAlerts';
 import { ThingsThatNeedAttention } from './ThingsThatNeedAttention';
 import { TodayClassesSection } from './TodayClassesSection';
 import { DashboardSummary } from './DashboardSummary';
-import { DashboardFollowUps } from './DashboardFollowUps';
 import { DashboardCalendar } from './DashboardCalendar';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { ErrorState } from '../../components/feedback/ErrorState';
@@ -26,7 +25,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
     classes,
     schedules,
     students,
-    fees,
     packages,
     meetingLinks,
     loading,
@@ -93,27 +91,27 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         </div>
       </div>
 
+      {/* Priority 1 & 2: Today's Classes with Imminent Class highlighted */}
+      <TodayClassesSection
+        classes={classes}
+        students={students}
+        meetingLinks={meetingLinks}
+      />
+
+      {/* Priority 3: Things That Need Attention */}
       <ThingsThatNeedAttention
         alerts={attentionAlerts}
         onNavigate={onNavigate}
         error={error}
       />
 
-      <TodayClassesSection
-        classes={classes}
-        schedules={schedules}
-        students={students}
-        meetingLinks={meetingLinks}
-      />
-
+      {/* Weekly Class Schedule Calendar */}
       <DashboardCalendar
         classes={classes}
         schedules={schedules}
         students={students}
         onRefresh={refreshData}
       />
-
-      <DashboardFollowUps classes={classes} fees={fees} onNavigate={onNavigate} />
     </div>
   );
 };

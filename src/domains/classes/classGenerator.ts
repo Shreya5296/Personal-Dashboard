@@ -67,6 +67,7 @@ export function generateProposedSessions(
       for (const ex of existingSessions) {
         const exStart = ex.scheduled_start || ex.start_time;
         if (!exStart) continue;
+        if (ex.session_status === 'CANCELLED' || ex.status === 'CANCELLED') continue;
 
         if (ex.student_id === studentId && exStart.slice(0, 16) === scheduledStart.slice(0, 16)) {
           isDuplicate = true;

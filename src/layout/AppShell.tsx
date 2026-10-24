@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import styles from './layout.module.css';
 import { Sidebar, NavSection } from './Sidebar';
 import { TopBar } from './TopBar';
+import { SchedulingProgressToast } from '../components/feedback/SchedulingProgressToast';
 
 export interface AppShellProps {
   activeSection: NavSection;
@@ -30,6 +31,7 @@ export const AppShell: React.FC<AppShellProps> = ({
           onNavigate={onNavigate}
         />
         <main className={styles.content}>{children}</main>
+        <SchedulingProgressToast />
       </div>
     </div>
   );

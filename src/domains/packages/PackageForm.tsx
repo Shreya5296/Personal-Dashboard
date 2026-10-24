@@ -4,6 +4,7 @@ import { FormField } from '../../components/forms/FormField';
 import { Button } from '../../components/buttons/Button';
 import { toInputDateFormat } from '../../lib/dateFormat';
 import formStyles from '../../components/forms/forms.module.css';
+import { calculatePerClassRate } from './packageCalculations';
 
 export interface PackageFormProps {
   studentId: string;
@@ -24,15 +25,19 @@ export const PackageForm: React.FC<PackageFormProps> = ({
   const [price, setPrice] = useState(10000);
   const [startDate, setStartDate] = useState(toInputDateFormat());
 
+  const autoRate = calculatePerClassRate(price, totalClasses);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await onSubmit({
       student_id: studentId,
       package_name: packageName.trim(),
       total_classes: Number(totalClasses),
+      classes_purchased: Number(totalClasses),
       class_duration: classDuration,
       duration_minutes: classDuration,
       price: Number(price),
+      per_class: autoRate,
       start_date: startDate,
     });
   };
@@ -73,7 +78,7 @@ export const PackageForm: React.FC<PackageFormProps> = ({
         </FormField>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-3)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--space-3)' }}>
         <FormField label="Price (₹ INR)">
           <input
             className={formStyles.input}
@@ -82,6 +87,16 @@ export const PackageForm: React.FC<PackageFormProps> = ({
             step="any"
             value={price}
             onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
+          />
+        </FormField>
+        <FormField label="Per-Class Rate (Calculated)">
+          <input
+            className={formStyles.input}
+            type="text"
+            readOnly
+            value={autoRate > 0 ? `₹ ${autoRate}` : 'Calculated automatically'}
+            disabled
+            style={{ backgroundColor: 'var(--color-bg-subtle)', cursor: 'not-allowed' }}
           />
         </FormField>
         <FormField label="Start Date" required>

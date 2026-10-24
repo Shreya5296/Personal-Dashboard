@@ -36,8 +36,8 @@ export const FinanceSummaryCards: React.FC<FinanceSummaryCardsProps> = ({ summar
 
         <div style={cardStyle}>
           <span style={labelStyle}>Total Outstanding</span>
-          <div style={{ ...amountStyle, color: outstanding > 0 ? '#dc2626' : 'var(--color-text-main)' }}>
-            {formatCurrency(outstanding)}
+          <div style={{ ...amountStyle, color: outstanding > 0 ? '#dc2626' : 'var(--color-text-muted)' }}>
+            {outstanding > 0 ? formatCurrency(outstanding) : 'NIL'}
           </div>
           <p style={descStyle}>Uncollected Balance</p>
         </div>

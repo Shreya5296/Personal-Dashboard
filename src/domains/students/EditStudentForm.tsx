@@ -87,6 +87,10 @@ export const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, onSuc
       setServerError('Please select a First Class Date to automatically schedule sessions.');
       return;
     }
+    if ((studentData.status === 'INACTIVE' || studentData.status === 'ARCHIVED') && schedules.length > 0) {
+      setServerError('Cannot set student to Inactive: Student has active recurring schedules. Please remove all recurring schedule entries in Section 4 before deactivating.');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -109,7 +113,15 @@ export const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, onSuc
       {serverError && <div style={{ padding: '0.75rem 1rem', backgroundColor: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)', borderRadius: 'var(--radius-md)', color: 'var(--color-danger-text)', fontSize: 'var(--font-size-sm)' }}>⚠️ {serverError}</div>}
       <EditStudentPersonalSection values={studentData} errors={errors} onChange={(f, v) => setStudentData((p) => ({ ...p, [f]: v }))} disabled={isSubmitting} />
       <EditStudentLinksSection meetingLink1={meetingLinks.link1} meetingLink2={meetingLinks.link2} errors={errors} onChange={(f, v) => setMeetingLinks((p) => ({ ...p, [f === 'meeting_link_1' ? 'link1' : 'link2']: v }))} disabled={isSubmitting} />
-      <EditStudentPackageSection existingPackage={existingPkg} values={packageData} errors={errors} onChange={handlePackageChange} disabled={isSubmitting} />
+      <EditStudentPackageSection
+        existingPackage={existingPkg}
+        values={packageData}
+        errors={errors}
+        onChange={handlePackageChange}
+        firstClassDate={firstClassDate || existingPkg?.start_date}
+        schedules={schedules}
+        disabled={isSubmitting}
+      />
       <ScheduleDetailsSection
         schedules={schedules}
         classDuration={packageData.class_duration}

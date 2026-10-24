@@ -16,6 +16,7 @@ export const ClassesPage: React.FC = () => {
   const { token } = useAuth();
   const [isScheduling, setIsScheduling] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudentId, setSelectedStudentId] = useState('');
@@ -26,10 +27,13 @@ export const ClassesPage: React.FC = () => {
 
   const handleScheduleSubmit = async (input: ClassSessionInput) => {
     setFormLoading(true);
+    setScheduleError(null);
     try {
       await scheduleClass(input, token);
       setIsScheduling(false);
       setRefreshKey((k) => k + 1);
+    } catch (err: unknown) {
+      setScheduleError((err as Error).message || 'Failed to schedule class session');
     } finally {
       setFormLoading(false);
     }
@@ -103,9 +107,14 @@ export const ClassesPage: React.FC = () => {
           <h3 style={{ margin: '0 0 var(--space-4)', fontSize: 'var(--font-size-base)', fontWeight: 600 }}>
             Schedule New Class Session
           </h3>
+          {scheduleError && (
+            <div style={{ padding: '0.75rem 1rem', backgroundColor: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)', borderRadius: 'var(--radius-md)', color: 'var(--color-danger-text)', fontSize: 'var(--font-size-sm)', marginBottom: 'var(--space-3)' }}>
+              ⚠️ {scheduleError}
+            </div>
+          )}
           <ClassSessionForm
             onSubmit={handleScheduleSubmit}
-            onCancel={() => setIsScheduling(false)}
+            onCancel={() => { setIsScheduling(false); setScheduleError(null); }}
             isLoading={formLoading}
           />
         </div>

@@ -34,6 +34,7 @@ export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
   const [activeTab, setActiveTab] = useState<TabType>('packages');
   const [isArchiving, setIsArchiving] = useState(false);
   const [showConfirmArchive, setShowConfirmArchive] = useState(false);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
   const [credits, setCredits] = useState<CurrencyCreditSummary[]>([]);
 
   useEffect(() => {
@@ -54,6 +55,7 @@ export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
   const handleToggleArchive = async () => {
     const isInactive = student.status === 'INACTIVE';
     setIsArchiving(true);
+    setArchiveError(null);
     try {
       const res = isInactive
         ? await reactivateStudent(student.student_id, token)
@@ -61,6 +63,8 @@ export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
       const updated = { ...student, ...res, status: isInactive ? 'ACTIVE' : 'INACTIVE' };
       if (onUpdate) onUpdate(updated);
       setShowConfirmArchive(false);
+    } catch (err: unknown) {
+      setArchiveError((err as Error).message || 'Failed to update student status');
     } finally {
       setIsArchiving(false);
     }
@@ -125,12 +129,12 @@ export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
       <ConfirmDialog
         isOpen={showConfirmArchive}
         title={`${isInactive ? 'Reactivate' : 'Archive'} Student Record?`}
-        message={`Are you sure you want to ${actionWord} ${student.student_name || student.full_name}? ${isInactive ? 'They will reappear in active directories.' : 'They will be moved to inactive records.'}`}
+        message={archiveError ? `⚠️ ${archiveError}` : `Are you sure you want to ${actionWord} ${student.student_name || student.full_name}? ${isInactive ? 'They will reappear in active directories.' : 'They will be moved to inactive records.'}`}
         confirmLabel={isInactive ? 'Reactivate' : 'Archive'}
         isDestructive={!isInactive}
         isLoading={isArchiving}
         onConfirm={handleToggleArchive}
-        onCancel={() => setShowConfirmArchive(false)}
+        onCancel={() => { setShowConfirmArchive(false); setArchiveError(null); }}
       />
     </div>
   );

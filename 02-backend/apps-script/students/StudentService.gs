@@ -12,6 +12,8 @@ var _stuRepo = typeof Students_getAll === 'function' ? {
 } : (typeof require !== 'undefined' ? require('./StudentRepository.gs') : null);
 var _stuAudit = typeof recordAuditEvent === 'function' ? { recordAuditEvent: recordAuditEvent } : (typeof require !== 'undefined' ? require('../audit/AuditService.gs') : null);
 var _stuLock = typeof withLock === 'function' ? { withLock: withLock } : (typeof require !== 'undefined' ? require('../sheets/LockManager.gs') : null);
+var _stuSchedSvc = typeof Schedules_list === 'function' ? { Schedules_list: Schedules_list } : (typeof require !== 'undefined' ? require('../classes/ClassScheduleService.gs') : null);
+var _stuClsRepo = typeof Classes_getAll === 'function' ? { Classes_getAll: Classes_getAll } : (typeof require !== 'undefined' ? require('../classes/ClassRepository.gs') : null);
 var _stuReg = {
   get SHEET_NAMES() {
     if (typeof SHEET_NAMES !== 'undefined' && SHEET_NAMES) return SHEET_NAMES;
@@ -25,6 +27,37 @@ var _stuReg = {
   }
 };
 var _stuMap = typeof createHeaderMap === 'function' ? { createHeaderMap: createHeaderMap, rowToRecord: rowToRecord, recordToRow: recordToRow } : (typeof require !== 'undefined' ? require('../sheets/HeaderMapper.gs') : null);
+
+function _hasActiveSchedulesOrSessions(spreadsheet, studentId) {
+  if (_stuSchedSvc && _stuSchedSvc.Schedules_list) {
+    try {
+      var res = _stuSchedSvc.Schedules_list(spreadsheet, studentId);
+      var scheds = res && res.data ? res.data : [];
+      if (scheds && scheds.length > 0 && scheds.some(function(s) { return s.is_active !== false && String(s.is_active) !== 'false'; })) {
+        return { hasActive: true, reason: 'recurring schedules' };
+      }
+    } catch (e) {}
+  }
+  if (_stuClsRepo && _stuClsRepo.Classes_getAll) {
+    try {
+      var sessions = _stuClsRepo.Classes_getAll(spreadsheet);
+      var nowTime = new Date().getTime() - 60000;
+      for (var i = 0; i < sessions.length; i++) {
+        var c = sessions[i];
+        if (c.student_id === studentId) {
+          var status = c.session_status || c.status;
+          if (status === 'SCHEDULED') {
+            var start = c.scheduled_start || c.start_time;
+            if (start && new Date(start).getTime() >= nowTime) {
+              return { hasActive: true, reason: 'active future class sessions' };
+            }
+          }
+        }
+      }
+    } catch (e) {}
+  }
+  return { hasActive: false };
+}
 
 function Students_enrich(s) {
   if (!s) return s;
@@ -182,6 +215,17 @@ function Students_update(spreadsheet, studentId, updates, actor) {
     safeUpdates.status = String(normalized.student_status).trim();
   }
 
+  if (safeUpdates.status === 'INACTIVE' || safeUpdates.status === 'ARCHIVED') {
+    var activeCheck = _hasActiveSchedulesOrSessions(spreadsheet, studentId);
+    if (activeCheck.hasActive) {
+      return {
+        success: false,
+        code: 'ACTIVE_SCHEDULE_EXISTS',
+        message: 'Cannot deactivate student: Student has ' + activeCheck.reason + '. Please cancel or remove all future sessions and recurring schedules before setting student to inactive.'
+      };
+    }
+  }
+
   safeUpdates.updated_at = new Date().toISOString();
 
   var updated = _stuRepo.Students_update(spreadsheet, studentId, safeUpdates);
@@ -204,6 +248,14 @@ function Students_archive(spreadsheet, studentId, actor) {
   var existing = _stuRepo.Students_getById(spreadsheet, studentId);
   if (!existing) {
     return { success: false, code: 'RECORD_NOT_FOUND', message: 'Student not found: ' + studentId };
+  }
+  var activeCheck = _hasActiveSchedulesOrSessions(spreadsheet, studentId);
+  if (activeCheck.hasActive) {
+    return {
+      success: false,
+      code: 'ACTIVE_SCHEDULE_EXISTS',
+      message: 'Cannot deactivate student: Student has ' + activeCheck.reason + '. Please cancel or remove all future sessions and recurring schedules before setting student to inactive.'
+    };
   }
   var now = new Date().toISOString();
   var updated = _stuRepo.Students_update(spreadsheet, studentId, {

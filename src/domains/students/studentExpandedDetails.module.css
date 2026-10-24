@@ -1,34 +1,79 @@
 .container {
-  padding: var(--space-4) var(--space-5);
-  background-color: #f8fafc;
+  padding: 1.25rem 1.5rem;
+  background-color: var(--color-bg-surface);
   border-top: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--color-border-subtle);
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   font-size: var(--font-size-xs);
 }
 
+.identityBanner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.studentMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.studentName {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+.idBadge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background-color: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-subtle);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+}
+
+.subjectBadge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-primary);
+  background-color: var(--color-primary-bg);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
 .detailsGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
-.card {
-  min-width: 0;
-  background-color: var(--color-bg-surface);
+.section {
+  background-color: var(--color-bg-base);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
-  padding: 0.875rem 1rem;
+  padding: 0.75rem 0.875rem;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
 }
 
 .heading {
   font-weight: 600;
-  font-size: 11px;
+  font-size: 10.5px;
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .textWrap {

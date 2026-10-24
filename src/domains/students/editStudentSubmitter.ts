@@ -7,7 +7,7 @@ import { updateStudent } from './studentApi';
 import { createMeetingLink } from '../meeting-links/meetingLinkApi';
 import { createPackage, updatePackage } from '../packages/packageApi';
 import { calculateEndTime } from '../classes/scheduleDurationCalculator';
-import { executeAutoSchedule } from './autoScheduleHelper';
+import { startAsyncScheduling } from './asyncScheduleWorker';
 
 export interface SubmitEditStudentParams {
   student: Student;
@@ -100,18 +100,17 @@ export async function submitEditStudent(params: SubmitEditStudentParams): Promis
   let successMessage = 'Student details saved successfully';
 
   if (autoSchedule && firstClassDate && schedsToSave.length > 0) {
-    const autoResult = await executeAutoSchedule({
-      student: updatedStu,
+    startAsyncScheduling({
+      studentId: updatedStu.student_id,
+      studentName: updatedStu.student_name,
       packageId: currentPkgId,
-      schedules: schedsToSave,
       firstClassDate,
+      schedules: schedsToSave,
       durationMinutes: durNum,
       classesPurchased: Number(packageData.classes_purchased) || undefined,
       token,
     });
-    if (autoResult.createdCount > 0) {
-      successMessage = `Student details saved. ${autoResult.message}`;
-    }
+    successMessage = 'Class schedule saved. Scheduling classes now…';
   }
 
   return { updatedStudent: updatedStu, successMessage };

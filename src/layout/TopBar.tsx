@@ -2,7 +2,6 @@ import React from 'react';
 import styles from './topBar.module.css';
 import { useAuth } from '../auth/AuthProvider';
 import { MenuIcon } from '../components/icons/ActionIcons';
-import { AccountDropdown } from './AccountDropdown';
 import { NavSection } from './Sidebar';
 import { useLiveHeaderTime } from './useLiveHeaderTime';
 
@@ -11,7 +10,7 @@ export interface TopBarProps {
   onNavigate?: (section: NavSection) => void;
 }
 
-export const TopBar: React.FC<TopBarProps> = ({ onToggleMenu, onNavigate }) => {
+export const TopBar: React.FC<TopBarProps> = ({ onToggleMenu }) => {
   const { user } = useAuth();
   const { dateStr, timeStr } = useLiveHeaderTime();
 
@@ -31,21 +30,17 @@ export const TopBar: React.FC<TopBarProps> = ({ onToggleMenu, onNavigate }) => {
           </button>
         )}
 
-        <div className={styles.greetingGroup}>
-          <span className={styles.welcomeText}>
-            Welcome Back {displayName}!
-          </span>
-
-          <div className={styles.dateTimeWrapper} aria-label="Current date and time">
-            <span>{dateStr}</span>
-            <span>•</span>
-            <span className={styles.timeValue}>{timeStr}</span>
-          </div>
-        </div>
+        <span className={styles.welcomeText}>
+          Welcome Back {displayName}!
+        </span>
       </div>
 
       <div className={styles.rightGroup}>
-        {user && <AccountDropdown onNavigate={onNavigate} />}
+        <div className={styles.dateTimeWrapper} aria-label="Current date and time">
+          <span className={styles.dateLabel}>{dateStr}</span>
+          <span className={styles.dateDot}>•</span>
+          <span className={styles.timeValue}>{timeStr}</span>
+        </div>
       </div>
     </header>
   );

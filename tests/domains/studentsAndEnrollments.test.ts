@@ -226,4 +226,38 @@ describe('Phase 5 — Students and Enrollments Domain Services', () => {
     const noMatch = StudentService.Students_list(spreadsheet, { query: 'nonexistent' });
     expect(noMatch.data.length).toBe(0);
   });
+
+  it('blocks deactivating or archiving student when active schedules exist', () => {
+    const created = StudentService.Students_create(spreadsheet, {
+      student_name: 'Scheduled Student',
+      parent_name: 'Parent',
+      parent_phone: '9876543210',
+      parent_email: 'p@test.com',
+    }, actor);
+    const stuId = created.data.student_id;
+
+    // Simulate an active recurring schedule
+    // @ts-ignore
+    const ClassScheduleService = require('../../02-backend/apps-script/classes/ClassScheduleService.gs');
+    ClassScheduleService.Schedules_save(spreadsheet, stuId, [
+      { day_of_week: 'MONDAY', start_time: '16:00', end_time: '17:00' }
+    ], actor);
+
+    // Attempting to set status to INACTIVE must be blocked
+    const updateRes = StudentService.Students_update(spreadsheet, stuId, { status: 'INACTIVE' }, actor);
+    expect(updateRes.success).toBe(false);
+    expect(updateRes.code).toBe('ACTIVE_SCHEDULE_EXISTS');
+    expect(updateRes.message).toContain('recurring schedules');
+
+    // Attempting to archive student must also be blocked
+    const archiveRes = StudentService.Students_archive(spreadsheet, stuId, actor);
+    expect(archiveRes.success).toBe(false);
+    expect(archiveRes.code).toBe('ACTIVE_SCHEDULE_EXISTS');
+
+    // After removing schedules, deactivation succeeds
+    ClassScheduleService.Schedules_save(spreadsheet, stuId, [], actor);
+    const validDeactivate = StudentService.Students_update(spreadsheet, stuId, { status: 'INACTIVE' }, actor);
+    expect(validDeactivate.success).toBe(true);
+    expect(validDeactivate.data.status).toBe('INACTIVE');
+  });
 });

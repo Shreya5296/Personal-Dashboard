@@ -7,7 +7,7 @@ import { fetchStudents } from './studentApi';
 import { StudentSearch } from './StudentSearch';
 import { StudentList } from './StudentList';
 import { EditStudentModal } from './EditStudentModal';
-import { StudentRegistrationForm } from './StudentRegistrationForm';
+import { AddStudentModal } from './AddStudentModal';
 import { StudentProfilePage } from './StudentProfilePage';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { ErrorState } from '../../components/feedback/ErrorState';
@@ -109,10 +109,10 @@ export const StudentsPage: React.FC = () => {
       </div>
 
       {isCreating && (
-        <div style={{ backgroundColor: 'var(--color-bg-surface)', padding: '1.5rem', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-subtle)', marginBottom: 'var(--space-6)', boxShadow: 'var(--shadow-sm)' }}>
-          <h3 style={{ margin: '0 0 var(--space-4)', fontSize: 'var(--font-size-base)', fontWeight: 600 }}>New Student Registration</h3>
-          <StudentRegistrationForm onSuccess={handleRegistrationSuccess} onCancel={() => setIsCreating(false)} />
-        </div>
+        <AddStudentModal
+          onSuccess={handleRegistrationSuccess}
+          onClose={() => setIsCreating(false)}
+        />
       )}
 
       {editingStudent && (

@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { PackageDetails } from './registrationTypes';
 import { FormField } from '../../components/forms/FormField';
 import formStyles from '../../components/forms/forms.module.css';
+import { calculatePerClassRate } from '../packages/packageCalculations';
 
-const PLAN_TYPES = ['Package', 'Per Class', 'Hourly', 'Monthly'];
+const PLAN_TYPES = ['Package', 'Annual / Early Childhood', 'Per Class', 'Hourly', 'Monthly'];
 const CURRENCIES = ['INR', 'USD', 'GBP', 'EUR', 'CAD', 'AUD', 'SGD', 'AED'];
 const DURATION_OPTIONS = [
   { value: '30', label: '30 minutes' },
@@ -24,6 +25,14 @@ export const PackageDetailsSection: React.FC<PackageDetailsSectionProps> = ({
   onChange,
   disabled = false,
 }) => {
+  const autoRate = calculatePerClassRate(values.package_price, values.classes_purchased);
+
+  useEffect(() => {
+    if (autoRate > 0 && String(autoRate) !== values.per_class) {
+      onChange('per_class', String(autoRate));
+    }
+  }, [autoRate]);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
       <h4 style={{ margin: 0, fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--color-text-main)', borderBottom: '1px solid var(--color-border-subtle)', paddingBottom: '6px' }}>
@@ -86,18 +95,6 @@ export const PackageDetailsSection: React.FC<PackageDetailsSectionProps> = ({
             disabled={disabled}
           />
         </FormField>
-        <FormField label="Per Class Rate" error={errors?.per_class}>
-          <input
-            type="number"
-            min="0"
-            step="any"
-            className={`${formStyles.input} ${errors?.per_class ? formStyles.inputError : ''}`}
-            placeholder="e.g. 500"
-            value={values.per_class}
-            onChange={(e) => onChange('per_class', e.target.value)}
-            disabled={disabled}
-          />
-        </FormField>
         <FormField label="Classes Purchased" error={errors?.classes_purchased}>
           <input
             type="number"
@@ -108,6 +105,16 @@ export const PackageDetailsSection: React.FC<PackageDetailsSectionProps> = ({
             value={values.classes_purchased}
             onChange={(e) => onChange('classes_purchased', e.target.value)}
             disabled={disabled}
+          />
+        </FormField>
+        <FormField label="Per-Class Rate (Calculated)">
+          <input
+            type="text"
+            readOnly
+            className={formStyles.input}
+            value={autoRate > 0 ? `${values.currency} ${autoRate}` : 'Calculated automatically'}
+            disabled
+            style={{ backgroundColor: 'var(--color-bg-subtle)', cursor: 'not-allowed' }}
           />
         </FormField>
       </div>

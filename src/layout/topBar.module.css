@@ -16,7 +16,7 @@
 .leftGroup {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-3);
   min-width: 0;
 }
 
@@ -31,13 +31,6 @@
   flex-shrink: 0;
 }
 
-.greetingGroup {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  min-width: 0;
-}
-
 .welcomeText {
   font-size: var(--font-size-base);
   font-weight: 700;
@@ -48,6 +41,13 @@
   text-overflow: ellipsis;
 }
 
+.rightGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
 .dateTimeWrapper {
   display: flex;
   align-items: center;
@@ -56,21 +56,12 @@
   color: var(--color-text-muted);
   font-weight: 500;
   white-space: nowrap;
-  padding-left: var(--space-3);
-  border-left: 1px solid var(--color-border-subtle);
 }
 
 .timeValue {
   font-family: var(--font-mono);
   color: var(--color-primary);
   font-weight: 600;
-}
-
-.rightGroup {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  flex-shrink: 0;
 }
 
 @media (max-width: 900px) {
@@ -81,20 +72,22 @@
   }
 }
 
-@media (max-width: 768px) {
-  .dateTimeWrapper {
+@media (max-width: 640px) {
+  .dateLabel,
+  .dateDot {
     display: none;
   }
   .welcomeText {
     font-size: var(--font-size-sm);
+    max-width: 180px;
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 400px) {
   .topBar {
     padding: 0.75rem 0.875rem;
   }
   .welcomeText {
-    max-width: 140px;
+    max-width: 130px;
   }
 }

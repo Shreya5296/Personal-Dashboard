@@ -53,34 +53,85 @@ function Classes_schedule(spreadsheet, data, actor) {
     deduct_class: false
   };
 
-  _clsRepo.Classes_insert(spreadsheet, record);
+  var lockFn = _clsLock && _clsLock.withLock ? _clsLock.withLock : function(t, fn) { return { success: true, result: fn() }; };
+  var lockRes = lockFn(10000, function() {
+    var allSessions = _clsRepo.Classes_getAll(spreadsheet) || [];
+    var newStartMs = new Date(normalized.scheduled_start).getTime();
+    var newEndMs = new Date(normalized.scheduled_end).getTime();
 
-  _sessionMetaMap[id] = {
-    package_id: normalized.package_id || '',
-    class_title: title
-  };
+    for (var i = 0; i < allSessions.length; i++) {
+      var s = allSessions[i];
+      var sStatus = s.session_status || s.status;
+      if (sStatus === 'CANCELLED') continue;
 
-  if (_clsAudit && _clsAudit.recordAuditEvent) {
-    _clsAudit.recordAuditEvent(spreadsheet, _clsReg, _clsMap, {
-      actor_id: actor ? actor.actorId : 'SYSTEM',
-      actor_email: actor ? actor.email : '',
-      entity_type: 'CLASS_SESSION',
-      entity_id: id,
-      action: 'SCHEDULE',
-      after_summary: { class_session_id: id, start: record.scheduled_start },
-      request_id: actor ? actor.requestId : ''
+      var exStart = s.scheduled_start || s.start_time;
+      if (!exStart) continue;
+      var exEnd = s.scheduled_end;
+      if (!exEnd) {
+        var dur = Number(s.duration_minutes) || 60;
+        exEnd = new Date(new Date(exStart).getTime() + dur * 60000).toISOString();
+      }
+
+      var exStartMs = new Date(exStart).getTime();
+      var exEndMs = new Date(exEnd).getTime();
+
+      // Interval overlap check: [S1, E1) and [S2, E2) overlap iff S1 < E2 and S2 < E1
+      if (newStartMs < exEndMs && exStartMs < newEndMs) {
+        var confStu = _clsStuRepo && _clsStuRepo.Students_getById ? _clsStuRepo.Students_getById(spreadsheet, s.student_id) : null;
+        var confName = (confStu && (confStu.student_name || confStu.full_name)) || s.student_id;
+        return {
+          success: false,
+          code: 'SCHEDULING_CONFLICT',
+          message: 'Scheduling conflict: A class is already scheduled from ' + exStart + ' to ' + exEnd + ' for ' + confName + ' (' + s.student_id + '). Overlapping intervals are not allowed.'
+        };
+      }
+    }
+
+    _clsRepo.Classes_insert(spreadsheet, record);
+
+    _sessionMetaMap[id] = {
+      package_id: normalized.package_id || '',
+      class_title: title
+    };
+
+    if (_clsAudit && _clsAudit.recordAuditEvent) {
+      _clsAudit.recordAuditEvent(spreadsheet, _clsReg, _clsMap, {
+        actor_id: actor ? actor.actorId : 'SYSTEM',
+        actor_email: actor ? actor.email : '',
+        entity_type: 'CLASS_SESSION',
+        entity_id: id,
+        action: 'SCHEDULE',
+        after_summary: { class_session_id: id, start: record.scheduled_start },
+        request_id: actor ? actor.requestId : ''
+      });
+    }
+
+    return Object.assign({}, record, {
+      class_title: title,
+      topic: title,
+      package_id: data.package_id || '',
+      duration_minutes: data.duration_minutes || 60,
+      class_credit_effect: 'PENDING'
     });
-  }
-
-  var returnRecord = Object.assign({}, record, {
-    class_title: title,
-    topic: title,
-    package_id: data.package_id || '',
-    duration_minutes: data.duration_minutes || 60,
-    class_credit_effect: 'PENDING'
   });
 
-  return { success: true, data: returnRecord };
+  if (!lockRes.success) {
+    var errMsg = lockRes.message || 'Scheduling failed';
+    if (errMsg.indexOf('SCHED_CONFLICT:') !== -1) {
+      return {
+        success: false,
+        code: 'SCHEDULING_CONFLICT',
+        message: errMsg.replace(/^.*SCHED_CONFLICT:/, '').trim()
+      };
+    }
+    return { success: false, code: 'CONFLICT', message: errMsg };
+  }
+
+  if (lockRes.result && lockRes.result.success === false) {
+    return lockRes.result;
+  }
+
+  return { success: true, data: lockRes.result };
 }
 
 function Classes_complete(spreadsheet, data, actor) {

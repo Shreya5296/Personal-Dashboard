@@ -3,6 +3,7 @@ export interface CalendarEventItem {
   studentId: string;
   studentName: string;
   topic: string;
+  subject: string;
   startIso: string;
   endIso: string;
   startTime12: string;
@@ -14,6 +15,10 @@ export interface CalendarEventItem {
   dateKey: string;
   isRecurring: boolean;
   status: string;
+  attendanceStatus?: string;
+  isPast?: boolean;
+  isCancelled?: boolean;
+  canJoin?: boolean;
   meetingUrl?: string;
 }
 

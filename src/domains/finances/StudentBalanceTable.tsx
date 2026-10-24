@@ -4,6 +4,7 @@ import { DataTable, Column } from '../../components/tables/DataTable';
 import { formatCurrency } from '../../lib/currencyFormat';
 import { formatDate } from '../../lib/dateFormat';
 import { EmptyState } from '../../components/feedback/EmptyState';
+import { formatOutstandingBalance } from '../../lib/balanceFormat';
 
 export interface StudentBalanceTableProps {
   records: StudentBalanceRecord[];
@@ -56,16 +57,16 @@ export const StudentBalanceTable: React.FC<StudentBalanceTableProps> = ({ record
       key: 'outstandingBalance',
       header: 'Outstanding Balance',
       render: (r) => {
-        const isDebt = r.outstandingBalance > 0;
+        const out = formatOutstandingBalance(r.outstandingBalance);
         return (
           <span
             style={{
               fontVariantNumeric: 'tabular-nums',
               fontWeight: 700,
-              color: isDebt ? '#dc2626' : '#059669',
+              color: out.color,
             }}
           >
-            {formatCurrency(r.outstandingBalance)}
+            {out.text}
           </span>
         );
       },

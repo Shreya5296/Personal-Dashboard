@@ -886,3 +886,61 @@ NEXT ACTION
     - Strict TypeScript check (tsc --noEmit): 0 errors (PASS).
     - Clean Vite production build in 586ms (PASS).
     - Playwright live tests passing (auth, cross-cutting responsiveness, visual layout).
+- Next Fix Batch — Package Logic, Scheduling Reliability, Calendar, and Global UI Polish completed & verified:
+  * 1. Automatic Package Expiry & Date Calculations:
+    - Removed manual editable Package Expiry Date field from student package forms.
+    - Created `packageCalculations.ts` calculating projected last class date based on first class date, recurring weekly schedules, and purchased class count.
+    - Handled multiple days per week, uneven weekly distributions, and partial-week final classes.
+    - Handled reschedule recalculations dynamically without mutating historical attendance.
+  * 2. Per-Class Rate & Yearly Class Count Calculations:
+    - Created `calculatePerClassRate` (Package price ÷ Classes purchased) with safe handling for zero/empty classes.
+    - Created `AnnualPackageMetricsCard.tsx` deriving yearly class counts from actual calendar year and weekdays without hardcoded 4 weeks/month assumption.
+    - Distinguished annual calendar-year counts from total package entitlement.
+  * 3. Responsive & Asynchronous Scheduling:
+    - Updated `editStudentSubmitter.ts` to save student, package, and recurring schedule first, displaying immediate feedback: "Class schedule saved. Scheduling classes now…".
+    - Returned user to interactive UI immediately while delegating session generation to non-blocking background worker (`asyncScheduleWorker.ts`, `asyncScheduleTypes.ts`).
+    - Added floating non-blocking progress indicator (`SchedulingProgressToast.tsx`) mounted in `AppShell.tsx` showing progress and final created/skipped/failed counts.
+    - Supported session recovery from localStorage to prevent duplicate sessions on page refresh.
+  * 4. Enforce Active Status for Scheduled Students:
+    - Updated backend `StudentService.gs`: `Students_update` and `Students_archive` invoke `_hasActiveSchedulesOrSessions`, blocking transitions to `INACTIVE` or archive with code `ACTIVE_SCHEDULE_EXISTS` and actionable error message if active recurring schedules or upcoming sessions exist.
+    - Added frontend pre-validation in `EditStudentForm.tsx` and `StudentProfilePage.tsx` explaining deactivation blocks clearly.
+  * 5. Improved Dashboard and Calendar Events:
+    - Calendar cards in `WeeklyTimeGrid.tsx`, `calendarGridBuilder.ts`, and `DashboardCalendar.tsx` display Student Name, Subject, 12-hour Start/End Time with AM/PM, and Join Class button when eligible meeting link exists.
+    - Removed 'Recurring Slot' as primary event title.
+    - Styled past classes with explicit attendance colors: Green for attended, Red for absent, Yellow for unrecorded. Preserved full legibility without date-based fading.
+    - Styled cancelled sessions with strike-through styling and disabled Join Class button.
+  * 6. Profile and Logout Relocated to Sidebar:
+    - Removed profile dropdown and logout control from top header.
+    - Added user identity (avatar, display name, email/role) and accessible `Logout` + `Settings` actions in dedicated bottom section of `Sidebar.tsx` (`sidebarFooter.module.css`).
+  * 7. Live Date and Time Relocated to Top-Right:
+    - Relocated live ticking date and 12-hour AM/PM time in `Asia/Kolkata` to far right of `TopBar.tsx`.
+    - Aligned greeting `Welcome Back <Username>!` to the left.
+    - Responsive layout prevents collisions on mobile viewports.
+  * 8. Reordered Dashboard Hierarchy:
+    - Reordered `DashboardPage.tsx`: (1) `TodayClassesSection`, (2) `ThingsThatNeedAttention`, (3) `DashboardCalendar`.
+    - `TodayClassesSection` features hero highlight card for the next imminent class with Join Class button, followed by other today's classes.
+    - Removed fee obligations section from Dashboard.
+  * 9. Add Student Modal Dialog:
+    - Created `AddStudentModal.tsx` matching `EditStudentModal.tsx` with centered dialog, backdrop, Escape key, body scroll lock, internal scrolling, and Cancel button.
+    - Updated `StudentsPage.tsx` to launch registration modal instead of rendering inline form.
+  * 10. Scheduling Conflict Prevention:
+    - Hardened backend `ClassService.gs`: concurrency lock checks interval overlap `[S1, E1)` and `[S2, E2)`. Authoritatively rejects overlapping sessions with code `SCHEDULING_CONFLICT` and detailed student/slot error message.
+    - Allows non-overlapping adjacent sessions.
+    - Added frontend validation in `classGenerator.ts` and `editStudentSubmitter.ts`.
+  * 11. Redesigned Class Schedule Page:
+    - `ClassSchedule.tsx` and `classScheduleColumns.tsx` display Student name, Weekday & Date, 12-hour Start/End time, Consumed vs Purchased classes, Join Class action, and attendance controls.
+    - Join Class strictly enabled only for today's date in `Asia/Kolkata` on active sessions with valid meeting link.
+  * 12. Display NIL for Zero Outstanding Balances:
+    - Implemented `formatOutstandingBalance` in `balanceFormat.ts`.
+    - Returns `NIL` in neutral grey (`#64748b`) when balance is zero or `<= 0`. Never displays `₹0` in green.
+    - Applied consistently across `StudentBalanceTable.tsx`, `FinanceSummaryCards.tsx`, and `StudentExpandedDetails.tsx`.
+  * 13. Cohesive Student Details Record:
+    - Redesigned `StudentExpandedDetails.tsx` and `studentExpandedDetails.module.css` into a single unified container with top identity banner and subtle internal dividers across all 6 sections.
+  * 14. Global UI/UX Consistency & Quality Gates:
+    - Aligned design tokens, typography, surfaces, and spacing across all pages.
+    - Apps Script backend deployed in-place to Version @35 on deployment ID `AKfycbx4d_VG4CsZIEAomX_OjNMuej06ktTYmKLME5ennLsI7mx3Fn5b-YBu9CRqe7NwrUVH3w`.
+    - Live Apps Script Web App responding normally (`doGet` and authenticated `doPost`).
+    - 270/270 Vitest tests passing across 45 test files (PASS).
+    - Source-file line limit check: all 197 files in `src/` and `public/` strictly <= 149 lines (PASS).
+    - Strict TypeScript check (`tsc --noEmit`): 0 errors (PASS).
+    - Clean Vite production build in 677ms (PASS).

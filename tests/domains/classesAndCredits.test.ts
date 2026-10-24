@@ -211,4 +211,49 @@ describe('Phase 5 — Classes, Credits, Meeting Links, and Notes', () => {
     expect(overview.success).toBe(true);
     expect(overview.data.activeStudentsCount).toBe(1);
   });
+
+  it('authoritatively blocks overlapping scheduling conflicts while allowing adjacent intervals', () => {
+    // 1. Initial valid class
+    const cls1 = ClassService.Classes_schedule(spreadsheet, {
+      student_id: studentId,
+      class_title: 'Math Class 1',
+      scheduled_start: '2026-11-02T15:00:00.000Z',
+      scheduled_end: '2026-11-02T16:00:00.000Z',
+      duration_minutes: 60,
+    }, actor);
+    expect(cls1.success).toBe(true);
+
+    // 2. Overlapping class (15:30 to 16:30) must be rejected
+    const overlap = ClassService.Classes_schedule(spreadsheet, {
+      student_id: studentId,
+      class_title: 'Math Class 2',
+      scheduled_start: '2026-11-02T15:30:00.000Z',
+      scheduled_end: '2026-11-02T16:30:00.000Z',
+      duration_minutes: 60,
+    }, actor);
+    expect(overlap.success).toBe(false);
+    expect(overlap.code).toBe('SCHEDULING_CONFLICT');
+    expect(overlap.message).toContain('already scheduled');
+
+    // 3. Exact duplicate (15:00 to 16:00) must be rejected
+    const dup = ClassService.Classes_schedule(spreadsheet, {
+      student_id: studentId,
+      class_title: 'Math Class Dup',
+      scheduled_start: '2026-11-02T15:00:00.000Z',
+      scheduled_end: '2026-11-02T16:00:00.000Z',
+      duration_minutes: 60,
+    }, actor);
+    expect(dup.success).toBe(false);
+    expect(dup.code).toBe('SCHEDULING_CONFLICT');
+
+    // 4. Adjacent class (16:00 to 17:00) touching boundary must be allowed
+    const adjacent = ClassService.Classes_schedule(spreadsheet, {
+      student_id: studentId,
+      class_title: 'Math Class 3',
+      scheduled_start: '2026-11-02T16:00:00.000Z',
+      scheduled_end: '2026-11-02T17:00:00.000Z',
+      duration_minutes: 60,
+    }, actor);
+    expect(adjacent.success).toBe(true);
+  });
 });
