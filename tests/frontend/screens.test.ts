@@ -8,6 +8,7 @@ describe('Frontend Product Screens & Routing Logic', () => {
     const requiredSections = [
       'dashboard',
       'students',
+      'finances',
       'fees',
       'classes',
       'meeting-links',

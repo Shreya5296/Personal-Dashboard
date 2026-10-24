@@ -62,7 +62,11 @@ export async function navigateTo(page: Page, sectionLabel: string): Promise<void
     await menuToggle.click();
     await page.waitForTimeout(200);
   }
-  const navBtn = page.locator(`aside button:has-text("${sectionLabel}")`);
+  let target = sectionLabel;
+  if (target === 'Fees & Payments' || target === 'Earnings') {
+    target = 'Finances';
+  }
+  const navBtn = page.locator(`aside button:has-text("${target}")`);
   await expect(navBtn).toBeVisible({ timeout: 15000 });
   await navBtn.click();
 }

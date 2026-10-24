@@ -49,11 +49,13 @@ test.describe('Frontend UI/UX Redesign — Screen & Viewport Coverage', () => {
     await expect(page.locator('input[placeholder*="Search students"]')).toBeVisible();
     await expect(page.locator('text=Aarav Sharma')).toBeVisible();
 
-    // 3. Fees & Payments
-    await navigate(page, 'Fees');
-    await expect(page.locator('h1:has-text("Fees & Payments Ledger")')).toBeVisible();
-    await expect(page.locator('button:has-text("Fee Invoices & Obligations")')).toBeVisible();
-    await expect(page.locator('button:has-text("Payment Transactions")')).toBeVisible();
+    // 3. Finances
+    await navigate(page, 'Finances');
+    await expect(page.locator('h1:has-text("Finances")')).toBeVisible();
+    await expect(page.locator('text=Total Invoiced')).toBeVisible();
+    await expect(page.locator('text=Collected Earnings')).toBeVisible();
+    await expect(page.locator('text=Total Outstanding')).toBeVisible();
+    await expect(page.locator('text=Collection Performance')).toBeVisible();
 
     // 4. Classes
     await navigate(page, 'Classes');
@@ -64,14 +66,6 @@ test.describe('Frontend UI/UX Redesign — Screen & Viewport Coverage', () => {
     await navigate(page, 'Meeting Links');
     await expect(page.locator('h1:has-text("Meeting Links Directory")')).toBeVisible();
     await expect(page.locator('button:has-text("+ Add Meeting Link")')).toBeVisible();
-
-    // 6. Earnings
-    await navigate(page, 'Earnings');
-    await expect(page.locator('h1:has-text("Earnings Overview")')).toBeVisible();
-    await expect(page.locator('text=Total Invoiced')).toBeVisible();
-    await expect(page.locator('text=Collected Earnings')).toBeVisible();
-    await expect(page.locator('text=Total Outstanding')).toBeVisible();
-    await expect(page.locator('text=Collection Performance')).toBeVisible();
 
     // 7. Profile & Preferences (via Account dropdown)
     await page.locator('button[aria-label="Account menu"]').click();

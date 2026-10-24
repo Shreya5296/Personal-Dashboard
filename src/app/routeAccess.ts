@@ -20,6 +20,12 @@ export const ROUTE_CONFIGS: Record<NavSection, RouteConfig> = {
     subtitle: 'Manage student enrollments, class packages, contact details, and records.',
     requiresAdmin: true,
   },
+  finances: {
+    id: 'finances',
+    title: 'Finances',
+    subtitle: 'Unified ledger of agreed packages, received tuition, pending balances, and student payment history.',
+    requiresAdmin: true,
+  },
   fees: {
     id: 'fees',
     title: 'Fee Obligations & Payments',

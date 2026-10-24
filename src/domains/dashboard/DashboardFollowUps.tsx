@@ -73,7 +73,7 @@ export const DashboardFollowUps: React.FC<DashboardFollowUpsProps> = ({
       <div style={cardStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)' }}>
           <h3 style={{ margin: 0, fontSize: 'var(--font-size-base)', fontWeight: 600 }}>Outstanding Fee Obligations</h3>
-          <Button variant="ghost" size="sm" onClick={() => onNavigate('fees')}>Ledger →</Button>
+          <Button variant="ghost" size="sm" onClick={() => onNavigate('finances')}>Finances →</Button>
         </div>
         {pendingFees.length === 0 ? (
           <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)', padding: 'var(--space-4) 0' }}>

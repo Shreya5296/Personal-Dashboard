@@ -28,17 +28,18 @@ test.describe('E2E — Account Dropdown, Branding, Preferences & Calendar', () =
     await expect(page.locator('header').locator('text="Demo / Mock Data"')).toHaveCount(0);
   });
 
-  test('verifies Settings is absent from the sidebar and Reports is renamed to Earnings', async ({ page }) => {
+  test('verifies Settings is absent from the sidebar and Finances replaces Fees and Earnings', async ({ page }) => {
     const sidebar = page.locator('aside');
     await expect(sidebar.locator('button:has-text("Dashboard")')).toBeVisible();
     await expect(sidebar.locator('button:has-text("Students")')).toBeVisible();
-    await expect(sidebar.locator('button:has-text("Fees & Payments")')).toBeVisible();
+    await expect(sidebar.locator('button:has-text("Finances")')).toBeVisible();
     await expect(sidebar.locator('button:has-text("Classes")')).toBeVisible();
     await expect(sidebar.locator('button:has-text("Meeting Links")')).toBeVisible();
-    await expect(sidebar.locator('button:has-text("Earnings")')).toBeVisible();
 
-    // Verify Settings is completely absent from the sidebar
+    // Verify Settings, Fees & Payments, and Earnings are completely absent from sidebar
     await expect(sidebar.locator('button:has-text("Settings")')).toHaveCount(0);
+    await expect(sidebar.locator('button:has-text("Fees & Payments")')).toHaveCount(0);
+    await expect(sidebar.locator('button:has-text("Earnings")')).toHaveCount(0);
   });
 
   test('verifies account dropdown trigger displays primary name, secondary email, and exactly two options', async ({ page }) => {
@@ -132,12 +133,12 @@ test.describe('E2E — Account Dropdown, Branding, Preferences & Calendar', () =
     await expect(firstColDay.locator('text=Mon')).toBeVisible();
   });
 
-  test('navigates to Earnings page and displays collected vs invoiced accurately', async ({ page }) => {
-    await page.locator('aside button:has-text("Earnings")').click();
-    await expect(page.locator('h1:has-text("Earnings Overview")')).toBeVisible();
+  test('navigates to Finances page and displays summary cards and unified records', async ({ page }) => {
+    await page.locator('aside button:has-text("Finances")').click();
+    await expect(page.locator('h1:has-text("Finances")')).toBeVisible();
     await expect(page.locator('text=Collected Earnings')).toBeVisible();
     await expect(page.locator('text=Total Invoiced')).toBeVisible();
     await expect(page.locator('text=Total Outstanding')).toBeVisible();
-    await expect(page.locator('button:has-text("Export Earnings CSV")')).toBeVisible();
+    await expect(page.locator('button:has-text("Export Finances CSV")')).toBeVisible();
   });
 });

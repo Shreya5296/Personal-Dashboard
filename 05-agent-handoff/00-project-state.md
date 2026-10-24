@@ -38,16 +38,16 @@ The Git history and this file are the recovery sources of truth. Chat history an
 |---|---|
 | Project | Student Management Dashboard / Personal Dashboard |
 | Execution mode | Autonomous, sequential implementation |
-| Current phase | Live Deployment Update (@25) & Live Earnings API Verification |
+| Current phase | Unified Finances Consolidation & Ledger Single Source |
 | Current phase status | PASSED |
-| Last completed phase | Live Deployment Update (@25) & Live API Verification |
+| Last completed phase | Unified Finances Consolidation & Ledger Single Source |
 | Current Git branch | main |
-| Last full regression run | 144 Vitest tests passed (27 test files) + line-limit check passing (124 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build (910ms) + Playwright suites passing (10/10) |
+| Last full regression run | 147 Vitest tests passed (28 test files) + line-limit check passing (129 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build (539ms) + Playwright suites passing (14/14) |
 | Canonical Spreadsheet | `Private Class Dashboard` (ID: `1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8`, Owner: `ashreya0502@gmail.com`) — 6 approved business tables + 1 AuditLog operational table |
 | Backup Spreadsheet | `Master Backup (Pre-Launch 2026-10-21T12-13-40-537Z)` (ID: `1kIFYmI81DfNIAqb-ZHsTifiKE6JxhfQrXqpfphrw9eU`) — Verified accessible and preserved intact |
 | Apps Script Project | `1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL` — ConfigService implemented; ReportService per-student package deduplication & numeric in_inr parsing pushed |
 | Web App Deployment | Active at version `@25` (`AKfycbx4d_VG4CsZIEAomX_OjNMuej06ktTYmKLME5ennLsI7mx3Fn5b-YBu9CRqe7NwrUVH3w`) — Deployment ID preserved; updated in-place to version 25 |
-| Last state update | Redeployed Apps Script deployment in-place to Version @25. Diagnosed and fixed shared package_id across students (PKG_001 used for both Rehaan and Viwaan) and dash placeholder '-' in in_inr. Live authenticated endpoint verified returning ₹2,16,800 invoiced, ₹1,66,800 collected, ₹50,000 outstanding. |
+| Last state update | Consolidated Fees & Payments and Earnings into unified Finances page with 3 summary cards, dual ledger views (Payment History and Student Balances), search, date filters, and CSV export. Retired deprecated reports components. Strict line limits (129 files <= 149 lines), 147 Vitest tests, and 14 Playwright E2E tests verified passing. |
 
 ## 5. Phase Register
 
@@ -71,7 +71,8 @@ The Git history and this file are the recovery sources of truth. Chat history an
 | 15 | Import & Reconcile Feature Retirement | PASSED | HEAD | Fully removed Import & Reconcile UI, routing, icons, backend handlers/services, and dedicated tests. Operational schemas & historical tabs preserved intact. 121 tests passing across 24 test suites. Clean production build. |
 | 16 | Operational Tabs Retirement & ConfigService Decoupling | PASSED | 5f1aca1 | Completely removed AppConfig, ImportBatches, ImportRowResults dependencies; implemented ConfigService with ScriptProperties defaults; verified absent-tab scenarios (140/140 tests). |
 | 17 | Earnings Calculations Bug Resolution & Deduplication | PASSED | a2e8d47 | Fixed earnings calculation data flow, package deduplication by package_id, bidirectional student identity matching, currency rules, and debtor balance insulation (143/143 tests). |
-| 18 | Live Deployment Update (@25) & Live API Verification | PASSED | HEAD | Redeployed AKfycbx4d_... in-place to Version @25 via clasp; resolved student-scoped package deduplication and '-' in_inr; live authenticated API verified returning ₹2,16,800 / ₹1,66,800 / ₹50,000. |
+| 18 | Live Deployment Update (@25) & Live API Verification | PASSED | 0ef97b3 | Redeployed AKfycbx4d_... in-place to Version @25 via clasp; resolved student-scoped package deduplication and '-' in_inr; live authenticated API verified returning ₹2,16,800 / ₹1,66,800 / ₹50,000. |
+| 19 | Unified Finances Consolidation & Ledger Single Source | PASSED | HEAD | Consolidated Fees & Payments and Earnings into unified Finances page with 3 summary cards, Payment History + Student Balances tables, search, date filtering, and CSV export. 147 Vitest tests, 129 micro-files <= 149 lines, 14/14 Playwright tests passing. |
 
 ## 6. Live Infrastructure Inspection & Modification Boundary
 

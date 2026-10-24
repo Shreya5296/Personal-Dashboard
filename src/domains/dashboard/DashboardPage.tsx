@@ -95,8 +95,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           <Button variant="secondary" onClick={() => onNavigate('classes')}>
             + Schedule Class
           </Button>
-          <Button variant="secondary" onClick={() => onNavigate('fees')}>
-            Review Fee Obligations
+          <Button variant="secondary" onClick={() => onNavigate('finances')}>
+            Review Finances
           </Button>
         </div>
       </div>

@@ -7,18 +7,18 @@ import {
   FeesIcon,
   ClassesIcon,
   MeetingLinksIcon,
-  ReportsIcon,
 } from '../components/icons/NavIcons';
 import { CloseIcon } from '../components/icons/ActionIcons';
 
 export type NavSection =
   | 'dashboard'
   | 'students'
-  | 'fees'
+  | 'finances'
   | 'classes'
   | 'meeting-links'
-  | 'reports'
-  | 'settings';
+  | 'settings'
+  | 'fees'
+  | 'reports';
 
 export interface SidebarProps {
   activeSection: NavSection;
@@ -30,10 +30,9 @@ export interface SidebarProps {
 const navItems = [
   { id: 'dashboard' as NavSection, label: 'Dashboard', Icon: DashboardIcon },
   { id: 'students' as NavSection, label: 'Students', Icon: StudentsIcon },
-  { id: 'fees' as NavSection, label: 'Fees & Payments', Icon: FeesIcon },
+  { id: 'finances' as NavSection, label: 'Finances', Icon: FeesIcon },
   { id: 'classes' as NavSection, label: 'Classes', Icon: ClassesIcon },
   { id: 'meeting-links' as NavSection, label: 'Meeting Links', Icon: MeetingLinksIcon },
-  { id: 'reports' as NavSection, label: 'Earnings', Icon: ReportsIcon },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({

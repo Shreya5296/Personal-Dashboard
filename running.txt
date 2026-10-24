@@ -441,3 +441,25 @@ NEXT ACTION
     - TypeScript strict check: 0 errors.
     - Production Vite build: 910ms clean build.
     - Playwright e2e tests: 10/10 passed in 21.5s.
+- Unified Finances Consolidation & Ledger Single Source completed:
+  * 1. Navigation & Page Unification:
+    - Replaced separate 'Fees & Payments' and 'Earnings' sidebar items with a single 'Finances' sidebar item using FeesIcon.
+    - Preserved backward-compatible routing for legacy `/fees` and `/reports` aliases redirecting/rendering FinancesPage.
+    - Updated dashboard quick actions ('Record Payment' and 'Review outstanding balances') to navigate cleanly to 'finances'.
+    - Removed obsolete src/domains/reports/ components (ReportsPage.tsx, ReportFilters.tsx, ExportAction.tsx).
+  * 2. Component Architecture (under src/domains/finances/):
+    - financeTypes.ts (30 lines): Data structures for summaries, filters, student balances, and active tab states.
+    - FinanceSummaryCards.tsx (96 lines): 3 responsive summary cards (Total Invoiced, Collected Earnings, Total Outstanding) plus collection rate progress bar.
+    - FinanceToolbar.tsx (108 lines): Unified search, date range pickers (startDate, endDate), and CSV export button.
+    - FinancialHistoryTable.tsx (114 lines): Complete payment transaction ledger with student name, date, formatted amount, payment method, reference note, void/active status badge, and void action button.
+    - StudentBalanceTable.tsx (89 lines): Per-student aggregated financial ledger displaying agreed package value, collected earnings, pending outstanding balance, and transaction count.
+    - useFinancesData.ts (134 lines): Reactive custom hook aggregating data from reports.financialSummary, payments.list, and packages.list, with search/date filtering and optimistic payment voiding.
+    - financeCsvExport.ts (40 lines): CSV generator combining high-level financial summary metadata and itemized transaction rows.
+    - FinancesPage.tsx (114 lines): Unified page integrating header, summary cards, search toolbar, tabs ('Payment History' and 'Student Balances'), tables, and void confirmation modal.
+  * 3. Regression Testing & Verification:
+    - Added tests/frontend/financesConsolidation.test.ts (74 lines) verifying route registration, legacy alias handling, and CSV generation.
+    - Unit tests: 147/147 passing across 28 test files in 1.28s (Vitest).
+    - Line limit check: node scripts/check-line-limits.js passing across 129 files in src/ and public/ (all <= 149 lines).
+    - TypeScript strict check: tsc --noEmit passed with 0 errors.
+    - Production Vite build: 539ms clean build, 0 warnings.
+    - Playwright E2E suites: 14/14 passed in 18.7s (accountDropdown.spec.ts, reportsAndCrossCutting.spec.ts, redesignScreensVisual.spec.ts).
