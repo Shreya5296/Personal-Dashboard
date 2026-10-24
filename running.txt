@@ -568,3 +568,26 @@ NEXT ACTION
     - Vitest unit/integration suite: 179/179 tests passing across 34 test files (PASS).
     - Production Vite build: clean build in 802ms (PASS).
     - Playwright E2E suites: 28 passed, 1 skipped (0 failures) (PASS).
+- Student ID Consistency Audit & Legacy ID Migration Plan completed:
+  * 1. Canonical Spreadsheet Audit:
+    - Audited live Google Spreadsheet (Private Class Dashboard, ID: 1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8).
+    - Identified 25 total students: 3 standard sequential IDs (STU_001, STU_002, STU_003) and 22 synthetic test rows created by past test runs with legacy IDs (stu_mvm...).
+    - Audited referential integrity across all dependent tables: 3 Packages (pkg_mvmiosa2xm00wvg2, pkg_mvmiuwumsjttw5lo, pkg_mvmiyle2ecyeq5u4), 3 MeetingLinks, 3 StudentNotes, 0 Payments, 0 ClassSessions, and 22 AuditLog entries reference legacy IDs.
+  * 2. Migration Engine Implementation:
+    - Created 02-backend/apps-script/setup/StudentIdMigration.gs (119 lines).
+    - Computes safe sequential mapping (STU_004 to STU_025) starting from next number after highest existing standard STU_\d+ ID.
+    - Cascades foreign-key updates across Students, Packages, Payments, ClassSessions, MeetingLinks, StudentNotes, ClassSchedules, and AuditLog.
+    - Creates StudentId_Migration_Backup audit tab recording original_id, migrated_id, and migrated_at for full recovery and rollback.
+    - Idempotent: running migration multiple times performs 0 updates and makes no changes once migrated.
+  * 3. Mock Data Synchronization:
+    - Synchronized src/api/mockDataInitial.ts to use STU_001, STU_002, STU_003, STU_004 across MOCK_STUDENTS, MOCK_FEES, MOCK_PAYMENTS, MOCK_CLASSES, MOCK_LINKS, MOCK_PACKAGES, and MOCK_NOTES.
+  * 4. Safe Execution Boundary Preserved:
+    - In accordance with Critical Rules 1 & 2, no deployment to Apps Script/Vercel was executed and no live spreadsheet data was modified.
+    - Full migration plan, mapping table, and step-by-step owner execution instructions documented in docs/prelaunch/student-id-migration-plan.md.
+  * 5. Testing and Quality Gates:
+    - Added tests/backend/studentIdMigration.test.ts (4 tests) covering mapping calculation, gap handling, 7-table foreign-key cascading, and idempotency.
+    - 35 test files passed, 183 tests passed in Vitest.
+    - Line limit check: 152 files in src/ and public/ <= 149 lines (PASS).
+    - Strict TypeScript check: 0 errors (PASS).
+    - Production Vite build: 784ms (PASS).
+    - Playwright students e2e test: 2/2 passed.
