@@ -1,16 +1,8 @@
 import { ApiResponse } from './apiResponse';
 import {
-  MOCK_STUDENTS,
-  MOCK_FEES,
-  MOCK_PAYMENTS,
-  MOCK_CLASSES,
-  MOCK_LINKS,
-  MOCK_PACKAGES,
-  MOCK_NOTES,
-  MOCK_SCHEDULES,
-  createMockStudent,
-  updateMockPackage,
-  scheduleMockClass,
+  MOCK_STUDENTS, MOCK_FEES, MOCK_PAYMENTS, MOCK_CLASSES, MOCK_LINKS,
+  MOCK_PACKAGES, MOCK_NOTES, MOCK_SCHEDULES, createMockStudent,
+  updateMockPackage, scheduleMockClass,
 } from './mockDataInitial';
 
 export function handleMockApiRequest<T>(operation: string, payload: Record<string, unknown>, reqId: string): ApiResponse<T> {
@@ -104,7 +96,8 @@ export function handleMockApiRequest<T>(operation: string, payload: Record<strin
   if (operation === 'packages.getBalance') return { ok: true, data: { totalPurchased: 12, totalConsumed: 4, remainingBalance: 8 } as T, meta };
   if (operation === 'schedules.list') {
     const sid = String(payload.student_id || payload.studentId || '');
-    return { ok: true, data: (MOCK_SCHEDULES[sid] || []) as T, meta };
+    const data = sid ? (MOCK_SCHEDULES[sid] || []) : Object.values(MOCK_SCHEDULES).flat();
+    return { ok: true, data: data as T, meta };
   }
   if (operation === 'schedules.save') {
     const sid = String(payload.student_id || payload.studentId || '');

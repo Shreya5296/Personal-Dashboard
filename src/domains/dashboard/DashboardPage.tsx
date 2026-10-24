@@ -3,6 +3,9 @@ import { useAuth } from '../../auth/AuthProvider';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { fetchDashboardOverview } from './dashboardApi';
 import { fetchClasses } from '../classes/classApi';
+import { fetchSchedules, WeeklyScheduleEntry } from '../classes/scheduleApi';
+import { fetchStudents } from '../students/studentApi';
+import { Student } from '../students/studentTypes';
 import { fetchFeeObligations } from '../fees/feeApi';
 import { DashboardSummary } from './DashboardSummary';
 import { DashboardFollowUps } from './DashboardFollowUps';
@@ -25,6 +28,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const { token } = useAuth();
   const [overview, setOverview] = useState<DashboardOverviewData | null>(null);
   const [classes, setClasses] = useState<ClassSession[]>([]);
+  const [schedules, setSchedules] = useState<WeeklyScheduleEntry[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
   const [fees, setFees] = useState<FeeObligation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,13 +38,17 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
     setLoading(true);
     setError(null);
     try {
-      const [ov, cls, feeList] = await Promise.all([
+      const [ov, cls, schedList, stuList, feeList] = await Promise.all([
         fetchDashboardOverview(token),
         fetchClasses(undefined, token).catch(() => []),
+        fetchSchedules(undefined, token).catch(() => []),
+        fetchStudents({}, token).catch(() => []),
         fetchFeeObligations(undefined, token).catch(() => []),
       ]);
       setOverview(ov);
       setClasses(cls);
+      setSchedules(schedList);
+      setStudents(stuList);
       setFees(feeList);
     } catch (err: unknown) {
       setError((err as Error).message || 'Failed to load dashboard metrics');
@@ -101,7 +110,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      <DashboardCalendar classes={classes} />
+      <DashboardCalendar
+        classes={classes}
+        schedules={schedules}
+        students={students}
+        onRefresh={loadData}
+      />
 
       <DashboardFollowUps classes={classes} fees={fees} onNavigate={onNavigate} />
     </div>

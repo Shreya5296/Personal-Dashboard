@@ -1,57 +1,54 @@
 import React, { useState } from 'react';
 import styles from './dashboardCalendar.module.css';
 import { ClassSession } from '../classes/classTypes';
+import { WeeklyScheduleEntry } from '../classes/scheduleApi';
+import { Student } from '../students/studentTypes';
 import { getSavedTimezone } from '../../lib/userPreferences';
-import { formatTimeOnly } from '../../lib/dateFormat';
+import { formatTimeOnly, toInputDateFormat } from '../../lib/dateFormat';
 import { Button } from '../../components/buttons/Button';
+import {
+  getMondayForDateStr,
+  shiftMondayStr,
+  getWeekDates,
+  generateCalendarEvents,
+  getDateKeyInTz,
+} from './calendarEventGenerator';
 
 export interface DashboardCalendarProps {
   classes: ClassSession[];
+  schedules?: WeeklyScheduleEntry[];
+  students?: Student[];
+  onRefresh?: () => void;
 }
 
-function getMonday(d: Date): Date {
-  const date = new Date(d);
-  const day = date.getDay();
-  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-  date.setDate(diff);
-  date.setHours(0, 0, 0, 0);
-  return date;
-}
-
-function parseClassDate(raw: string | null | undefined): Date | null {
-  if (!raw) return null;
-  const clean = String(raw).trim().replace(/T\s+(\d:)/, 'T0$1');
-  const d = new Date(clean);
-  return isNaN(d.getTime()) ? null : d;
-}
-
-function getDateKeyInTz(d: Date | null, timeZone: string): string {
-  if (!d || isNaN(d.getTime())) return '';
-  try {
-    return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
-  } catch {
-    return '';
-  }
-}
-
-export const DashboardCalendar: React.FC<DashboardCalendarProps> = ({ classes }) => {
-  const [monday, setMonday] = useState<Date>(() => getMonday(new Date()));
+export const DashboardCalendar: React.FC<DashboardCalendarProps> = ({
+  classes,
+  schedules = [],
+  students = [],
+  onRefresh,
+}) => {
   const activeTz = getSavedTimezone();
+  const [mondayStr, setMondayStr] = useState<string>(() =>
+    getMondayForDateStr(toInputDateFormat(new Date(), activeTz))
+  );
 
-  const weekDays = [0, 1, 2, 3, 4, 5, 6].map((offset) => {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + offset);
-    return d;
+  const weekDates = getWeekDates(mondayStr);
+  const sundayStr = weekDates[6];
+  const todayKey = toInputDateFormat(new Date(), activeTz);
+
+  const allEvents = generateCalendarEvents({
+    datedSessions: classes,
+    recurringSchedules: schedules,
+    students,
+    weekDates,
+    activeTz,
   });
 
-  const sunday = weekDays[6];
-  const todayKey = getDateKeyInTz(new Date(), activeTz);
+  const rangeText = `${mondayStr} – ${sundayStr} (${activeTz})`;
 
-  const rangeText = `${new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: activeTz }).format(monday)} – ${new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: activeTz }).format(sunday)} (${activeTz})`;
-
-  const handlePrev = () => setMonday((prev) => new Date(prev.getTime() - 7 * 86400000));
-  const handleNext = () => setMonday((prev) => new Date(prev.getTime() + 7 * 86400000));
-  const handleToday = () => setMonday(getMonday(new Date()));
+  const handlePrev = () => setMondayStr((prev) => shiftMondayStr(prev, -7));
+  const handleNext = () => setMondayStr((prev) => shiftMondayStr(prev, 7));
+  const handleToday = () => setMondayStr(getMondayForDateStr(toInputDateFormat(new Date(), activeTz)));
 
   return (
     <div className={styles.calendarWrapper}>
@@ -61,6 +58,11 @@ export const DashboardCalendar: React.FC<DashboardCalendarProps> = ({ classes })
           <span className={styles.rangeText}>{rangeText}</span>
         </div>
         <div className={styles.navControls}>
+          {onRefresh && (
+            <Button variant="secondary" size="sm" onClick={onRefresh} aria-label="Refresh calendar">
+              ↻
+            </Button>
+          )}
           <Button variant="secondary" size="sm" onClick={handlePrev} aria-label="Previous week">
             ‹
           </Button>
@@ -75,16 +77,17 @@ export const DashboardCalendar: React.FC<DashboardCalendarProps> = ({ classes })
 
       <div className={styles.gridContainer}>
         <div className={styles.grid}>
-          {weekDays.map((day) => {
-            const dayKey = getDateKeyInTz(day, activeTz);
+          {weekDates.map((dayKey) => {
+            const [y, m, d] = dayKey.split('-').map(Number);
+            const dayDate = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
             const isToday = dayKey === todayKey;
-            const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: activeTz }).format(day);
-            const dayNumber = new Intl.DateTimeFormat('en-US', { day: 'numeric', timeZone: activeTz }).format(day);
+            const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'UTC' }).format(dayDate);
+            const dayNumber = String(d);
 
-            const dayClasses = classes.filter((c) => {
-              const start = c.start_time || c.scheduled_start;
-              const parsed = parseClassDate(start);
-              if (!parsed) return false;
+            const dayClasses = allEvents.filter((c) => {
+              const raw = c.start_time || c.scheduled_start;
+              if (!raw) return false;
+              const parsed = new Date(String(raw).trim().replace(/T\s+(\d:)/, 'T0$1'));
               return getDateKeyInTz(parsed, activeTz) === dayKey;
             });
 
@@ -103,7 +106,8 @@ export const DashboardCalendar: React.FC<DashboardCalendarProps> = ({ classes })
                       const timeStr = formatTimeOnly(startTime, activeTz);
                       const studentName = c.student_name || c.student_id;
                       const topic = c.topic || c.class_title || 'Class Session';
-                      const cardKey = `${c.session_id || c.class_session_id || 'cls'}_${c.student_id || idx}_${idx}`;
+                      const cardKey = `${c.session_id || idx}_${c.student_id || idx}_${idx}`;
+                      const isRec = (c as unknown as { is_recurring?: boolean }).is_recurring;
                       return (
                         <div key={cardKey} className={styles.classCard}>
                           <span className={styles.classTime}>
@@ -113,7 +117,7 @@ export const DashboardCalendar: React.FC<DashboardCalendarProps> = ({ classes })
                             {topic}
                           </span>
                           <span className={styles.classStudent} title={studentName}>
-                            {studentName} • {c.status || 'SCHEDULED'}
+                            {studentName} • {isRec ? 'Recurring' : (c.status || 'SCHEDULED')}
                           </span>
                         </div>
                       );

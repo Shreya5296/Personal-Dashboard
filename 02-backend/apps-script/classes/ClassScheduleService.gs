@@ -78,6 +78,26 @@ function Schedules_list(spreadsheet, studentId) {
     return { success: true, data: [], meta: { persistentSheet: false } };
   }
 
+  var stuSheet = spreadsheet && spreadsheet.getSheetByName ? spreadsheet.getSheetByName('Students') : null;
+  var stuNameMap = {};
+  if (stuSheet) {
+    var sData = stuSheet.getDataRange ? stuSheet.getDataRange().getValues() : (stuSheet.getData ? stuSheet.getData() : []);
+    if (sData.length > 1) {
+      var sHeaders = sData[0].map(function(h) { return String(h || '').trim(); });
+      var idCol = sHeaders.indexOf('student_id');
+      var nameCol = sHeaders.indexOf('student_name');
+      if (nameCol === -1) nameCol = sHeaders.indexOf('full_name');
+      if (idCol !== -1 && nameCol !== -1) {
+        for (var si = 1; si < sData.length; si++) {
+          var sRow = sData[si];
+          var sidKey = String(sRow[idCol] || '').trim();
+          var sName = String(sRow[nameCol] || '').trim();
+          if (sidKey) stuNameMap[sidKey] = sName;
+        }
+      }
+    }
+  }
+
   var data = sheet.getDataRange ? sheet.getDataRange().getValues() : (sheet.getData ? sheet.getData() : []);
   if (data.length <= 1) return { success: true, data: [] };
 
@@ -97,6 +117,9 @@ function Schedules_list(spreadsheet, studentId) {
         }
       }
       if (item.is_active !== false && item.is_active !== 'FALSE') {
+        if (!item.student_name && stuNameMap[item.student_id]) {
+          item.student_name = stuNameMap[item.student_id];
+        }
         results.push(item);
       }
     }

@@ -34,7 +34,7 @@ export function adaptStudentInput(input: Partial<StudentInput>): Record<string, 
   const studentEmail = String(input.student_email || input.email || '').trim();
   const subject = String(input.subject || '').trim();
   const notes = String(input.notes || '').trim();
-  const status = input.status || 'ACTIVE';
+  const status = input.status ? String(input.status).trim().toUpperCase() : 'ACTIVE';
 
   return {
     student_name: name,
@@ -75,7 +75,7 @@ export function enrichStudentData(student: Student): Student {
     parent_email: String(student.parent_email || student.email || ''),
     student_email: String(student.student_email || ''),
     subject,
-    status: student.status || 'ACTIVE',
+    status: student.status ? String(student.status).trim().toUpperCase() : 'ACTIVE',
     notes,
   };
 }

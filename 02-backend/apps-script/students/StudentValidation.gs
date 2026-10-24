@@ -36,9 +36,12 @@ function validateStudentInput(data, isUpdate) {
     }
   }
 
-  var statusVal = data.status || data.student_status;
-  if (statusVal && ['ACTIVE', 'INACTIVE', 'ARCHIVED'].indexOf(statusVal) === -1) {
-    errors.status = 'Status must be ACTIVE, INACTIVE, or ARCHIVED';
+  var rawStatus = data.status || data.student_status;
+  if (rawStatus !== undefined && rawStatus !== null && String(rawStatus).trim() !== '') {
+    var statusVal = String(rawStatus).trim().toUpperCase();
+    if (['ACTIVE', 'INACTIVE', 'ARCHIVED'].indexOf(statusVal) === -1) {
+      errors.status = 'Status must be ACTIVE, INACTIVE, or ARCHIVED';
+    }
   }
 
   return {

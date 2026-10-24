@@ -35,7 +35,7 @@ export const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, onSuc
     parent_email: student.parent_email || '',
     student_phone: student.student_phone || '',
     student_email: student.student_email || student.email || '',
-    status: student.status || 'ACTIVE',
+    status: student.status ? String(student.status).trim().toUpperCase() : 'ACTIVE',
     notes: student.notes || '',
   });
 
@@ -86,7 +86,13 @@ export const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, onSuc
     }
     setIsSubmitting(true);
     try {
-      const preservedData = { ...studentData, student_phone: student.student_phone || student.phone || '', student_email: student.student_email || student.email || '', notes: student.notes || '' };
+      const preservedData = {
+        ...studentData,
+        status: studentData.status ? String(studentData.status).trim().toUpperCase() : 'ACTIVE',
+        student_phone: student.student_phone || student.phone || '',
+        student_email: student.student_email || student.email || '',
+        notes: student.notes || '',
+      };
       const updatedStu = await updateStudent(student.student_id, preservedData, token);
       if (meetingLinks.link1.trim() || meetingLinks.link2.trim()) {
         await createMeetingLink({ student_id: student.student_id, student_name: updatedStu.student_name, meeting_link_1: meetingLinks.link1.trim(), meeting_link_2: meetingLinks.link2.trim(), meeting_url: meetingLinks.link1.trim(), provider: 'GOOGLE_MEET' }, token);

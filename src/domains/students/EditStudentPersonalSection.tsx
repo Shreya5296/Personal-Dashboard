@@ -56,7 +56,7 @@ export const EditStudentPersonalSection: React.FC<EditStudentPersonalSectionProp
           <input className={formStyles.input} type="tel" value={values.student_phone || ''} disabled={true} readOnly={true} placeholder="Field inactive" title="Student Phone is inactive" />
         </FormField>
         <FormField label="Status" error={errors.status}>
-          <select className={formStyles.select} value={values.status || 'ACTIVE'} onChange={(e) => onChange('status', e.target.value)} disabled={disabled}>
+          <select className={formStyles.select} value={values.status ? String(values.status).trim().toUpperCase() : 'ACTIVE'} onChange={(e) => onChange('status', e.target.value.toUpperCase())} disabled={disabled}>
             <option value="ACTIVE">Active</option>
             <option value="INACTIVE">Inactive / Archived</option>
           </select>

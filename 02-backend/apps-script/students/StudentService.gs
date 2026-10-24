@@ -39,7 +39,7 @@ function Students_enrich(s) {
   copy.phone = copy.parent_phone;
   copy.email = copy.parent_email;
   copy.subject = s.subject || '';
-  copy.status = s.status || s.student_status || 'ACTIVE';
+  copy.status = String(s.status || s.student_status || 'ACTIVE').trim().toUpperCase();
   copy.student_status = copy.status;
   copy.notes = s.notes || '';
   return copy;
@@ -63,7 +63,7 @@ function Students_create(spreadsheet, data, actor) {
     parent_email: String(rawParentEmail || '').trim(),
     student_email: String(rawStudentEmail || '').trim(),
     subject: rawSubject,
-    status: data.status || data.student_status || 'ACTIVE',
+    status: data.status ? String(data.status).trim().toUpperCase() : (data.student_status ? String(data.student_status).trim().toUpperCase() : 'ACTIVE'),
     notes: rawNotes
   };
 
@@ -145,6 +145,12 @@ function Students_update(spreadsheet, studentId, updates, actor) {
   if (updates.email !== undefined && updates.parent_email === undefined) {
     normalized.parent_email = updates.email;
   }
+  if (updates.status !== undefined && updates.status !== null) {
+    normalized.status = String(updates.status).trim().toUpperCase();
+  }
+  if (updates.student_status !== undefined && updates.student_status !== null) {
+    normalized.student_status = String(updates.student_status).trim().toUpperCase();
+  }
 
   var v = _stuVal.validateStudentInput(normalized, true);
   if (!v.valid) {
@@ -164,6 +170,8 @@ function Students_update(spreadsheet, studentId, updates, actor) {
       var val = normalized[f] !== null ? String(normalized[f]).trim() : '';
       if ((f === 'student_phone' || f === 'student_email' || f === 'notes') && val === '' && existing[f]) {
         safeUpdates[f] = existing[f];
+      } else if (f === 'status') {
+        safeUpdates[f] = String(val).trim().toUpperCase();
       } else {
         safeUpdates[f] = val;
       }

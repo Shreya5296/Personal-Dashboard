@@ -809,3 +809,38 @@ NEXT ACTION
     - Line limit check: 169/169 files in src/ and public/ strictly <= 149 lines (PASS).
     - Strict TypeScript check (tsc --noEmit): 0 errors (PASS).
     - Clean Vite production build in 852ms (PASS).
+- Student Schedule Save Validation and Calendar Synchronization completed & verified:
+  * 1. Fix Status Validation on Student Edit (Issue 1):
+    - Root Cause: Legacy students in Google Sheets (e.g., STU_001, STU_002, STU_003) stored status with title-case 'Active' or 'Inactive'. Frontend EditStudentForm state initialized from student.status, leaving status as 'Active'. When submitted, backend StudentValidation.gs checked ['ACTIVE', 'INACTIVE', 'ARCHIVED'].indexOf(statusVal), which strictly failed for 'Active', returning 'Validation failed: Status must be ACTIVE, INACTIVE, or ARCHIVED'.
+    - Fixes:
+      - Normalized status in frontend EditStudentPersonalSection select value/onChange, EditStudentForm state initialization and preservation, studentApi adaptStudentInput and enrichStudentData, and studentValidation.ts.
+      - Updated backend StudentValidation.gs to normalize rawStatus to uppercase (.trim().toUpperCase()) before checking against allowed set, preserving the strict validation rule.
+      - Updated backend StudentService.gs (Students_update, Students_create, Students_enrich) to normalize status to canonical uppercase and persist 'ACTIVE' / 'INACTIVE' to Google Sheets.
+      - Updated ReportService.gs to count active students with case-insensitive check.
+  * 2. Fix Dashboard Calendar Scheduled Classes (Issue 2):
+    - Root Cause: DashboardPage only fetched classes.list (dated sessions in ClassSessions sheet). It never loaded recurring schedules from ClassSchedules (via schedules.list), leaving recurring classes completely missing from the weekly calendar. In addition, scheduleApi.fetchSchedules had a guard if (!studentId) return [] preventing fetching all schedules, and calendar date parsing lacked timezone-aware weekday-to-date mapping and deduplication against dated sessions.
+    - Fixes:
+      - Updated scheduleApi.ts to allow fetchSchedules(undefined, token) for all schedules, and enhanced cleanTime() with timezone-aware parsing for legacy 1899 epoch date values and text strings.
+      - Created calendarEventGenerator.ts (121 lines) providing pure, timezone-safe getMondayForDateStr, getWeekDates, makeIsoInTz, and generateCalendarEvents.
+      - Maps recurring weekdays (MONDAY..SUNDAY) to the 7 calendar dates of the visible week without UTC date shifts.
+      - Distinguishes recurring schedules (is_recurring: true, badge: 'Recurring') from actual dated sessions (COMPLETED, ATTENDED, CANCELLED, SCHEDULED).
+      - Deduplicates: when an actual dated class session already exists for that student on that date at that time, suppresses the recurring placeholder so the event is not duplicated.
+      - Preserved existing attendance and credit-deduction logic without fabricating database session records.
+      - Updated DashboardCalendar.tsx (137 lines) with timezone-safe Monday navigation (getMondayForDateStr, shiftMondayStr) and refresh capability.
+      - Updated DashboardPage.tsx (127 lines) to fetch dated sessions, recurring schedules, and students in parallel and pass them to DashboardCalendar.
+  * 3. Deployment and Live Verification:
+    - Pushed 71 files to Apps Script via clasp and deployed in-place to Version @34 (preserved deployment ID AKfycbx4d_VG4CsZIEAomX_OjNMuej06ktTYmKLME5ennLsI7mx3Fn5b-YBu9CRqe7NwrUVH3w).
+    - Executed live verification suite tests/live-e2e-status-and-calendar-verification.js:
+      - Created synthetic student STU_043 with status 'Active' -> normalized to 'ACTIVE'.
+      - Updated student with status 'Active' -> succeeded without validation error!
+      - Updated student with invalid status 'INVALID_STATUS' -> properly rejected with 'Validation failed: Status must be ACTIVE, INACTIVE, or ARCHIVED'.
+      - Saved recurring schedule MONDAY 16:00-16:40 -> verified in ClassSchedules tab.
+      - Listed schedules with schedules.list -> verified student_name enriched.
+      - Updated schedule to WEDNESDAY 17:00-18:00 (60m) -> deduplication verified (exactly 1 record).
+      - Cleaned up test records safely.
+  * 4. Testing & Quality Gates:
+    - Added tests/frontend/studentStatusAndCalendarSync.test.ts (7 tests).
+    - 237/237 Vitest tests passing across 42 test files (PASS).
+    - Line limit check: 170/170 files in src/ and public/ strictly <= 149 lines (PASS).
+    - Strict TypeScript check (tsc --noEmit): 0 errors (PASS).
+    - Clean Vite production build in 1.13s (PASS).

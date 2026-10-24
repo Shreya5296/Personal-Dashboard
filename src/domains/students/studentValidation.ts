@@ -50,6 +50,11 @@ export function validateStudentInput(input: Partial<StudentInput>): ValidationRe
     errors.subject = 'Subject cannot exceed 100 characters.';
   }
 
+  const status = input.status !== undefined ? String(input.status).trim().toUpperCase() : '';
+  if (status && ['ACTIVE', 'INACTIVE', 'ARCHIVED'].indexOf(status) === -1) {
+    errors.status = 'Status must be ACTIVE, INACTIVE, or ARCHIVED';
+  }
+
   return {
     isValid: Object.keys(errors).length === 0,
     errors,
