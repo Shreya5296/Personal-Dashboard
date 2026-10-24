@@ -9,7 +9,16 @@ var _migH = typeof findColIndex === 'function' && typeof buildStudentIdMigration
   : (typeof require !== 'undefined' ? require('./StudentIdMigration.gs') : null);
 
 function runStudentIdMigrationPreflight(spreadsheet) {
-  var ss = spreadsheet || (typeof SpreadsheetApp !== 'undefined' ? SpreadsheetApp.getActiveSpreadsheet() : null);
+  var ss = spreadsheet || (typeof SpreadsheetApp !== 'undefined' ? (function() {
+    try {
+      if (typeof PropertiesService !== 'undefined') {
+        var p = PropertiesService.getScriptProperties();
+        var id = p && p.getProperty('SPREADSHEET_ID');
+        if (id) return SpreadsheetApp.openById(id);
+      }
+      return SpreadsheetApp.openById('1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8');
+    } catch (e) { return SpreadsheetApp.getActiveSpreadsheet(); }
+  })() : null);
   if (!ss) return { ready: false, status: 'BLOCKED', reasons: ['Spreadsheet not available'] };
 
   var reasons = [];

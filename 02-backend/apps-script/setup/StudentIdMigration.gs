@@ -53,7 +53,16 @@ function runStudentIdMigration(spreadsheet) {
     return { success: false, code: 'CONCURRENCY_LOCKED', message: 'Migration is already running' };
   }
   try {
-    var ss = spreadsheet || (typeof SpreadsheetApp !== 'undefined' ? SpreadsheetApp.getActiveSpreadsheet() : null);
+    var ss = spreadsheet || (typeof SpreadsheetApp !== 'undefined' ? (function() {
+      try {
+        if (typeof PropertiesService !== 'undefined') {
+          var p = PropertiesService.getScriptProperties();
+          var id = p && p.getProperty('SPREADSHEET_ID');
+          if (id) return SpreadsheetApp.openById(id);
+        }
+        return SpreadsheetApp.openById('1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8');
+      } catch (e) { return SpreadsheetApp.getActiveSpreadsheet(); }
+    })() : null);
     if (!ss) return { success: false, message: 'Spreadsheet not available' };
     var stuSheet = ss.getSheetByName('Students');
     if (!stuSheet) return { success: false, message: 'Students sheet not found' };

@@ -7,8 +7,23 @@ var _migHelper = typeof findColIndex === 'function' && typeof updateColumnWithMa
   ? { findColIndex: findColIndex, updateColumnWithMap: updateColumnWithMap }
   : (typeof require !== 'undefined' ? require('./StudentIdMigration.gs') : null);
 
+function _resolveSs(spreadsheet) {
+  if (spreadsheet) return spreadsheet;
+  if (typeof SpreadsheetApp !== 'undefined') {
+    try {
+      if (typeof PropertiesService !== 'undefined') {
+        var p = PropertiesService.getScriptProperties();
+        var id = p && p.getProperty('SPREADSHEET_ID');
+        if (id) return SpreadsheetApp.openById(id);
+      }
+      return SpreadsheetApp.openById('1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8');
+    } catch (e) { return SpreadsheetApp.getActiveSpreadsheet(); }
+  }
+  return null;
+}
+
 function verifyStudentIdReferentialIntegrity(spreadsheet) {
-  var ss = spreadsheet || (typeof SpreadsheetApp !== 'undefined' ? SpreadsheetApp.getActiveSpreadsheet() : null);
+  var ss = _resolveSs(spreadsheet);
   if (!ss) return { success: false, message: 'Spreadsheet not available' };
   var stuSheet = ss.getSheetByName('Students');
   if (!stuSheet) return { success: false, message: 'Students sheet not found' };
@@ -61,7 +76,7 @@ function rollbackStudentIdMigration(spreadsheet) {
     return { success: false, code: 'CONCURRENCY_LOCKED', message: 'Rollback cannot proceed: lock unavailable' };
   }
   try {
-    var ss = spreadsheet || (typeof SpreadsheetApp !== 'undefined' ? SpreadsheetApp.getActiveSpreadsheet() : null);
+    var ss = _resolveSs(spreadsheet);
     if (!ss) return { success: false, message: 'Spreadsheet not available' };
     var backupSheet = ss.getSheetByName('StudentId_Migration_Backup');
     if (!backupSheet || backupSheet.getLastRow() <= 1) {
