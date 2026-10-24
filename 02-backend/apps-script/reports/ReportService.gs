@@ -116,17 +116,19 @@ function Reports_getFinancialSummary(spreadsheet, options) {
     if (endDate && payDate && payDate > endDate) continue;
 
     var payCurrency = pay.currency ? String(pay.currency).trim().toUpperCase() : 'INR';
-    var hasInInr = pay.in_inr !== undefined && pay.in_inr !== null && pay.in_inr !== '';
+    var rawInInr = pay.in_inr !== undefined && pay.in_inr !== null ? String(pay.in_inr).trim() : '';
+    var numInInr = Number(rawInInr);
+    var hasValidInInr = rawInInr !== '' && rawInInr !== '-' && !isNaN(numInInr) && numInInr > 0;
     var payAmt = 0;
 
-    if (hasInInr) {
+    if (hasValidInInr) {
       // Manually supplied INR value takes precedence
-      payAmt = Number(pay.in_inr) || 0;
+      payAmt = numInInr;
     } else if (payCurrency === 'INR') {
       // Domestic INR payment amount
       payAmt = Number(pay.amount) || 0;
     } else {
-      // Foreign currency payment with no manual in_inr: do not invent exchange rates
+      // Foreign currency payment with no valid manual in_inr: do not invent exchange rates
       payAmt = 0;
     }
 
@@ -136,14 +138,15 @@ function Reports_getFinancialSummary(spreadsheet, options) {
   }
 
   // 2. Deduplicate and aggregate Packages
-  // Prevent counting the same package multiple times due to duplicated or historical rows
+  // Prevent counting the same package multiple times due to duplicated or historical rows.
+  // Deduplication is scoped per student so identical package IDs (e.g. PKG_001) across different students are not conflated.
   var uniquePackagesMap = {};
   for (var k = 0; k < pkgs.length; k++) {
     var rawPkg = pkgs[k];
     var pkgId = rawPkg.package_id ? String(rawPkg.package_id).trim() : '';
     var studentKey = resolveStudentKey(rawPkg);
-    var pkgKey = pkgId || ('_synth_' + studentKey + '_' + (rawPkg.start_date || '') + '_' + (rawPkg.package_price || ''));
-    // Latest row overwrites earlier duplicate row
+    var pkgKey = studentKey + '_' + (pkgId || ('_synth_' + (rawPkg.start_date || '') + '_' + (rawPkg.package_price || '')));
+    // Latest row overwrites earlier duplicate row for this student
     uniquePackagesMap[pkgKey] = rawPkg;
   }
 

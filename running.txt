@@ -418,3 +418,26 @@ NEXT ACTION
     - Strict TypeScript check (tsc --noEmit): 0 errors.
     - Production Vite build: clean build in 2.42s.
     - Playwright e2e tests (reportsAndCrossCutting.spec.ts & accountDropdown.spec.ts): 10/10 passed in 30.9s.
+- Apps Script Deployment Update (@25) & Live API Verification completed:
+  * 1. Deployment Execution:
+    - Pushed all 65 Apps Script files via clasp.
+    - Created Version 24 and Version 25 (`Personal Dashboard earnings calculation fix @25`).
+    - Redeployed deployment `AKfycbx4d_VG4CsZIEAomX_OjNMuej06ktTYmKLME5ennLsI7mx3Fn5b-YBu9CRqe7NwrUVH3w` in-place to Version @25. Deployment ID, URL, execution policy (executeAs: USER_DEPLOYING, access: ANYONE_ANONYMOUS), and script properties preserved 100%. Zero new deployments created.
+  * 2. Live Sheet Discrepancy Diagnosis & Fix:
+    - Shared package_id: Both Rehaan and Viwaan had package_id PKG_001 in the canonical spreadsheet. Initial package deduplication indexed by package_id alone, causing Viwaan to overwrite Rehaan (billing 116,800 instead of 216,800). Fixed by scoping deduplication per student (`studentKey + '_' + package_id`).
+    - Dash placeholder in in_inr: Payments sheet stored '-' in the in_inr column for domestic INR payments. Previous `hasInInr` treated any non-empty string as a manual override, resulting in `Number('-') || 0 = 0` and totalReceived = 0. Fixed by validating `numInInr > 0 && !isNaN(numInInr) && rawInInr !== '-'`, correctly falling back to domestic INR `amount`.
+  * 3. Live Authenticated Endpoint Verification:
+    - Authenticated via `auth.login` obtaining HMAC session token.
+    - Verified `reports.financialSummary` on live deployed URL:
+      * totalInvoiced / totalBilled: ₹2,16,800
+      * totalCollected / totalReceived: ₹1,66,800
+      * totalOutstanding: ₹50,000
+    - Verified `dashboard.overview` on live deployed URL:
+      * outstandingFeesTotal: ₹50,000
+      * overdueFeesTotal: ₹50,000
+  * 4. Quality Gates:
+    - 144/144 Vitest tests passing across 27 test files (added test 11 covering shared package_id and dash in in_inr).
+    - Line limit check: all 124 files in src/ and public/ <= 149 lines.
+    - TypeScript strict check: 0 errors.
+    - Production Vite build: 910ms clean build.
+    - Playwright e2e tests: 10/10 passed in 21.5s.

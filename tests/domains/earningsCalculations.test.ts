@@ -436,4 +436,34 @@ describe('Earnings Calculations & Canonical Financial Summary', () => {
     expect(summary.data.totalOutstanding).toBe(0);
     expect(summary.data.currency).toBe('INR');
   });
+
+  it('accurately calculates metrics when multiple students share identical package_id and payments contain dash in in_inr', () => {
+    const pkgSheet = spreadsheet.getSheetByName('Packages')!;
+    const paySheet = spreadsheet.getSheetByName('Payments')!;
+
+    // Replicate exact physical sheet rows observed in owner screenshots:
+    // Rehaan: PKG_001 (₹100,000)
+    pkgSheet.appendRow(['PKG_001', 'STU_001', 'Rehaan', 'Yearly Plan', 'INR', 100000, '-', 80, '2026-04-05', '2027-03-30', '2026-11-30']);
+    // Viwaan: PKG_001 (₹100,000) - shares PKG_001 ID
+    pkgSheet.appendRow(['PKG_001', 'STU_002', 'Viwaan', 'Yearly Plan', 'INR', 100000, '-', 80, '2026-04-05', '2027-03-30', '2026-11-30']);
+    // Seerat: PKG_002 (₹16,800)
+    pkgSheet.appendRow(['PKG_002', 'STU_003', 'Seerat', 'Per Class', 'INR', 16800, 350, 48, '2026-01-18', '2026-05-08', '-']);
+
+    // Payments with in_inr = '-'
+    paySheet.appendRow(['STU_001', 'Rehaan', '2026-04-01', 25000, 'INR', '-']);
+    paySheet.appendRow(['STU_002', 'Viwaan', '2026-04-01', 25000, 'INR', '-']);
+    paySheet.appendRow(['STU_001', 'Rehaan', '2026-07-16', 25000, 'INR', '-']);
+    paySheet.appendRow(['STU_002', 'Viwaan', '2026-07-16', 25000, 'INR', '-']);
+    paySheet.appendRow(['STU_001', 'Rehaan', '2026-10-06', 25000, 'INR', '-']);
+    paySheet.appendRow(['STU_002', 'Viwaan', '2026-10-06', 25000, 'INR', '-']);
+    paySheet.appendRow(['STU_003', 'Seerat', '2026-01-18', 16800, 'INR', '-']);
+
+    const summary = ReportService.Reports_getFinancialSummary(spreadsheet);
+    expect(summary.success).toBe(true);
+    expect(summary.data.totalInvoiced).toBe(216800);
+    expect(summary.data.totalBilled).toBe(216800);
+    expect(summary.data.totalCollected).toBe(166800);
+    expect(summary.data.totalReceived).toBe(166800);
+    expect(summary.data.totalOutstanding).toBe(50000);
+  });
 });
