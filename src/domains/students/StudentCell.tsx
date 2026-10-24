@@ -3,7 +3,7 @@ import { Student } from './studentTypes';
 
 export interface StudentCellProps {
   student: Student;
-  onSelect: (student: Student) => void;
+  onSelect?: (student: Student) => void;
 }
 
 export const StudentCell: React.FC<StudentCellProps> = ({ student, onSelect }) => {
@@ -31,22 +31,23 @@ export const StudentCell: React.FC<StudentCellProps> = ({ student, onSelect }) =
         {initial}
       </div>
       <div>
-        <button
-          type="button"
-          onClick={() => onSelect(student)}
+        <span
+          onClick={(e) => {
+            if (onSelect) {
+              e.stopPropagation();
+              onSelect(student);
+            }
+          }}
           style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--color-primary)',
             fontWeight: 600,
+            color: 'var(--color-text-main)',
             fontSize: 'var(--font-size-sm)',
-            cursor: 'pointer',
-            textAlign: 'left',
-            padding: 0,
+            display: 'block',
+            cursor: onSelect ? 'pointer' : undefined,
           }}
         >
           {name}
-        </button>
+        </span>
         <span style={{ fontSize: '11px', color: 'var(--color-text-subtle)', display: 'block', fontFamily: 'monospace' }}>
           {student.student_id}
         </span>

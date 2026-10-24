@@ -1,13 +1,10 @@
 import React from 'react';
-import { detectMeetingPlatform } from './platformDetector';
-import { MeetingPlatformBadge } from './MeetingPlatformBadge';
-import { Button } from '../../components/buttons/Button';
-import { CopyIcon } from '../../components/icons/ActionIcons';
+import { MeetingLinkButton } from './MeetingLinkButton';
 
 export interface MeetingLinkSlotProps {
   slotTitle: 'Primary Meeting Link' | 'Secondary Meeting Link';
   url: string | null | undefined;
-  onAdd: () => void;
+  onAdd?: () => void;
   onCopy: (url: string) => void;
   isCopied: boolean;
 }
@@ -15,13 +12,11 @@ export interface MeetingLinkSlotProps {
 export const MeetingLinkSlot: React.FC<MeetingLinkSlotProps> = ({
   slotTitle,
   url,
-  onAdd,
   onCopy,
   isCopied,
 }) => {
   const cleanUrl = (url || '').trim();
   const exists = cleanUrl !== '' && cleanUrl !== '-' && cleanUrl !== '—';
-  const platform = exists ? detectMeetingPlatform(cleanUrl) : null;
 
   return (
     <div
@@ -43,41 +38,18 @@ export const MeetingLinkSlot: React.FC<MeetingLinkSlotProps> = ({
           <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, color: 'var(--color-text-muted)' }}>
             {slotTitle}
           </span>
-          {platform && <MeetingPlatformBadge info={platform} />}
         </div>
 
         {exists ? (
-          <div
-            title={cleanUrl}
-            style={{
-              fontSize: 'var(--font-size-xs)',
-              wordBreak: 'break-all',
-              color: 'var(--color-text-main)',
-              fontFamily: 'monospace',
-              lineHeight: 1.4,
-              maxHeight: '3.6em',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            {cleanUrl}
-          </div>
+          <MeetingLinkButton
+            url={cleanUrl}
+            isCopied={isCopied}
+            onCopy={onCopy}
+          />
         ) : (
           <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-subtle)', fontStyle: 'italic', margin: '4px 0' }}>
             No link configured
           </div>
-        )}
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: '4px' }}>
-        {exists ? (
-          <Button variant="ghost" size="sm" onClick={() => onCopy(cleanUrl)}>
-            <CopyIcon size={12} /> {isCopied ? 'Copied' : 'Copy'}
-          </Button>
-        ) : (
-          <Button variant="secondary" size="sm" onClick={onAdd}>
-            Add Meeting Link
-          </Button>
         )}
       </div>
     </div>

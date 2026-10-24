@@ -50,8 +50,9 @@ test.describe('E2E — Students Domain Workflow', () => {
     await searchInput.fill(testId);
     await expect(page.locator(`text=${student.full_name}`)).toBeVisible();
 
-    // 4. Open profile and verify tabs
-    await page.locator(`button:has-text("${student.full_name}")`).first().click();
+    // 4. Expand row and open profile to verify tabs
+    await page.locator(`text=${student.full_name}`).first().click();
+    await page.locator('button:has-text("View Full Profile")').click();
     await expect(page.locator('main button:has-text("Packages & Balances")')).toBeVisible();
     await expect(page.locator('main button:has-text("Fee Obligations")')).toBeVisible();
     await expect(page.locator('main button:has-text("Classes & Attendance")')).toBeVisible();
@@ -90,7 +91,8 @@ test.describe('E2E — Students Domain Workflow', () => {
     await page.reload();
     await navigateTo(page, 'Students');
     await expect(page.locator(`text=${student.full_name}`)).toBeVisible({ timeout: 45000 });
-    await page.locator(`button:has-text("${student.full_name}")`).first().click();
+    await page.locator(`text=${student.full_name}`).first().click();
+    await page.locator('button:has-text("View Full Profile")').click();
     await expect(page.getByText('ACTIVE', { exact: true })).toBeVisible();
   });
 });

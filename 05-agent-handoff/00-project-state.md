@@ -38,11 +38,11 @@ The Git history and this file are the recovery sources of truth. Chat history an
 |---|---|
 | Project | Student Management Dashboard / Personal Dashboard |
 | Execution mode | Autonomous, sequential implementation |
-| Current phase | Student ID Consistency & Legacy ID Migration Plan |
+| Current phase | Meeting Links & Student Details UI Fixes |
 | Current phase status | PASSED |
-| Last completed phase | Student ID Consistency & Legacy ID Migration Plan |
+| Last completed phase | Meeting Links & Student Details UI Fixes |
 | Current Git branch | main |
-| Last full regression run | 183 Vitest tests passed (35 test files) + line-limit check passing (152 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build (784ms) + Playwright suites passing (28 passed, 1 skipped) |
+| Last full regression run | 202 Vitest tests passed (36 test files) + line-limit check passing (158 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build (795ms) |
 | Canonical Spreadsheet | `Private Class Dashboard` (ID: `1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8`, Owner: `ashreya0502@gmail.com`) — 6 approved business tables + 1 AuditLog operational table |
 | Backup Spreadsheet | `Master Backup (Pre-Launch 2026-10-21T12-13-40-537Z)` (ID: `1kIFYmI81DfNIAqb-ZHsTifiKE6JxhfQrXqpfphrw9eU`) — Verified accessible and preserved intact |
 | Apps Script Project | `1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL` — ConfigService, IdGenerator (STU_001), StudentService, ClassScheduleService, StudentIdMigration engine implemented |
@@ -81,6 +81,7 @@ The Git history and this file are the recovery sources of truth. Chat history an
 | 25 | Student ID Migration Read-Only Safety Audit & Verification Tooling | PASSED | 3dda679 | Conducted exhaustive read-only safety audit of live canonical sheet; implemented StudentIdVerification.gs (113 lines) with verifyStudentIdReferentialIntegrity and rollbackStudentIdMigration; expanded automated test coverage to 185 tests (6 migration tests passing); updated docs/prelaunch/student-id-migration-plan.md with verification and rollback runbooks. Zero live mutations performed. |
 | 26 | Student ID Migration Safety Hardening, Preflight & Recovery Engine | PASSED | 39bb3f4 | Implemented StudentIdPreflight.gs (134 lines) providing isolated preflight analysis reporting READY verdict on live sheet; hardened StudentIdMigration.gs (133 lines) with script locking, pre-write backup verification, and resume-on-retry state machine; enhanced StudentIdVerification.gs (128 lines) with concurrency-safe rollback; audited schedule storage (ClassSchedules sheet absent, handled gracefully); preserved audit history traceability; 189 Vitest tests passing (10 migration tests). Zero live writes. |
 | 27 | Student ID Migration Live Execution & Post-Migration Verification | PASSED | HEAD | Under explicit owner authorization, pushed 71 files to Apps Script, deployed Version @26 in-place to AKfycbx4d_..., verified preflight READY, executed runStudentIdMigration(), and verified post-migration state. 26/26 students now standard sequential STU_001-STU_026 (STU_001-003 preserved, 23 legacy migrated). 0 legacy IDs remain, 0 dangling references. Backup tab StudentId_Migration_Backup active (24 rows). Rollback available. 189 Vitest tests passing. Complete. |
+| 28 | Meeting Links & Student Details UI Fixes | PASSED | HEAD | Implemented 4 fixes: 1. Meeting links styled as clickable green/blue buttons with 1-click clipboard copy, subtle feedback, no separate provider labels/copy buttons. 2. Missing links show 'No link configured' without inline add button. 3. Add Meeting Link form starts with unselected student and neutral 'Select student' placeholder, enforcing required validation. 4. Students directory default rows show Name, Subject, Schedule, Classes (01/48); row click expands full details inline with collapse toggle and stopPropagation on action buttons. 202 Vitest tests passing, 158 micro-files <= 149 lines, clean build. |
 
 ## 6. Live Infrastructure Inspection & Modification Boundary
 

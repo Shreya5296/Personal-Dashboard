@@ -36,13 +36,17 @@ export const MeetingLinkForm: React.FC<MeetingLinkFormProps> = ({
     if (!initialStudentId && !initialLink?.student_id) {
       fetchStudents({}, token).then((data) => {
         setStudents(data);
-        if (data.length > 0 && !selectedStudentId) setSelectedStudentId(data[0].student_id);
       });
     }
   }, [initialStudentId, initialLink, token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!initialStudentId && !initialLink?.student_id && !selectedStudentId) {
+      setError('Please select a student.');
+      return;
+    }
+
     const pTrim = primaryUrl.trim();
     const sTrim = secondaryUrl.trim();
     if (targetSlot === 'primary' && !pTrim) { setError('Primary Meeting Link is required.'); return; }
@@ -85,10 +89,20 @@ export const MeetingLinkForm: React.FC<MeetingLinkFormProps> = ({
       </div>
 
       {!initialStudentId && !initialLink && (
-        <FormField label="Assign to Student" required>
-          <select className={formStyles.select} value={selectedStudentId} onChange={(e) => setSelectedStudentId(e.target.value)}>
+        <FormField label="Assign to Student" required error={error && !selectedStudentId ? error : undefined}>
+          <select
+            className={formStyles.select}
+            value={selectedStudentId}
+            onChange={(e) => {
+              setSelectedStudentId(e.target.value);
+              setError(null);
+            }}
+          >
+            <option value="">Select student</option>
             {students.map((s) => (
-              <option key={s.student_id} value={s.student_id}>{s.student_name || s.student_id} ({s.subject || 'General'})</option>
+              <option key={s.student_id} value={s.student_id}>
+                {s.student_name || s.student_id} ({s.subject || 'General'})
+              </option>
             ))}
           </select>
         </FormField>

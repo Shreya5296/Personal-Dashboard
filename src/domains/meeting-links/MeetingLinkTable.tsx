@@ -1,15 +1,13 @@
 import React from 'react';
 import { MeetingLink } from './meetingLinkTypes';
-import { detectMeetingPlatform } from './platformDetector';
-import { MeetingPlatformBadge } from './MeetingPlatformBadge';
+import { MeetingLinkButton } from './MeetingLinkButton';
 import { Button } from '../../components/buttons/Button';
-import { CopyIcon } from '../../components/icons/ActionIcons';
 import { DataTable, Column } from '../../components/tables/DataTable';
 
 export interface MeetingLinkTableProps {
   links: MeetingLink[];
   onEdit: (link: MeetingLink) => void;
-  onAddSlot: (link: MeetingLink, slot: 'primary' | 'secondary') => void;
+  onAddSlot?: (link: MeetingLink, slot: 'primary' | 'secondary') => void;
   onCopy: (key: string, url: string) => void;
   copiedKey: string | null;
 }
@@ -17,61 +15,32 @@ export interface MeetingLinkTableProps {
 export const MeetingLinkTable: React.FC<MeetingLinkTableProps> = ({
   links,
   onEdit,
-  onAddSlot,
   onCopy,
   copiedKey,
 }) => {
   const renderLinkCell = (
     link: MeetingLink,
     rawUrl: string | undefined,
-    slot: 'primary' | 'secondary',
     copySuffix: string
   ) => {
     const cleanUrl = (rawUrl || '').trim();
     const exists = cleanUrl !== '' && cleanUrl !== '-' && cleanUrl !== '—';
-    const platform = exists ? detectMeetingPlatform(cleanUrl) : null;
     const isCopied = copiedKey === `${link.meeting_link_id || link.student_id}_${copySuffix}`;
 
     if (!exists) {
       return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-subtle)', fontStyle: 'italic' }}>
-            No link configured
-          </span>
-          <Button variant="secondary" size="sm" onClick={() => onAddSlot(link, slot)}>
-            Add Meeting Link
-          </Button>
-        </div>
+        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-subtle)', fontStyle: 'italic' }}>
+          No link configured
+        </span>
       );
     }
 
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minHeight: '32px' }}>
-        {platform && <MeetingPlatformBadge info={platform} />}
-        <span
-          title={cleanUrl}
-          style={{
-            fontSize: 'var(--font-size-xs)',
-            fontFamily: 'monospace',
-            maxWidth: '220px',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            display: 'inline-block',
-            color: 'var(--color-text-main)',
-          }}
-        >
-          {cleanUrl}
-        </span>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onCopy(`${link.meeting_link_id || link.student_id}_${copySuffix}`, cleanUrl)}
-          aria-label={`Copy ${slot} link`}
-        >
-          <CopyIcon size={12} /> {isCopied ? 'Copied' : 'Copy'}
-        </Button>
-      </div>
+      <MeetingLinkButton
+        url={cleanUrl}
+        isCopied={isCopied}
+        onCopy={(u) => onCopy(`${link.meeting_link_id || link.student_id}_${copySuffix}`, u)}
+      />
     );
   };
 
@@ -97,13 +66,13 @@ export const MeetingLinkTable: React.FC<MeetingLinkTableProps> = ({
       key: 'primary_link',
       header: 'Primary Meeting Link',
       width: '33%',
-      render: (l) => renderLinkCell(l, l.meeting_link_1 || l.meeting_url, 'primary', '1'),
+      render: (l) => renderLinkCell(l, l.meeting_link_1 || l.meeting_url, '1'),
     },
     {
       key: 'secondary_link',
       header: 'Secondary Meeting Link',
       width: '33%',
-      render: (l) => renderLinkCell(l, l.meeting_link_2, 'secondary', '2'),
+      render: (l) => renderLinkCell(l, l.meeting_link_2, '2'),
     },
     {
       key: 'actions',

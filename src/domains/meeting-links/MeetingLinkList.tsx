@@ -47,9 +47,15 @@ export const MeetingLinkList: React.FC<{ studentId?: string }> = ({ studentId })
   };
 
   const handleCopy = (key: string, url: string) => {
-    navigator.clipboard.writeText(url);
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(url).catch(() => {});
+    }
     setCopiedKey(key);
-    setTimeout(() => setCopiedKey(null), 2000);
+    setFeedback('Meeting link copied to clipboard.');
+    setTimeout(() => {
+      setCopiedKey(null);
+      setFeedback(null);
+    }, 2500);
   };
 
   const openAddSlot = (link: MeetingLink, slot: 'primary' | 'secondary') => {

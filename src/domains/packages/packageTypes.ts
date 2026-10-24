@@ -9,12 +9,14 @@ export interface Package {
   classes_purchased?: number;
   purchased_classes?: number;
   consumed_classes?: number;
+  classes_consumed?: number;
   remaining_classes?: number;
   price?: number;
   package_price?: number;
   per_class?: number;
   currency?: string;
   start_date: string;
+  end_date?: string;
   expiry_date?: string;
   next_due_date?: string;
   status: 'ACTIVE' | 'EXHAUSTED' | 'EXPIRED' | string;
