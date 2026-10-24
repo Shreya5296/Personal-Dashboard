@@ -6,7 +6,7 @@ export function exportFinancesCsv(summary: FinancialSummary | null, payments: Pa
 
   rows.push('--- FINANCIAL SUMMARY ---');
   rows.push('Metric,Amount,Currency');
-  rows.push(`Total Invoiced / Package Value,${summary?.totalInvoiced ?? 0},${summary?.currency ?? 'INR'}`);
+  rows.push(`Total Invoice,${summary?.totalInvoiced ?? 0},${summary?.currency ?? 'INR'}`);
   rows.push(`Collected Earnings,${summary?.totalCollected ?? 0},${summary?.currency ?? 'INR'}`);
   rows.push(`Total Outstanding,${summary?.totalOutstanding ?? 0},${summary?.currency ?? 'INR'}`);
   rows.push('');
@@ -22,7 +22,8 @@ export function exportFinancesCsv(summary: FinancialSummary | null, payments: Pa
     const curr = p.currency || 'INR';
     const method = `"${(p.payment_method || '').replace(/"/g, '""')}"`;
     const ref = `"${(p.reference_number || p.payment_id || '').replace(/"/g, '""')}"`;
-    const status = p.status || p.payment_status || 'RECORDED';
+    const rawStatus = (p.status || p.payment_status || 'RECORDED').toUpperCase();
+    const status = rawStatus === 'RECORDED' ? 'Received' : (p.status || p.payment_status || 'Received');
 
     rows.push(`${pDate},${name},${sid},${amt},${curr},${method},${ref},${status}`);
   }

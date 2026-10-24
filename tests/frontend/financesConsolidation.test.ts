@@ -70,11 +70,11 @@ describe('Finances Consolidation & Single Financial Place', () => {
       expect(exportedDownload).toContain('finances_report_');
       const decoded = decodeURIComponent(exportedUri.replace('data:text/csv;charset=utf-8,', ''));
       expect(decoded).toContain('--- FINANCIAL SUMMARY ---');
-      expect(decoded).toContain('Total Invoiced / Package Value,216800,INR');
+      expect(decoded).toContain('Total Invoice,216800,INR');
       expect(decoded).toContain('Collected Earnings,166800,INR');
       expect(decoded).toContain('Total Outstanding,50000,INR');
       expect(decoded).toContain('--- TRANSACTION RECORDS ---');
-      expect(decoded).toContain('2026-04-01,"Rehaan","STU_001",25000,INR,"UPI","REF_123",RECORDED');
+      expect(decoded).toContain('2026-04-01,"Rehaan","STU_001",25000,INR,"UPI","REF_123",Received');
     } finally {
       delete (globalThis as any).document;
     }

@@ -52,7 +52,7 @@ test.describe('Frontend UI/UX Redesign — Screen & Viewport Coverage', () => {
     // 3. Finances
     await navigate(page, 'Finances');
     await expect(page.locator('h1:has-text("Finances")')).toBeVisible();
-    await expect(page.locator('text=Total Invoiced')).toBeVisible();
+    await expect(page.locator('text=Total Invoice')).toBeVisible();
     await expect(page.locator('text=Collected Earnings')).toBeVisible();
     await expect(page.locator('text=Total Outstanding')).toBeVisible();
     await expect(page.locator('text=Collection Performance')).toBeVisible();

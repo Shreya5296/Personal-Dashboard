@@ -23,15 +23,15 @@ export const FinanceSummaryCards: React.FC<FinanceSummaryCardsProps> = ({ summar
         }}
       >
         <div style={cardStyle}>
-          <span style={labelStyle}>Total Invoiced / Package Value</span>
+          <span style={labelStyle}>Total Invoice</span>
           <div style={amountStyle}>{formatCurrency(invoiced)}</div>
-          <p style={descStyle}>Total agreed package value and billed obligations</p>
+          <p style={descStyle}>Total agreed package value</p>
         </div>
 
         <div style={cardStyle}>
           <span style={labelStyle}>Collected Earnings</span>
           <div style={{ ...amountStyle, color: '#059669' }}>{formatCurrency(collected)}</div>
-          <p style={descStyle}>Actual received tuition payments</p>
+          <p style={descStyle}>Received Payments</p>
         </div>
 
         <div style={cardStyle}>
@@ -39,7 +39,7 @@ export const FinanceSummaryCards: React.FC<FinanceSummaryCardsProps> = ({ summar
           <div style={{ ...amountStyle, color: outstanding > 0 ? '#dc2626' : 'var(--color-text-main)' }}>
             {formatCurrency(outstanding)}
           </div>
-          <p style={descStyle}>Uncollected balance across student packages</p>
+          <p style={descStyle}>Uncollected Balance</p>
         </div>
       </div>
 

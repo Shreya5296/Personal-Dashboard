@@ -5,6 +5,7 @@ import { Package } from '../packages/packageTypes';
 import { fetchFinancialSummary } from '../reports/reportApi';
 import { fetchPayments, voidPayment } from '../payments/paymentApi';
 import { fetchPackages } from '../packages/packageApi';
+import { sortPaymentsByDateAscending } from './financeSorting';
 
 export function useFinancesData(token?: string | null) {
   const [summary, setSummary] = useState<FinancialSummary | null>(null);
@@ -40,7 +41,7 @@ export function useFinancesData(token?: string | null) {
     const start = filter.startDate;
     const end = filter.endDate;
 
-    return payments.filter((p) => {
+    const filtered = payments.filter((p) => {
       const pDate = p.payment_date ? String(p.payment_date).slice(0, 10) : '';
       if (start && pDate && pDate < start) return false;
       if (end && pDate && pDate > end) return false;
@@ -52,6 +53,8 @@ export function useFinancesData(token?: string | null) {
       }
       return true;
     });
+
+    return sortPaymentsByDateAscending(filtered);
   }, [payments, filter]);
 
   const studentBalances = useMemo<StudentBalanceRecord[]>(() => {

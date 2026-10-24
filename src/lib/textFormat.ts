@@ -14,6 +14,8 @@ export function formatStatusBadge(status: string | null | undefined): { label: s
     case 'ATTENDED':
     case 'COMPLETED':
       return { label: upper, tone: 'success' };
+    case 'RECORDED':
+      return { label: 'Received', tone: 'neutral' };
     case 'PARTIALLY_PAID':
     case 'SCHEDULED':
     case 'PENDING':

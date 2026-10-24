@@ -3,20 +3,21 @@ import { useAuth } from '../../auth/AuthProvider';
 import { MeetingLink, MeetingLinkInput } from './meetingLinkTypes';
 import { fetchMeetingLinks, createMeetingLink } from './meetingLinkApi';
 import { MeetingLinkForm } from './MeetingLinkForm';
-import { DataTable, Column } from '../../components/tables/DataTable';
+import { MeetingLinkCard } from './MeetingLinkCard';
 import { Button } from '../../components/buttons/Button';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { EmptyState } from '../../components/feedback/EmptyState';
-import { CopyIcon, ExternalLinkIcon } from '../../components/icons/ActionIcons';
 
 export const MeetingLinkList: React.FC<{ studentId?: string }> = ({ studentId }) => {
   const { token } = useAuth();
   const [links, setLinks] = useState<MeetingLink[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isAdding, setIsAdding] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<MeetingLink | null>(null);
+  const [targetSlot, setTargetSlot] = useState<'primary' | 'secondary' | null>(null);
   const [formLoading, setFormLoading] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -34,8 +35,11 @@ export const MeetingLinkList: React.FC<{ studentId?: string }> = ({ studentId })
     setFormLoading(true);
     try {
       await createMeetingLink(input, token);
-      setIsAdding(false);
+      setIsFormOpen(false);
       setEditingLink(null);
+      setTargetSlot(null);
+      setFeedback('Meeting link saved successfully.');
+      setTimeout(() => setFeedback(null), 3000);
       await loadData();
     } finally {
       setFormLoading(false);
@@ -48,86 +52,54 @@ export const MeetingLinkList: React.FC<{ studentId?: string }> = ({ studentId })
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  const renderLinkItem = (label: string, url: string, keyId: string) => (
-    <div>
-      <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)', display: 'block', marginBottom: '2px' }}>
-        {label}
-      </span>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-        <span style={{ fontSize: 'var(--font-size-xs)', wordBreak: 'break-all', color: 'var(--color-text-main)', flex: 1, minWidth: 0 }}>
-          {url}
-        </span>
-        <Button variant="ghost" size="sm" onClick={() => handleCopy(keyId, url)}>
-          <CopyIcon size={12} /> {copiedKey === keyId ? 'Copied' : 'Copy'}
-        </Button>
-        <a href={url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', fontSize: 'var(--font-size-xs)', color: 'var(--color-primary)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-          <ExternalLinkIcon size={12} /> Open ↗
-        </a>
-      </div>
-    </div>
-  );
+  const openAddSlot = (link: MeetingLink, slot: 'primary' | 'secondary') => {
+    setEditingLink(link);
+    setTargetSlot(slot);
+    setIsFormOpen(true);
+  };
 
-  const columns: Column<MeetingLink>[] = [
-    ...(!studentId ? [{
-      key: 'student',
-      header: 'Student',
-      render: (l: MeetingLink) => (
-        <span style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)', color: 'var(--color-text-main)' }}>
-          {l.student_name || l.student_id || 'Global / Unassigned'}
-        </span>
-      ),
-    }] : []),
-    {
-      key: 'links',
-      header: 'Meeting Links',
-      render: (l) => {
-        const link1 = l.meeting_link_1 || l.meeting_url;
-        const link2 = l.meeting_link_2;
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '260px' }}>
-            {link1 && renderLinkItem('Primary meeting link', link1, `${l.meeting_link_id}_1`)}
-            {link2 && link2.trim() && (
-              <div style={{ borderTop: '1px dashed var(--color-border-subtle)', paddingTop: '6px' }}>
-                {renderLinkItem('Secondary meeting link', link2.trim(), `${l.meeting_link_id}_2`)}
-              </div>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      key: 'actions',
-      header: 'Actions',
-      render: (l) => (
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => { setEditingLink(l); setIsAdding(true); }}
-        >
-          Edit
-        </Button>
-      ),
-    },
-  ];
+  const openEdit = (link: MeetingLink) => {
+    setEditingLink(link);
+    setTargetSlot(null);
+    setIsFormOpen(true);
+  };
+
+  const openAddNew = () => {
+    setEditingLink(null);
+    setTargetSlot(null);
+    setIsFormOpen(!isFormOpen);
+  };
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
-        <h4 style={{ margin: 0, fontSize: 'var(--font-size-base)', fontWeight: 600 }}>Registered Meeting Links</h4>
-        <Button variant="secondary" size="sm" onClick={() => { setEditingLink(null); setIsAdding(!isAdding); }}>
-          {isAdding ? 'Cancel' : '+ Add Meeting Link'}
+        <h3 style={{ margin: 0, fontSize: 'var(--font-size-base)', fontWeight: 600 }}>Registered Meeting Links</h3>
+        <Button variant="secondary" size="sm" onClick={openAddNew}>
+          {isFormOpen ? 'Close Form' : '+ Add Meeting Link'}
         </Button>
       </div>
 
-      {isAdding && (
+      {feedback && (
+        <div style={{ padding: '8px 12px', backgroundColor: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)', fontSize: 'var(--font-size-sm)' }}>
+          {feedback}
+        </div>
+      )}
+
+      {isFormOpen && (
         <div style={{ padding: '1.25rem', backgroundColor: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', marginBottom: 'var(--space-5)', boxShadow: 'var(--shadow-sm)' }}>
-          <MeetingLinkForm studentId={studentId} initialLink={editingLink} onSubmit={handleSave} onCancel={() => { setIsAdding(false); setEditingLink(null); }} isLoading={formLoading} />
+          <MeetingLinkForm studentId={studentId} initialLink={editingLink} targetSlot={targetSlot} onSubmit={handleSave} onCancel={() => { setIsFormOpen(false); setEditingLink(null); setTargetSlot(null); }} isLoading={formLoading} />
         </div>
       )}
 
       {loading && <LoadingState message="Loading meeting links…" />}
       {!loading && links.length === 0 && <EmptyState title="No meeting links configured" description="Add Google Meet or Zoom links to quickly connect with students during classes." />}
-      {!loading && links.length > 0 && <DataTable columns={columns} data={links} keyExtractor={(l) => l.meeting_link_id} />}
+      {!loading && links.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          {links.map((link) => (
+            <MeetingLinkCard key={link.meeting_link_id || link.student_id} link={link} onEdit={openEdit} onAddSlot={openAddSlot} onCopy={handleCopy} copiedKey={copiedKey} />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

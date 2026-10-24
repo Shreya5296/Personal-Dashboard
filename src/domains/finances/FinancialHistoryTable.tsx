@@ -3,18 +3,15 @@ import { Payment } from './financeTypes';
 import { DataTable, Column } from '../../components/tables/DataTable';
 import { formatCurrency } from '../../lib/currencyFormat';
 import { formatDate } from '../../lib/dateFormat';
-import { formatStatusBadge } from '../../lib/textFormat';
-import { Button } from '../../components/buttons/Button';
 import { EmptyState } from '../../components/feedback/EmptyState';
 
 export interface FinancialHistoryTableProps {
   payments: Payment[];
-  onVoid: (paymentId: string) => void;
+  onVoid?: (paymentId: string) => void;
 }
 
 export const FinancialHistoryTable: React.FC<FinancialHistoryTableProps> = ({
   payments,
-  onVoid,
 }) => {
   if (payments.length === 0) {
     return (
@@ -27,8 +24,17 @@ export const FinancialHistoryTable: React.FC<FinancialHistoryTableProps> = ({
 
   const columns: Column<Payment>[] = [
     {
+      key: 'student_id',
+      header: 'Student ID',
+      render: (p) => (
+        <span style={{ fontSize: 'var(--font-size-xs)', fontFamily: 'monospace', color: 'var(--color-text-subtle)' }}>
+          {p.student_id || '—'}
+        </span>
+      ),
+    },
+    {
       key: 'student_name',
-      header: 'Student',
+      header: 'Student Name',
       render: (p) => (
         <span style={{ fontWeight: 600, color: 'var(--color-text-main)' }}>
           {p.student_name || p.student_id || '—'}
@@ -45,66 +51,9 @@ export const FinancialHistoryTable: React.FC<FinancialHistoryTableProps> = ({
       header: 'Amount',
       render: (p) => (
         <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#059669' }}>
-          {formatCurrency(p.amount)}
+          {formatCurrency(p.amount, true, p.currency)}
         </span>
       ),
-    },
-    {
-      key: 'payment_method',
-      header: 'Method',
-      render: (p) => (
-        <span
-          style={{
-            fontSize: 'var(--font-size-xs)',
-            fontWeight: 500,
-            padding: '2px 8px',
-            borderRadius: 'var(--radius-sm)',
-            backgroundColor: 'var(--color-bg-subtle)',
-          }}
-        >
-          {p.payment_method || 'Payment'}
-        </span>
-      ),
-    },
-    {
-      key: 'reference_number',
-      header: 'Reference #',
-      render: (p) => <code>{p.reference_number || p.payment_id || '—'}</code>,
-    },
-    {
-      key: 'status',
-      header: 'Status',
-      render: (p) => {
-        const badge = formatStatusBadge(p.status || p.payment_status || 'RECORDED');
-        const isSuccess = badge.tone === 'success';
-        return (
-          <span
-            style={{
-              padding: '2px 8px',
-              borderRadius: 'var(--radius-full)',
-              fontSize: 'var(--font-size-xs)',
-              fontWeight: 600,
-              backgroundColor: isSuccess ? 'var(--color-success-bg)' : 'var(--color-danger-bg)',
-              color: isSuccess ? 'var(--color-success-text)' : 'var(--color-danger-text)',
-              border: `1px solid ${isSuccess ? 'var(--color-success-border)' : 'var(--color-danger-border)'}`,
-            }}
-          >
-            {badge.label}
-          </span>
-        );
-      },
-    },
-    {
-      key: 'actions',
-      header: 'Actions',
-      render: (p) =>
-        p.status !== 'VOID' ? (
-          <Button variant="outline" size="sm" onClick={() => onVoid(p.payment_id)}>
-            Void
-          </Button>
-        ) : (
-          <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-subtle)' }}>Voided</span>
-        ),
     },
   ];
 

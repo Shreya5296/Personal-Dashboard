@@ -463,3 +463,24 @@ NEXT ACTION
     - TypeScript strict check: tsc --noEmit passed with 0 errors.
     - Production Vite build: 539ms clean build, 0 warnings.
     - Playwright E2E suites: 14/14 passed in 18.7s (accountDropdown.spec.ts, reportsAndCrossCutting.spec.ts, redesignScreensVisual.spec.ts).
+- Finances & Meeting Links Refinements completed:
+  * 1. Finances Summary Cards & Payment History Refinements:
+    - Updated summary card titles and descriptions to exact approved labels: 'Total Invoice' with 'Total agreed package value', 'Collected Earnings' with 'Received Payments', and 'Total Outstanding' with 'Uncollected Balance'.
+    - Simplified Payment History table to exactly 4 columns: 'Student ID', 'Student Name', 'Date', and 'Amount'. Method, Reference, and Actions columns completely removed without blank cells or unused headers.
+    - Preserved original payment amounts and currencies using formatCurrency(amount, true, currency).
+    - Implemented ascending chronological sorting in financeSorting.ts by payment_date (oldest first, newest last) with deterministic secondary sort on same-day payments and safe handling of missing/invalid dates.
+    - Updated payment status wording to display 'RECORDED' as 'Received' in textFormat.ts and CSV exports.
+  * 2. Meeting Links Platform Identification & Columnar Layout:
+    - Implemented platformDetector.ts identifying 'Google Meet' (meet.google.com and subdomains), 'Zoom' (zoom.us, subdomains, zoomgov.com), and 'Other meeting platform' safely from parsed URL hostnames with protocol safety against javascript: schemes.
+    - Created MeetingPlatformBadge.tsx with platform-specific branding dots and color themes.
+    - Replaced shared links area with distinct MeetingLinkCard.tsx rendering two columns on desktop (stacking on tablet/mobile) for 'Primary Meeting Link' and 'Secondary Meeting Link' via MeetingLinkSlot.tsx.
+    - Implemented missing-link behavior: displays 'Add Meeting Link' button when a slot is empty/unconfigured; Copy and Open controls only display when a link exists.
+    - Upgraded MeetingLinkForm.tsx to support targetSlot ('primary' or 'secondary'), preselecting the student, indicating the target slot, and strictly preserving existing links in the other slot upon save.
+  * 3. Testing and Quality Gates:
+    - Added tests/frontend/financesRefinements.test.ts (6 unit tests) and tests/frontend/meetingLinksRefinements.test.ts (6 unit tests).
+    - Added tests/e2e/meetingLinksAndFinancesRefinements.spec.ts (2 Playwright tests).
+    - Unit tests: 159/159 passing across 30 test files in 1.52s.
+    - Line limit check: 134 files in src/ and public/ <= 149 lines (PASS).
+    - TypeScript strict check: 0 errors.
+    - Production Vite build: 503ms clean build.
+    - Playwright E2E suites: 16/16 passed in 29.8s.

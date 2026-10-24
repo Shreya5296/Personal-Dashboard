@@ -137,7 +137,7 @@ test.describe('E2E — Account Dropdown, Branding, Preferences & Calendar', () =
     await page.locator('aside button:has-text("Finances")').click();
     await expect(page.locator('h1:has-text("Finances")')).toBeVisible();
     await expect(page.locator('text=Collected Earnings')).toBeVisible();
-    await expect(page.locator('text=Total Invoiced')).toBeVisible();
+    await expect(page.locator('text=Total Invoice')).toBeVisible();
     await expect(page.locator('text=Total Outstanding')).toBeVisible();
     await expect(page.locator('button:has-text("Export Finances CSV")')).toBeVisible();
   });
