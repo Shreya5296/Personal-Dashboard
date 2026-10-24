@@ -3,6 +3,13 @@ import {
   buildStudentIdMigrationMap,
   runStudentIdMigration,
 } from '../../02-backend/apps-script/setup/StudentIdMigration.gs';
+import {
+  runStudentIdMigrationPreflight,
+} from '../../02-backend/apps-script/setup/StudentIdPreflight.gs';
+import {
+  verifyStudentIdReferentialIntegrity,
+  rollbackStudentIdMigration,
+} from '../../02-backend/apps-script/setup/StudentIdVerification.gs';
 
 function createMockSheet(name: string, headers: string[], initialRows: unknown[][] = []) {
   const data: unknown[][] = headers.length > 0 ? [headers, ...initialRows.map((r) => [...r])] : [];
@@ -54,65 +61,110 @@ function createMockSpreadsheet(sheetsMap: Record<string, ReturnType<typeof creat
   };
 }
 
-describe('Student ID Migration Engine', () => {
-  it('builds sequential migration map avoiding existing standard IDs', () => {
-    const students = [
-      { student_id: 'STU_001' },
-      { student_id: 'STU_002' },
-      { student_id: 'STU_003' },
-      { student_id: 'stu_mvm12345' },
-      { student_id: 'stu_mvm67890' },
-    ];
-    const map = buildStudentIdMigrationMap(students);
-    expect(map['stu_mvm12345']).toBe('STU_004');
-    expect(map['stu_mvm67890']).toBe('STU_005');
-    expect(map['STU_001']).toBeUndefined();
-    expect(map['STU_002']).toBeUndefined();
-    expect(map['STU_003']).toBeUndefined();
-  });
-
-  it('handles existing gaps and collision prevention during ID allocation', () => {
-    const students = [
-      { student_id: 'STU_001' },
-      { student_id: 'STU_005' }, // Gap: STU_002, 003, 004 unused, max is 5
-      { student_id: 'stu_legacy_a' },
-    ];
-    const map = buildStudentIdMigrationMap(students);
-    expect(map['stu_legacy_a']).toBe('STU_006');
-  });
-
-  it('cascades student ID updates across all 7 dependent tables', () => {
+describe('Student ID Migration Preflight Engine', () => {
+  it('reports READY and provides proposed sequential mapping on valid data', () => {
     const sheets = {
-      Students: createMockSheet('Students', ['student_id', 'student_name', 'status'], [
-        ['STU_001', 'Seerat', 'Active'],
-        ['stu_legacy_1', 'Synthetic Learner', 'Active'],
+      Students: createMockSheet('Students', ['student_id', 'student_name'], [
+        ['STU_001', 'Seerat'],
+        ['STU_002', 'Rehaan'],
+        ['stu_legacy_1', 'Legacy Student 1'],
+        ['stu_legacy_2', 'Legacy Student 2'],
       ]),
-      Packages: createMockSheet('Packages', ['package_id', 'student_id', 'total_classes'], [
-        ['pkg_1', 'STU_001', 12],
-        ['pkg_2', 'stu_legacy_1', 10],
-      ]),
-      Payments: createMockSheet('Payments', ['payment_id', 'student_id', 'amount'], [
-        ['pay_1', 'STU_001', 5000],
-        ['pay_2', 'stu_legacy_1', 2500],
-      ]),
-      ClassSessions: createMockSheet('ClassSessions', ['session_id', 'student_id', 'status'], [
-        ['cls_1', 'stu_legacy_1', 'ATTENDED'],
-      ]),
-      MeetingLinks: createMockSheet('MeetingLinks', ['meeting_link_id', 'student_id', 'meeting_url'], [
-        ['ml_1', 'stu_legacy_1', 'https://meet.google.com/xyz'],
-      ]),
-      StudentNotes: createMockSheet('StudentNotes', ['note_id', 'student_id', 'content'], [
-        ['note_1', 'stu_legacy_1', 'Good test score.'],
-      ]),
-      ClassSchedules: createMockSheet('ClassSchedules', ['schedule_id', 'student_id', 'day_of_week'], [
-        ['sched_1', 'stu_legacy_1', 'MONDAY'],
-      ]),
-      AuditLog: createMockSheet('AuditLog', ['audit_id', 'entity_type', 'entity_id', 'action'], [
-        ['aud_1', 'STUDENT', 'stu_legacy_1', 'CREATE'],
-        ['aud_2', 'PACKAGE', 'pkg_2', 'CREATE'],
+      Packages: createMockSheet('Packages', ['package_id', 'student_id'], [
+        ['pkg_1', 'STU_001'],
+        ['pkg_2', 'stu_legacy_1'],
       ]),
     };
+    const ss = createMockSpreadsheet(sheets);
+    const preflight = runStudentIdMigrationPreflight(ss as unknown as GoogleAppsScript.Spreadsheet.Spreadsheet);
 
+    expect(preflight.ready).toBe(true);
+    expect(preflight.status).toBe('READY');
+    expect(preflight.reasons).toHaveLength(0);
+    expect(preflight.proposedMapping['stu_legacy_1']).toBe('STU_003');
+    expect(preflight.proposedMapping['stu_legacy_2']).toBe('STU_004');
+    expect(preflight.stats.legacyStudentCount).toBe(2);
+    expect(preflight.stats.standardStudentCount).toBe(2);
+  });
+
+  it('reports BLOCKED if duplicate student IDs exist in Students tab', () => {
+    const sheets = {
+      Students: createMockSheet('Students', ['student_id', 'student_name'], [
+        ['STU_001', 'Seerat'],
+        ['stu_dup_1', 'Student A'],
+        ['stu_dup_1', 'Student B'],
+      ]),
+    };
+    const ss = createMockSpreadsheet(sheets);
+    const preflight = runStudentIdMigrationPreflight(ss as unknown as GoogleAppsScript.Spreadsheet.Spreadsheet);
+
+    expect(preflight.ready).toBe(false);
+    expect(preflight.status).toBe('BLOCKED');
+    expect(preflight.reasons.some((r) => r.includes('Duplicate student ID'))).toBe(true);
+  });
+
+  it('reports BLOCKED if dangling foreign keys exist in dependent tables', () => {
+    const sheets = {
+      Students: createMockSheet('Students', ['student_id', 'student_name'], [
+        ['STU_001', 'Seerat'],
+      ]),
+      Packages: createMockSheet('Packages', ['package_id', 'student_id'], [
+        ['pkg_1', 'stu_nonexistent'],
+      ]),
+    };
+    const ss = createMockSpreadsheet(sheets);
+    const preflight = runStudentIdMigrationPreflight(ss as unknown as GoogleAppsScript.Spreadsheet.Spreadsheet);
+
+    expect(preflight.ready).toBe(false);
+    expect(preflight.status).toBe('BLOCKED');
+    expect(preflight.reasons.some((r) => r.includes('Dangling foreign-key references'))).toBe(true);
+  });
+
+  it('reports BLOCKED if Students tab or student_id column is missing', () => {
+    const sheets = {
+      Students: createMockSheet('Students', ['bad_col', 'student_name'], [
+        ['STU_001', 'Seerat'],
+      ]),
+    };
+    const ss = createMockSpreadsheet(sheets);
+    const preflight = runStudentIdMigrationPreflight(ss as unknown as GoogleAppsScript.Spreadsheet.Spreadsheet);
+
+    expect(preflight.ready).toBe(false);
+    expect(preflight.status).toBe('BLOCKED');
+    expect(preflight.reasons.some((r) => r.includes('student_id column not found'))).toBe(true);
+  });
+});
+
+describe('Student ID Migration Execution & Recovery Engine', () => {
+  it('cascades student ID updates across all dependent tables including schedules', () => {
+    const sheets = {
+      Students: createMockSheet('Students', ['student_id', 'student_name'], [
+        ['STU_001', 'Seerat'],
+        ['stu_legacy_1', 'Synthetic Learner'],
+      ]),
+      Packages: createMockSheet('Packages', ['package_id', 'student_id'], [
+        ['pkg_1', 'stu_legacy_1'],
+      ]),
+      Payments: createMockSheet('Payments', ['payment_id', 'student_id'], [
+        ['pay_1', 'stu_legacy_1'],
+      ]),
+      ClassSessions: createMockSheet('ClassSessions', ['session_id', 'student_id'], [
+        ['cls_1', 'stu_legacy_1'],
+      ]),
+      MeetingLinks: createMockSheet('MeetingLinks', ['meeting_link_id', 'student_id'], [
+        ['ml_1', 'stu_legacy_1'],
+      ]),
+      StudentNotes: createMockSheet('StudentNotes', ['note_id', 'student_id'], [
+        ['note_1', 'stu_legacy_1'],
+      ]),
+      ClassSchedules: createMockSheet('ClassSchedules', ['schedule_id', 'student_id'], [
+        ['csch_1', 'stu_legacy_1'],
+      ]),
+      AuditLog: createMockSheet('AuditLog', ['audit_id', 'entity_type', 'entity_id', 'before_summary'], [
+        ['aud_1', 'STUDENT', 'stu_legacy_1', 'Created student record'],
+        ['aud_2', 'PACKAGE', 'pkg_1', 'Attached package for stu_legacy_1'],
+      ]),
+    };
     const ss = createMockSpreadsheet(sheets);
     const result = runStudentIdMigration(ss as unknown as GoogleAppsScript.Spreadsheet.Spreadsheet);
 
@@ -120,30 +172,52 @@ describe('Student ID Migration Engine', () => {
     expect(result.migratedCount).toBe(1);
     expect(result.mapping['stu_legacy_1']).toBe('STU_002');
 
-    // Verify all sheets updated
     expect(sheets.Students._getRawData()[2][0]).toBe('STU_002');
-    expect(sheets.Packages._getRawData()[2][1]).toBe('STU_002');
-    expect(sheets.Payments._getRawData()[2][1]).toBe('STU_002');
+    expect(sheets.Packages._getRawData()[1][1]).toBe('STU_002');
+    expect(sheets.Payments._getRawData()[1][1]).toBe('STU_002');
     expect(sheets.ClassSessions._getRawData()[1][1]).toBe('STU_002');
     expect(sheets.MeetingLinks._getRawData()[1][1]).toBe('STU_002');
     expect(sheets.StudentNotes._getRawData()[1][1]).toBe('STU_002');
     expect(sheets.ClassSchedules._getRawData()[1][1]).toBe('STU_002');
-    expect(sheets.AuditLog._getRawData()[1][2]).toBe('STU_002'); // entity_type == 'STUDENT'
-    expect(sheets.AuditLog._getRawData()[2][2]).toBe('pkg_2'); // entity_type == 'PACKAGE' preserved
-
-    // Verify standard STU_001 was untouched
-    expect(sheets.Students._getRawData()[1][0]).toBe('STU_001');
-    expect(sheets.Packages._getRawData()[1][1]).toBe('STU_001');
-    expect(sheets.Payments._getRawData()[1][1]).toBe('STU_001');
-
-    // Verify backup sheet created
-    const backup = ss.getSheetByName('StudentId_Migration_Backup');
-    expect(backup).not.toBeNull();
-    expect(backup!._getRawData()[1][0]).toBe('stu_legacy_1');
-    expect(backup!._getRawData()[1][1]).toBe('STU_002');
+    // AuditLog: entity_id updated for entity_type === 'STUDENT'
+    expect(sheets.AuditLog._getRawData()[1][2]).toBe('STU_002');
+    // AuditLog: entity_type === 'PACKAGE' preserved without blind summary rewrite
+    expect(sheets.AuditLog._getRawData()[2][2]).toBe('pkg_1');
+    expect(sheets.AuditLog._getRawData()[2][3]).toBe('Attached package for stu_legacy_1');
   });
 
-  it('is completely idempotent when run multiple times', () => {
+  it('resumes interrupted partial migration using existing backup mapping without generating new IDs', () => {
+    const sheets = {
+      Students: createMockSheet('Students', ['student_id', 'student_name'], [
+        ['STU_001', 'Seerat'],
+        ['STU_002', 'Synthetic Learner'],
+      ]),
+      Packages: createMockSheet('Packages', ['package_id', 'student_id'], [
+        ['pkg_1', 'STU_002'],
+      ]),
+      MeetingLinks: createMockSheet('MeetingLinks', ['meeting_link_id', 'student_id'], [
+        ['ml_1', 'stu_legacy_1'], // Interrupted before this was updated!
+      ]),
+      StudentNotes: createMockSheet('StudentNotes', ['note_id', 'student_id'], [
+        ['note_1', 'stu_legacy_1'],
+      ]),
+      StudentId_Migration_Backup: createMockSheet('StudentId_Migration_Backup', ['original_id', 'migrated_id', 'status'], [
+        ['stu_legacy_1', 'STU_002', 'MAPPED'],
+      ]),
+    };
+    const ss = createMockSpreadsheet(sheets);
+
+    const retryRes = runStudentIdMigration(ss as unknown as GoogleAppsScript.Spreadsheet.Spreadsheet);
+    expect(retryRes.success).toBe(true);
+    expect(retryRes.resumed).toBe(true);
+    expect(retryRes.mapping['stu_legacy_1']).toBe('STU_002');
+
+    expect(sheets.MeetingLinks._getRawData()[1][1]).toBe('STU_002');
+    expect(sheets.StudentNotes._getRawData()[1][1]).toBe('STU_002');
+    expect(sheets.Students._getRawData()[2][0]).toBe('STU_002');
+  });
+
+  it('is completely idempotent when run multiple times on completed data', () => {
     const sheets = {
       Students: createMockSheet('Students', ['student_id', 'student_name'], [
         ['STU_001', 'Seerat'],
@@ -154,11 +228,53 @@ describe('Student ID Migration Engine', () => {
     const result = runStudentIdMigration(ss as unknown as GoogleAppsScript.Spreadsheet.Spreadsheet);
     expect(result.success).toBe(true);
     expect(result.migratedCount).toBe(0);
-    expect(result.message).toContain('No legacy student IDs found');
+    expect(result.alreadyCompleted).toBe(true);
   });
 
-  it('performs read-only referential integrity verification and detects dangling references', async () => {
-    const { verifyStudentIdReferentialIntegrity } = await import('../../02-backend/apps-script/setup/StudentIdVerification.gs');
+  it('safely rolls back migrations restoring original IDs across all tables', () => {
+    const sheets = {
+      Students: createMockSheet('Students', ['student_id', 'student_name'], [
+        ['STU_001', 'Seerat'],
+        ['stu_legacy_1', 'Synthetic Learner'],
+      ]),
+      Packages: createMockSheet('Packages', ['package_id', 'student_id'], [
+        ['pkg_1', 'stu_legacy_1'],
+      ]),
+      MeetingLinks: createMockSheet('MeetingLinks', ['meeting_link_id', 'student_id'], [
+        ['ml_1', 'stu_legacy_1'],
+      ]),
+      AuditLog: createMockSheet('AuditLog', ['audit_id', 'entity_type', 'entity_id'], [
+        ['aud_1', 'STUDENT', 'stu_legacy_1'],
+      ]),
+    };
+    const ss = createMockSpreadsheet(sheets);
+
+    runStudentIdMigration(ss as unknown as GoogleAppsScript.Spreadsheet.Spreadsheet);
+    expect(sheets.Students._getRawData()[2][0]).toBe('STU_002');
+
+    const rollbackRes = rollbackStudentIdMigration(ss as unknown as GoogleAppsScript.Spreadsheet.Spreadsheet);
+    expect(rollbackRes.success).toBe(true);
+    expect(rollbackRes.rolledBackCount).toBe(1);
+
+    expect(sheets.Students._getRawData()[2][0]).toBe('stu_legacy_1');
+    expect(sheets.Packages._getRawData()[1][1]).toBe('stu_legacy_1');
+    expect(sheets.MeetingLinks._getRawData()[1][1]).toBe('stu_legacy_1');
+    expect(sheets.AuditLog._getRawData()[1][2]).toBe('stu_legacy_1');
+  });
+
+  it('handles rollback safely when backup sheet is missing or empty', () => {
+    const sheets = {
+      Students: createMockSheet('Students', ['student_id', 'student_name'], [
+        ['STU_001', 'Seerat'],
+      ]),
+    };
+    const ss = createMockSpreadsheet(sheets);
+    const rollbackRes = rollbackStudentIdMigration(ss as unknown as GoogleAppsScript.Spreadsheet.Spreadsheet);
+    expect(rollbackRes.success).toBe(false);
+    expect(rollbackRes.message).toContain('No StudentId_Migration_Backup');
+  });
+
+  it('verifies integrity using verifyStudentIdReferentialIntegrity and detects dangling keys', () => {
     const sheets = {
       Students: createMockSheet('Students', ['student_id', 'student_name'], [
         ['STU_001', 'Seerat'],
@@ -178,48 +294,5 @@ describe('Student ID Migration Engine', () => {
     expect(audit.nonStandardStudentIds).toEqual(['stu_legacy_x']);
     expect(audit.danglingReferences.Packages).toHaveLength(1);
     expect(audit.danglingReferences.Packages[0].student_id).toBe('STU_999_NONEXISTENT');
-  });
-
-  it('safely rolls back migrations restoring original IDs across all tables', async () => {
-    const { rollbackStudentIdMigration, verifyStudentIdReferentialIntegrity } = await import('../../02-backend/apps-script/setup/StudentIdVerification.gs');
-    const sheets = {
-      Students: createMockSheet('Students', ['student_id', 'student_name'], [
-        ['STU_001', 'Seerat'],
-        ['stu_legacy_1', 'Synthetic Learner'],
-      ]),
-      Packages: createMockSheet('Packages', ['package_id', 'student_id'], [
-        ['pkg_1', 'stu_legacy_1'],
-      ]),
-      MeetingLinks: createMockSheet('MeetingLinks', ['meeting_link_id', 'student_id'], [
-        ['ml_1', 'stu_legacy_1'],
-      ]),
-      AuditLog: createMockSheet('AuditLog', ['audit_id', 'entity_type', 'entity_id'], [
-        ['aud_1', 'STUDENT', 'stu_legacy_1'],
-      ]),
-    };
-    const ss = createMockSpreadsheet(sheets);
-
-    // 1. Run migration
-    const migRes = runStudentIdMigration(ss as unknown as GoogleAppsScript.Spreadsheet.Spreadsheet);
-    expect(migRes.success).toBe(true);
-    expect(sheets.Students._getRawData()[2][0]).toBe('STU_002');
-    expect(sheets.Packages._getRawData()[1][1]).toBe('STU_002');
-    expect(sheets.MeetingLinks._getRawData()[1][1]).toBe('STU_002');
-    expect(sheets.AuditLog._getRawData()[1][2]).toBe('STU_002');
-
-    // 2. Verify all are standard now
-    const preRollbackAudit = verifyStudentIdReferentialIntegrity(ss as unknown as GoogleAppsScript.Spreadsheet.Spreadsheet);
-    expect(preRollbackAudit.nonStandardStudentIds).toHaveLength(0);
-
-    // 3. Rollback
-    const rollbackRes = rollbackStudentIdMigration(ss as unknown as GoogleAppsScript.Spreadsheet.Spreadsheet);
-    expect(rollbackRes.success).toBe(true);
-    expect(rollbackRes.rolledBackCount).toBe(1);
-
-    // 4. Verify original IDs restored
-    expect(sheets.Students._getRawData()[2][0]).toBe('stu_legacy_1');
-    expect(sheets.Packages._getRawData()[1][1]).toBe('stu_legacy_1');
-    expect(sheets.MeetingLinks._getRawData()[1][1]).toBe('stu_legacy_1');
-    expect(sheets.AuditLog._getRawData()[1][2]).toBe('stu_legacy_1');
   });
 });

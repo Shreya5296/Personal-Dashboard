@@ -2,25 +2,27 @@
 
 ## 1. Executive Summary
 
-An audit of the canonical Google Spreadsheet (`Private Class Dashboard`, ID: `1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8`) was performed on 2026-10-24 via the authenticated Apps Script backend.
+A comprehensive read-only audit of the canonical Google Spreadsheet (`Private Class Dashboard`, ID: `1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8`) was completed on 2026-10-24 via authenticated backend inspection.
 
-### Findings
-- **Total Students in Canonical Sheet**: 25 students.
+### Verified Live Sheet State
+- **Total Students in Canonical Sheet**: 26 students.
 - **Standard Sequential IDs (`STU_001` - `STU_003`)**: 3 students (Seerat, Rehaan, Viwaan).
-- **Legacy Random IDs (`stu_...`)**: 22 synthetic student records created during test runs prior to sequential ID enforcement.
+- **Legacy Random IDs (`stu_...`)**: 23 synthetic test student records created during past automated verification runs.
 - **Referential Integrity Audit**:
   - `Packages`: 6 total records; 3 reference standard IDs (`STU_001`, `STU_002`, `STU_003`); 3 reference legacy IDs (`stu_mvmiomr6trzbiw8p`, `stu_mvmius7iukn9f9p9`, `stu_mvmiygz6ubjaj1lo`).
   - `Payments`: 7 total records; all 7 reference standard IDs (`STU_001`, `STU_002`, `STU_003`). 0 reference legacy IDs.
   - `ClassSessions`: 7 total records; all 7 reference standard IDs (`STU_001`, `STU_002`). 0 reference legacy IDs.
   - `MeetingLinks`: 6 total records; 3 reference standard IDs (`STU_001`, `STU_002`, `STU_003`); 3 reference legacy IDs (`stu_mvmitdx8nxfc11aw`, `stu_mvmivws8eavtk1hi`, `stu_mvmixxqgjq0a5qg6`).
   - `StudentNotes`: 7 total records; 4 reference standard IDs (`STU_002`, `STU_003`); 3 reference legacy IDs (`stu_mvmitdx8nxfc11aw`, `stu_mvmivws8eavtk1hi`, `stu_mvmixxqgjq0a5qg6`).
-  - `AuditLog`: 47 total records; 22 audit entries record operations on legacy student entities.
+  - `ClassSchedules`: Physical sheet not yet created in canonical spreadsheet. Storage currently inactive on deployed backend `@25`.
+  - `AuditLog`: 51 total records; 22 audit entries record operations on legacy student entities.
+  - **Dangling / Orphaned Foreign Keys**: **0** across all tables.
 
 ---
 
-## 2. Complete Legacy-to-Sequential ID Mapping
+## 2. Complete 23-Row Legacy-to-Sequential ID Mapping
 
-The 22 legacy random IDs will be migrated sequentially starting from `STU_004` to `STU_025`:
+The 23 legacy random IDs map sequentially from `STU_004` to `STU_026`:
 
 | # | Current Legacy ID | Target Migrated ID | Student Name | Dependent References to Update |
 |---|---|---|---|---|
@@ -46,62 +48,108 @@ The 22 legacy random IDs will be migrated sequentially starting from `STU_004` t
 | 20 | `stu_mvmixxqgjq0a5qg6` | `STU_023` | Synthetic Student NL_XWT0_82IA | `MeetingLinks` (`ml_...`), `StudentNotes` |
 | 21 | `stu_mvmiygz6ubjaj1lo` | `STU_024` | Synthetic Student PKG_YFUU_3GXV | `Packages` (`pkg_mvmiyle2ecyeq5u4`) |
 | 22 | `stu_mvmiz93y8ybzk0mv` | `STU_025` | Synthetic Student STU_Z78N_NTL7 | None |
+| 23 | `stu_mvmjfcnjwhmzr5z0` | `STU_026` | Synthetic Student STU_FBA1_8A5F | None |
 
 ---
 
-## 3. Migration Safety & Guarantees
+## 3. Recurring Schedule Storage Audit Findings
 
-1. **Pre-Migration Audit Backup**:
-   - The migration automatically creates a new tab `StudentId_Migration_Backup` with columns `original_id, migrated_id, migrated_at`.
-   - Every mapped row is appended before modifying any business tab.
-2. **Cascading Referential Integrity**:
-   - Foreign-key references in `Packages`, `Payments`, `ClassSessions`, `MeetingLinks`, `StudentNotes`, `ClassSchedules`, and `AuditLog` are updated in lockstep with `Students`.
-   - No orphan records are created.
-3. **Idempotence**:
-   - Running the migration multiple times has no additional effect (`migratedCount: 0`) because all IDs match `STU_\d+`.
-4. **Immutability of Standard IDs**:
-   - Existing standard IDs (`STU_001`, `STU_002`, `STU_003`) are detected and left unchanged.
-5. **Reversible Rollback Engine**:
-   - `rollbackStudentIdMigration(spreadsheet)` in `setup/StudentIdVerification.gs` reads `StudentId_Migration_Backup` and restores the original IDs across all business sheets.
-6. **Read-Only Verification Function**:
-   - `verifyStudentIdReferentialIntegrity(spreadsheet)` in `setup/StudentIdVerification.gs` performs a non-destructive read-only scan of all tables to confirm clean referential integrity before and after migration without modifying any data.
-7. **No Data Deletion**:
-   - No student records, transactions, or historical data are deleted.
+1. **Physical Sheet**: `ClassSchedules` does not currently exist as a tab in `Private Class Dashboard`.
+2. **Deployed Backend (@25)**: Calls to `schedules.list` return `UNKNOWN_OPERATION` because `ClassScheduleHandlers.gs` was authored locally but never pushed to the live deployment (obeying Critical Rule 2).
+3. **Backend Service (`ClassScheduleService.gs`)**:
+   - Detects whether `ClassSchedules` sheet is present in the spreadsheet.
+   - If present: reads and writes rows directly in the `ClassSchedules` sheet.
+   - If absent: operates in temporary execution memory with `meta: { persistentSheet: false }`.
+   - Does not store schedule records in ScriptProperties or CacheService.
+4. **Migration Engine Handling**:
+   - `StudentIdMigration.gs` includes `ClassSchedules` in `sheetsToCascade`.
+   - If `ClassSchedules` exists, student IDs in it are updated in lockstep.
+   - If absent, it is gracefully skipped without error.
 
 ---
 
-## 4. Owner Action Required for Live Execution
+## 4. Audit History Preservation Strategy
 
-In accordance with project safety rules, the automated assistant did not modify live spreadsheet rows. To audit, execute, and verify the migration on the live Google Spreadsheet:
+1. **Selective Updating of `entity_id`**:
+   - `AuditLog.entity_id` is updated **only** when `entity_type` (case-insensitive) equals `'STUDENT'` and `entity_id` matches a mapped legacy ID.
+   - Rows where `entity_type` is `'PACKAGE'`, `'PAYMENT'`, `'CLASS'`, or `'SYSTEM'` are preserved unchanged.
+2. **Context and Text Preservation**:
+   - No blind regex substitution is performed on `before_summary`, `after_summary`, or action descriptions.
+   - Exact historical event text remains authentic to the time it was recorded.
+3. **Traceability Guarantee**:
+   - The permanent `StudentId_Migration_Backup` tab preserves the exact `{ original_id, migrated_id, status, created_at, updated_at }` mapping.
+   - A dedicated audit entry is appended upon migration completion documenting the batch migration count and timestamp.
+   - Any historical audit record referencing `stu_...` can be resolved immediately to its sequential permanent ID (`STU_...`).
 
-### Step 1: Pre-Execution Read-Only Verification
-1. Open the Google Spreadsheet: `Private Class Dashboard` (ID: `1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8`).
+---
+
+## 5. Backup, Concurrency, and Recovery Architecture
+
+1. **Script Locking**:
+   - `runStudentIdMigration` and `rollbackStudentIdMigration` acquire `LockService.getScriptLock()` with a 30-second timeout.
+   - Concurrent invocations immediately fail with `CONCURRENCY_LOCKED` rather than producing corrupted mappings.
+2. **Pre-Write Backup Verification**:
+   - `StudentId_Migration_Backup` is created and populated with status `MAPPED` **before** any business data write.
+   - If backup writing fails, zero business tables are touched.
+3. **Resume on Interruption**:
+   - If execution is interrupted after `Students` is updated but before dependent tabs finish, re-running `runStudentIdMigration()` detects the existing backup.
+   - It re-uses the exact persisted mapping rather than allocating new numbers or skipping remaining tables.
+4. **Idempotence**:
+   - If executed on an already-migrated spreadsheet, the function detects that all IDs are standard and returns `alreadyCompleted: true` with 0 mutations.
+5. **Reversible Rollback**:
+   - `rollbackStudentIdMigration()` inverts the backup mapping, restores original IDs across all business sheets, updates backup status to `ROLLED_BACK`, and logs a rollback event in `AuditLog`.
+
+---
+
+## 6. Strictly Read-Only Preflight Tooling
+
+A dedicated preflight tool is provided in `02-backend/apps-script/setup/StudentIdPreflight.gs`:
+
+```javascript
+var preflight = runStudentIdMigrationPreflight(spreadsheet);
+// Returns:
+// {
+//   ready: true,
+//   status: 'READY',
+//   reasons: [],
+//   warnings: ['ClassSchedules sheet not present in spreadsheet (storage inactive)'],
+//   stats: { totalStudents: 26, standardStudentCount: 3, legacyStudentCount: 23, ... },
+//   proposedMapping: { ... 23 pairs ... },
+//   backupStatus: 'NONE'
+// }
+```
+
+- Strictly non-mutating: does not write, insert, append, or clear any cells.
+- Evaluates duplicate student IDs, orphaned foreign keys, schema conformance, and target collisions.
+- Reports `READY` or `BLOCKED` with specific reasons.
+
+---
+
+## 7. Owner Action Required for Live Execution
+
+In accordance with safety restrictions, the migration has **not** been executed against the live spreadsheet. To execute:
+
+### Step 1: Preflight Audit (Read-Only)
+1. Open Google Spreadsheet: `Private Class Dashboard` (ID: `1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8`).
 2. Go to **Extensions > Apps Script**.
-3. Open `setup/StudentIdVerification.gs`.
-4. Select `verifyStudentIdReferentialIntegrity` and click **Run**.
-5. Check the Execution log. It will report:
-   - `totalStudents: 25`
-   - `standardStudentCount: 3`
-   - `nonStandardStudentIds: 22` (`stu_...`)
-   - `danglingReferences: {}` (confirms no broken foreign keys currently exist).
+3. Open `setup/StudentIdPreflight.gs`.
+4. Select `runStudentIdMigrationPreflight` and click **Run**.
+5. Verify in Execution Log: `status: 'READY'`, `reasons: []`, `legacyStudentCount: 23`.
 
 ### Step 2: Live Migration Execution
 1. Open `setup/StudentIdMigration.gs`.
 2. Select `runStudentIdMigration` and click **Run**.
-3. Check the Execution log:
-   - Creates the `StudentId_Migration_Backup` tab.
-   - Updates rows 4 through 25 to `STU_004` ... `STU_025`.
-   - Updates dependent records in `Packages` (3), `MeetingLinks` (3), and `StudentNotes` (3).
-   - Returns `{ success: true, migratedCount: 22 }`.
+3. Verify in Execution Log:
+   - `StudentId_Migration_Backup` created with 23 pairs.
+   - 23 student rows updated (`STU_004` - `STU_026`).
+   - 3 package rows, 3 meeting link rows, 3 student note rows updated.
+   - Result: `{ success: true, migratedCount: 23 }`.
 
 ### Step 3: Post-Execution Verification
 1. Open `setup/StudentIdVerification.gs`.
 2. Select `verifyStudentIdReferentialIntegrity` and click **Run**.
-3. Execution log will confirm:
-   - `isValid: true`
-   - `standardStudentCount: 25`
-   - `nonStandardStudentIds: []`
-   - `danglingReferences: {}`
+3. Verify in Execution Log: `isValid: true`, `nonStandardStudentIds: []`, `danglingReferences: {}`.
 
-### Optional Rollback Step (Emergency Recovery)
-If needed, select `rollbackStudentIdMigration` in `setup/StudentIdVerification.gs` and click **Run** to restore original legacy IDs across all sheets.
+### Step 4 (Emergency Rollback, if ever needed):
+1. Select `rollbackStudentIdMigration` from `setup/StudentIdVerification.gs` and click **Run**.
+2. All records and foreign keys will be safely reverted to their original `stu_...` IDs.

@@ -591,16 +591,34 @@ NEXT ACTION
     - Strict TypeScript check: 0 errors (PASS).
     - Production Vite build: 919ms (PASS).
     - Playwright students e2e test: 2/2 passed.
-- Student ID Migration Read-Only Safety Audit & Verification Tooling completed:
-  * 1. Safety Audit:
-    - Strictly maintained read-only access boundary; zero modifications, creations, deletions, or schema changes performed on live canonical sheet (ID: 1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8).
-    - Verified 25 students (3 standard STU_001-003, 22 legacy synthetic records). All foreign-key relationships across Packages (3), MeetingLinks (3), and StudentNotes (3) point cleanly to existing student records with zero dangling or broken references.
-  * 2. Verification & Rollback Tooling:
-    - Created 02-backend/apps-script/setup/StudentIdVerification.gs (113 lines) containing verifyStudentIdReferentialIntegrity() and rollbackStudentIdMigration().
-    - verifyStudentIdReferentialIntegrity() performs non-mutating deep audit checking for unmapped legacy IDs, non-sequential STU_ identifiers, duplicate student IDs, and orphaned foreign-key references across all 7 business tables.
-    - rollbackStudentIdMigration() safely inverts the StudentId_Migration_Backup mapping to restore all tables to their exact pre-migration state if an operational abort is ever required.
-  * 3. Hardened Migration Script:
-    - Hardened 02-backend/apps-script/setup/StudentIdMigration.gs (119 lines) with duplicate student ID skip guards and empty sheet column boundary protection.
-  * 4. Documentation & Tests:
-    - Updated docs/prelaunch/student-id-migration-plan.md with verification and rollback runbooks.
-    - 185/185 unit & integration tests passing across 35 test suites. All quality gates green.
+- Student ID Migration Safety Hardening, Preflight & Recovery Engine completed:
+  * 1. Revalidated Live Canonical Spreadsheet Data:
+    - Conducted authenticated read-only audit of canonical spreadsheet (Private Class Dashboard, ID: 1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8).
+    - Verified exact counts: 26 total students (3 standard STU_001-003, 23 legacy synthetic stu_... records).
+    - Verified 0 orphaned foreign keys across Packages (6), Payments (7), ClassSessions (7), MeetingLinks (6), and StudentNotes (7).
+    - Proposed mapping sequentially maps all 23 legacy IDs to STU_004 through STU_026 without gaps or collisions.
+  * 2. Dedicated Read-Only Preflight Tooling:
+    - Authored 02-backend/apps-script/setup/StudentIdPreflight.gs (134 lines) with runStudentIdMigrationPreflight().
+    - Preflight strictly performs non-mutating analysis of duplicate IDs, orphaned foreign keys, schema headers, and collision hazards.
+    - Verified against live data: reports status: 'READY', ready: true, reasons: [].
+  * 3. Hardened Migration State Machine & Concurrency Protection:
+    - Hardened 02-backend/apps-script/setup/StudentIdMigration.gs (133 lines) with LockService.getScriptLock() concurrency guard.
+    - Guaranteed pre-write backup creation and verification in StudentId_Migration_Backup before any business records change.
+    - Added resume-on-retry: if interrupted, subsequent runs detect the existing backup and use the persisted mapping without generating new or conflicting IDs.
+    - Complete idempotence: re-running on completed data returns alreadyCompleted: true with 0 mutations.
+  * 4. Safe Rollback Engine:
+    - Enhanced 02-backend/apps-script/setup/StudentIdVerification.gs (128 lines) with concurrency locking and ambiguous mapping guards.
+    - Inverts the persisted backup to restore all tables to their exact pre-migration state and logs a rollback event in AuditLog.
+  * 5. Recurring Schedule Storage Analysis:
+    - Physical ClassSchedules tab is absent in canonical sheet; schedules.list returns UNKNOWN_OPERATION on deployed Web App @25.
+    - Migration engine cascades updates to ClassSchedules when present and safely skips when absent.
+  * 6. Audit History Preservation:
+    - Selectively updates AuditLog.entity_id only when entity_type === 'STUDENT' and entity_id matches a mapped legacy ID.
+    - Historical summary text, descriptions, and non-student audit events remain authentic and untruncated.
+  * 7. Comprehensive Tests & Quality Gates:
+    - Added 10 unit tests in tests/backend/studentIdMigration.test.ts covering preflight analysis, 7-table cascading, resume-on-retry, idempotence, safe rollback, empty backup handling, and referential integrity audit.
+    - Vitest unit/integration suite: 189/189 tests passing across 35 test files (PASS).
+    - Line limit check: 152 files in src/ and public/ <= 149 lines; setup scripts <= 134 lines (PASS).
+    - Strict TypeScript check: 0 errors (PASS).
+    - Production Vite build: 839ms (PASS).
+    - Live spreadsheet preserved untouched per safety instructions. READY FOR OWNER AUTHORIZATION.
