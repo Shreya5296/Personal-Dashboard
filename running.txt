@@ -371,3 +371,25 @@ NEXT ACTION
     - Strict TypeScript check (tsc --noEmit) passing with 0 errors.
     - Production Vite build clean in 972ms.
     - 10/10 Playwright e2e tests passing in 20.2s.
+- Operational Tabs Retirement (AppConfig, ImportBatches, ImportRowResults Complete Removal) completed:
+  * 1. Dependency Tracing & Decoupling:
+    - Traced every active runtime dependency on AppConfig, ImportBatches, and ImportRowResults across backend services, repositories, and setup scripts.
+    - Zero business repositories or services (Students, Packages, Payments, Classes, MeetingLinks, Notes, Reports, Auth, Audit) read or write to these three sheets.
+    - Decoupled setup and utility scripts (SheetRegistry.gs, SpreadsheetBootstrap.gs, RunBootstrap.gs, SchemaMigration.gs, SystemHandlers.gs, CleanupHandlers.gs).
+  * 2. Replacement of AppConfig with ConfigService:
+    - Implemented ConfigService.gs (Config_get, Config_getAll) reading from native ScriptProperties with resilient in-code defaults (SCHEMA_VERSION: '2.0.0', APP_NAME: 'Student Manager', DEFAULT_CURRENCY: 'INR', DEFAULT_TIMEZONE: 'Asia/Kolkata', DEFAULT_CLASS_DURATION_MINUTES: '60').
+    - Hardcoded secrets strictly avoided; authorization, authentication, HMAC session security, and deployment settings preserved.
+  * 3. Removal of Obsolete Schemas & Re-creation Safeguards:
+    - Removed ImportBatches, ImportRowResults, and AppConfig from SHEET_NAMES and SHEET_SCHEMAS in SheetRegistry.gs.
+    - Removed AppConfig row seeding from SpreadsheetBootstrap.gs and RunBootstrap.gs; bootstrap will never recreate the absent tabs.
+    - Updated SchemaMigration.gs preflight and post-migration checks: only requires operational tab AuditLog.
+    - Updated CleanupHandlers.gs protectedTabs: removed obsolete tabs from required preflight checks.
+    - Updated SystemHandlers.gs: system.hideOperationalTabs targets AuditLog only.
+    - Preserved AuditLog (12 cols) and the six approved business sheets and their exact schemas (Students 9 cols, Packages 11 cols, Payments 6 cols, ClassSessions 8 cols, MeetingLinks 4 cols, StudentNotes 5 cols).
+  * 4. Regression Testing & Verification:
+    - Added tests/schema/absentOperationalTabsRegression.test.ts verifying bootstrap, CRUD, reports, dashboard overview, ConfigService defaults, and schema migration execute without errors when AppConfig, ImportBatches, and ImportRowResults are absent.
+    - 140/140 Vitest tests passing across 27 test suites.
+    - Line limit policy strictly verified: 124/124 files in src/ and public/ <= 149 lines.
+    - Strict TypeScript check (tsc --noEmit) passing with 0 errors.
+    - Production Vite build clean in 958ms.
+    - 10/10 Playwright e2e tests passing in 21.2s.

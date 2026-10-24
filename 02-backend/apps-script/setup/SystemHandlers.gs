@@ -34,7 +34,7 @@ function registerSystemOperations(router) {
     var ss = ctx.spreadsheet;
     if (!ss) return { success: false, code: 'UNAVAILABLE', message: 'Spreadsheet unavailable' };
 
-    var targets = ['AuditLog', 'ImportBatches', 'ImportRowResults', 'AppConfig'];
+    var targets = ['AuditLog'];
     var outcome = {};
 
     for (var i = 0; i < targets.length; i++) {

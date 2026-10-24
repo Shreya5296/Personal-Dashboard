@@ -1,6 +1,7 @@
 /**
  * Canonical Sheet Registry
- * Defines all 12 master spreadsheet tabs and their exact column headers.
+ * Defines the canonical business and operational spreadsheet tabs and their exact column headers.
+ * AppConfig, ImportBatches, and ImportRowResults are permanently retired from canonical schemas.
  */
 
 var SHEET_NAMES = {
@@ -12,26 +13,25 @@ var SHEET_NAMES = {
   CLASS_SESSIONS: 'ClassSessions',
   MEETING_LINKS: 'MeetingLinks',
   STUDENT_NOTES: 'StudentNotes',
-  AUDIT_LOG: 'AuditLog',
-  IMPORT_BATCHES: 'ImportBatches',
-  IMPORT_ROW_RESULTS: 'ImportRowResults',
-  APP_CONFIG: 'AppConfig'
+  AUDIT_LOG: 'AuditLog'
 };
 
 var SHEET_SCHEMAS = {};
 
+// Table 1: Students (9 columns)
 SHEET_SCHEMAS[SHEET_NAMES.STUDENTS] = [
   'student_id', 'student_name', 'parent_name', 'parent_phone', 'student_phone',
   'parent_email', 'student_email', 'subject', 'status'
 ];
 
-// Preserved for legacy transitions; deprecated in finalized schema
+// Preserved for legacy transition fallback; superseded by Packages
 SHEET_SCHEMAS[SHEET_NAMES.ENROLLMENTS] = [
   'enrollment_id', 'student_id', 'enrollment_name', 'start_date', 'end_date',
   'enrollment_status', 'fee_plan_name', 'agreed_total_amount', 'currency',
   'billing_notes', 'created_at', 'updated_at', 'closed_at'
 ];
 
+// Table 2: Packages (11 columns)
 SHEET_SCHEMAS[SHEET_NAMES.PACKAGES] = [
   'package_id', 'student_id', 'student_name', 'plan_type',
   'currency', 'package_price', 'per_class', 'classes_purchased',
@@ -67,31 +67,11 @@ SHEET_SCHEMAS[SHEET_NAMES.STUDENT_NOTES] = [
   'student_id', 'student_name', 'note_date', 'note_text', 'follow_up_date'
 ];
 
-// Operational Tab: AuditLog (Active - audit trail & transaction idempotency)
+// Operational Tab: AuditLog (Active - audit trail & transaction idempotency, 12 columns)
 SHEET_SCHEMAS[SHEET_NAMES.AUDIT_LOG] = [
   'audit_id', 'occurred_at', 'actor_id', 'actor_email', 'entity_type',
   'entity_id', 'action', 'before_summary', 'after_summary', 'request_id',
   'outcome', 'error_code'
-];
-
-// Operational Tab: ImportBatches (Retired from active workflows after bulk-import removal; schema retained for spreadsheet compatibility)
-SHEET_SCHEMAS[SHEET_NAMES.IMPORT_BATCHES] = [
-  'import_batch_id', 'source_name', 'source_spreadsheet_id',
-  'source_tab_name', 'started_at', 'completed_at', 'import_status',
-  'total_rows', 'imported_rows', 'skipped_rows', 'failed_rows',
-  'duplicate_rows', 'initiated_by', 'notes'
-];
-
-// Operational Tab: ImportRowResults (Retired from active workflows after bulk-import removal; schema retained for spreadsheet compatibility)
-SHEET_SCHEMAS[SHEET_NAMES.IMPORT_ROW_RESULTS] = [
-  'import_row_result_id', 'import_batch_id', 'source_row_reference',
-  'target_entity_type', 'target_record_id', 'row_status',
-  'source_fingerprint', 'message', 'processed_at'
-];
-
-// Operational Tab: AppConfig (Active - runtime settings and schema version metadata)
-SHEET_SCHEMAS[SHEET_NAMES.APP_CONFIG] = [
-  'config_key', 'config_value', 'description', 'updated_at'
 ];
 
 function getCanonicalSheetNames() {

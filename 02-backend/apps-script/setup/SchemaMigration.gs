@@ -88,7 +88,7 @@ function runApprovedSchemaMigration(spreadsheet) {
 
   try {
     // 0. Preflight: Verify operational tabs exist before any changes
-    var operationalTabs = ['AuditLog', 'ImportBatches', 'ImportRowResults', 'AppConfig'];
+    var operationalTabs = ['AuditLog'];
     for (var op = 0; op < operationalTabs.length; op++) {
       var opPreSheet = ss.getSheetByName(operationalTabs[op]);
       if (!opPreSheet) {

@@ -38,16 +38,16 @@ The Git history and this file are the recovery sources of truth. Chat history an
 |---|---|
 | Project | Student Management Dashboard / Personal Dashboard |
 | Execution mode | Autonomous, sequential implementation |
-| Current phase | Feature Removal: Import & Reconcile Complete Retirement |
+| Current phase | Operational Tabs Retirement: AppConfig, ImportBatches, ImportRowResults Complete Removal |
 | Current phase status | PASSED |
-| Last completed phase | Complete Retirement of Import & Reconcile Feature |
+| Last completed phase | Operational Tabs Retirement & ConfigService Replacement |
 | Current Git branch | main |
-| Last full regression run | 121 Vitest tests passed (24 test files) + line-limit check passing (117 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build (842ms) + Playwright suites passing |
-| Canonical Spreadsheet | `Private Class Dashboard` (ID: `1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8`, Owner: `ashreya0502@gmail.com`) — Pristine, physical migration verified, ready for owner onboarding |
+| Last full regression run | 140 Vitest tests passed (27 test files) + line-limit check passing (124 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build (958ms) + Playwright suites passing |
+| Canonical Spreadsheet | `Private Class Dashboard` (ID: `1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8`, Owner: `ashreya0502@gmail.com`) — 6 approved business tables + 1 AuditLog operational table |
 | Backup Spreadsheet | `Master Backup (Pre-Launch 2026-10-21T12-13-40-537Z)` (ID: `1kIFYmI81DfNIAqb-ZHsTifiKE6JxhfQrXqpfphrw9eU`) — Verified accessible and preserved intact |
-| Apps Script Project | `1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL` — Backend import handlers/services safely removed locally |
+| Apps Script Project | `1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL` — ConfigService implemented; AppConfig/ImportBatches/ImportRowResults safely retired |
 | Web App Deployment | Active at version `@23` (`AKfycbx4d_VG4CsZIEAomX_OjNMuej06ktTYmKLME5ennLsI7mx3Fn5b-YBu9CRqe7NwrUVH3w`) — Deployment unchanged; live spreadsheet untouched |
-| Last state update | Completely removed Import & Reconcile page, components, routes, icons, navigation, backend handlers/services, and dedicated tests. Historical tabs preserved. 121 tests passing across 24 test files. Clean production build. |
+| Last state update | Completely decoupled backend and setup scripts from AppConfig, ImportBatches, and ImportRowResults. Replaced with ConfigService and ScriptProperties. Full CRUD, reports, bootstrap, migration, and health checks verified when obsolete tabs are absent. 140 tests passing across 27 test files. |
 
 ## 5. Phase Register
 

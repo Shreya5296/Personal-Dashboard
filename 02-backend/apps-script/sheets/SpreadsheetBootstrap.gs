@@ -1,6 +1,7 @@
 /**
- * SpreadsheetBootstrap: Initializes all 12 canonical tabs and headers.
+ * SpreadsheetBootstrap: Initializes all active canonical tabs and headers.
  * Does not overwrite or clear existing tabs.
+ * Does not recreate obsolete tabs (AppConfig, ImportBatches, ImportRowResults).
  */
 
 function bootstrapSpreadsheet(spreadsheet, registry, schemaVersion) {
@@ -30,25 +31,6 @@ function bootstrapSpreadsheet(spreadsheet, registry, schemaVersion) {
         sheet.appendRow(headers);
       }
     }
-  }
-
-  // Seed default AppConfig entries if empty
-  var configSheet = spreadsheet.getSheetByName(registry.SHEET_NAMES.APP_CONFIG);
-  var configLastRow = 0;
-  if (configSheet) {
-    if (typeof configSheet.getLastRow === 'function') {
-      configLastRow = configSheet.getLastRow();
-    } else if (typeof configSheet.getLastRowNum === 'function') {
-      configLastRow = configSheet.getLastRowNum();
-    }
-  }
-  if (configSheet && configLastRow <= 1) {
-    var now = new Date().toISOString();
-    var version = schemaVersion || '1.0.0';
-    configSheet.appendRow(['schema_version', version, 'Canonical schema version', now]);
-    configSheet.appendRow(['display_currency', 'INR', 'Default display currency', now]);
-    configSheet.appendRow(['display_timezone', 'Asia/Kolkata', 'Default display timezone', now]);
-    configSheet.appendRow(['default_class_duration_minutes', '60', 'Default class session duration', now]);
   }
 
   return {

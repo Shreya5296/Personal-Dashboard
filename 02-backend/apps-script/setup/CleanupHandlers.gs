@@ -49,12 +49,8 @@ function registerCleanupOperations(router) {
       ];
 
       var protectedTabs = [
-        { name: 'Enrollments', expectedRows: 1, expectedCols: 13 },
-        { name: 'StudentNotes', expectedRows: 9, expectedCols: 9 },
-        { name: 'AuditLog', minRows: 196, expectedCols: 12 },
-        { name: 'ImportBatches', expectedRows: 8, expectedCols: 14 },
-        { name: 'ImportRowResults', expectedRows: 14, expectedCols: 9 },
-        { name: 'AppConfig', expectedRows: 5, expectedCols: 4 }
+        { name: 'AuditLog', minRows: 1, expectedCols: 12 },
+        { name: 'StudentNotes', minRows: 1, expectedCols: 5 }
       ];
 
       var preflightErrors = [];

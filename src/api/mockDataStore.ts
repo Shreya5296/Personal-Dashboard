@@ -92,7 +92,7 @@ export function handleMockApiRequest<T>(operation: string, payload: Record<strin
     };
   }
   if (operation === 'system.health') {
-    return { ok: true, data: { appsScriptConnected: true, schemaVersion: 1, appEnv: 'mock', activeSpreadsheetTabs: 6 } as T, meta };
+    return { ok: true, data: { appsScriptConnected: true, schemaVersion: 2, appEnv: 'mock', activeSpreadsheetTabs: 7 } as T, meta };
   }
   return { ok: true, data: { success: true } as T, meta };
 }

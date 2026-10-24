@@ -47,12 +47,9 @@ describe('Physical Schema Migration Runner (SchemaMigration.gs)', () => {
     const legacyNotes = spreadsheet.insertSheet('StudentNotes');
     legacyNotes.rows = [['note_id', 'student_id', 'note_type', 'note_text', 'follow_up_date', 'follow_up_status', 'created_at', 'updated_at', 'created_by']];
 
-    // Operational sheets
+    // Operational sheets (AuditLog is the sole required operational sheet)
     const auditSheet = spreadsheet.insertSheet('AuditLog');
     auditSheet.rows = [['audit_id', 'occurred_at', 'actor_id', 'actor_email', 'entity_type', 'entity_id', 'action', 'before_summary', 'after_summary', 'request_id', 'outcome', 'error_code']];
-    spreadsheet.insertSheet('AppConfig').rows = [['config_key', 'config_value', 'description', 'updated_at']];
-    spreadsheet.insertSheet('ImportBatches').rows = [['import_batch_id', 'source_name', 'source_spreadsheet_id', 'source_tab_name', 'started_at', 'completed_at', 'import_status', 'total_rows', 'imported_rows', 'skipped_rows', 'failed_rows', 'duplicate_rows', 'initiated_by', 'notes']];
-    spreadsheet.insertSheet('ImportRowResults').rows = [['import_row_result_id', 'import_batch_id', 'source_row_reference', 'target_entity_type', 'target_record_id', 'row_status', 'source_fingerprint', 'message', 'processed_at']];
   });
 
   it('physically deletes obsolete columns, removes legacy tabs, and aligns exact target headers for all six tables', () => {
@@ -106,11 +103,8 @@ describe('Physical Schema Migration Runner (SchemaMigration.gs)', () => {
     expect(res.enrollmentsTab).toBe('PHYSICALLY_DELETED_EMPTY');
     expect(res.feeObligationsTab).toBe('PHYSICALLY_DELETED_EMPTY');
 
-    // 8. Operational sheets verification
+    // 8. Operational sheets verification (AuditLog preserved)
     expect(spreadsheet.getSheetByName('AuditLog')).not.toBeNull();
-    expect(spreadsheet.getSheetByName('AppConfig')).not.toBeNull();
-    expect(spreadsheet.getSheetByName('ImportBatches')).not.toBeNull();
-    expect(spreadsheet.getSheetByName('ImportRowResults')).not.toBeNull();
 
     // 9. Audit log entry recorded
     const auditSheet = spreadsheet.getSheetByName('AuditLog')!;

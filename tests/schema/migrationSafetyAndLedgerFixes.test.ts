@@ -41,9 +41,6 @@ describe('Audit Findings Fixes: Migration Safety, Payment Ops, Notes & Class Ded
     ss.insertSheet('AuditLog').rows = [
       ['audit_id', 'occurred_at', 'actor_id', 'actor_email', 'entity_type', 'entity_id', 'action', 'before_summary', 'after_summary', 'request_id', 'outcome', 'error_code']
     ];
-    ss.insertSheet('AppConfig').rows = [['config_key', 'config_value', 'description', 'updated_at']];
-    ss.insertSheet('ImportBatches').rows = [['import_batch_id', 'source_name', 'source_spreadsheet_id', 'source_tab_name', 'started_at', 'completed_at', 'import_status', 'total_rows', 'imported_rows', 'skipped_rows', 'failed_rows', 'duplicate_rows', 'initiated_by', 'notes']];
-    ss.insertSheet('ImportRowResults').rows = [['import_row_result_id', 'import_batch_id', 'source_row_reference', 'target_entity_type', 'target_record_id', 'row_status', 'source_fingerprint', 'message', 'processed_at']];
     return ss;
   }
 
@@ -56,9 +53,6 @@ describe('Audit Findings Fixes: Migration Safety, Payment Ops, Notes & Class Ded
       const ss = new MockSpreadsheet();
       // Setup operational sheets
       ss.insertSheet('AuditLog').rows = [['audit_id', 'occurred_at', 'actor_id', 'actor_email', 'entity_type', 'entity_id', 'action', 'before_summary', 'after_summary', 'request_id', 'outcome', 'error_code']];
-      ss.insertSheet('AppConfig').rows = [['config_key', 'config_value']];
-      ss.insertSheet('ImportBatches').rows = [['import_batch_id']];
-      ss.insertSheet('ImportRowResults').rows = [['import_row_result_id']];
 
       // Setup legacy Payments with 15 columns and 2 data rows
       const legacyPay = ss.insertSheet('Payments');
@@ -92,9 +86,6 @@ describe('Audit Findings Fixes: Migration Safety, Payment Ops, Notes & Class Ded
     it('never overwrites an existing archive, creating a timestamped archive instead', () => {
       const ss = new MockSpreadsheet();
       ss.insertSheet('AuditLog').rows = [['audit_id']];
-      ss.insertSheet('AppConfig').rows = [['config_key']];
-      ss.insertSheet('ImportBatches').rows = [['batch_id']];
-      ss.insertSheet('ImportRowResults').rows = [['result_id']];
 
       // Pre-existing archive sheet
       const existingArch = ss.insertSheet('FeeObligations_Archive');
@@ -114,15 +105,11 @@ describe('Audit Findings Fixes: Migration Safety, Payment Ops, Notes & Class Ded
 
     it('aborts safely before destructive changes if an operational tab is missing', () => {
       const ss = new MockSpreadsheet();
-      // AppConfig is missing!
-      ss.insertSheet('AuditLog').rows = [['audit_id']];
-      ss.insertSheet('ImportBatches').rows = [['batch_id']];
-      ss.insertSheet('ImportRowResults').rows = [['result_id']];
-
+      // AuditLog is missing!
       const legacyPay = ss.insertSheet('Payments');
       legacyPay.rows = [['payment_id', 'student_id', 'amount'], ['pay_1', 'stu_1', 1000]];
 
-      expect(() => runApprovedSchemaMigration(ss)).toThrow(/Required operational tab missing: AppConfig/);
+      expect(() => runApprovedSchemaMigration(ss)).toThrow(/Required operational tab missing: AuditLog/);
 
       // Verify Payments was untouched because preflight aborted
       expect(legacyPay.rows[0]).toEqual(['payment_id', 'student_id', 'amount']);
