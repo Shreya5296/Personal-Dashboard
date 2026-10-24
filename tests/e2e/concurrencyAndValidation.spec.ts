@@ -39,7 +39,7 @@ test.describe('E2E — Concurrency, Validation, and Responsive Layouts', () => {
     await page.locator('button[aria-label="Account menu"]').click();
     await page.locator('button[role="menuitem"]:has-text("Profile")').click();
     await expect(page.getByRole('heading', { name: 'Administrator Profile' })).toBeVisible({ timeout: 20000 });
-    await expect(page.getByRole('heading', { name: 'Regional Defaults' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Regional Defaults/ })).toBeVisible();
   });
 
   test('verifies responsive layouts across desktop, tablet, and mobile viewports', async ({ page }) => {

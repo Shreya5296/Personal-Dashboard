@@ -9,12 +9,12 @@ test.describe('E2E — Reports, Navigation & Cross-cutting Responsiveness', () =
     }
   });
 
-  test('loads financial reports and verifies summary metrics', async ({ page }) => {
-    await navigateTo(page, 'Reports');
+  test('loads earnings overview and verifies summary metrics', async ({ page }) => {
+    await navigateTo(page, 'Earnings');
     await expect(page.locator('text=Total Invoiced')).toBeVisible({ timeout: 20000 });
-    await expect(page.locator('text=Total Collected')).toBeVisible();
+    await expect(page.locator('text=Collected Earnings')).toBeVisible();
     await expect(page.locator('text=Total Outstanding')).toBeVisible();
-    await expect(page.locator('button:has-text("Export Summary CSV")')).toBeVisible();
+    await expect(page.locator('button:has-text("Export Earnings CSV")')).toBeVisible();
   });
 
   test('verifies responsive navigation at mobile viewport', async ({ page }) => {

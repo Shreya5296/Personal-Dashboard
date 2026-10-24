@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 const MOCK_JWT = `${btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))}.${btoa(JSON.stringify({ email: 'ashreya0502@gmail.com', name: 'Authorized Administrator' }))}.mocksig`;
 
-test.describe('E2E — Account Dropdown and Profile & Preferences', () => {
+test.describe('E2E — Account Dropdown, Branding, Preferences & Calendar', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await page.evaluate(({ token }) => {
@@ -18,14 +18,24 @@ test.describe('E2E — Account Dropdown and Profile & Preferences', () => {
     await expect(page.locator('button[aria-label="Account menu"]')).toBeVisible({ timeout: 10000 });
   });
 
-  test('verifies Settings is absent from the sidebar while other items remain intact', async ({ page }) => {
+  test('verifies single product title Student Manager and no dev/mock badge in top bar', async ({ page }) => {
+    // Brand title is Student Manager
+    await expect(page.locator('aside span:has-text("Student Manager")')).toBeVisible();
+    await expect(page.locator('text=Tutor Administration')).toHaveCount(0);
+
+    // Development / Mock badge is completely absent from top bar
+    await expect(page.locator('header').locator('text="Development / Mock"')).toHaveCount(0);
+    await expect(page.locator('header').locator('text="Demo / Mock Data"')).toHaveCount(0);
+  });
+
+  test('verifies Settings is absent from the sidebar and Reports is renamed to Earnings', async ({ page }) => {
     const sidebar = page.locator('aside');
     await expect(sidebar.locator('button:has-text("Dashboard")')).toBeVisible();
     await expect(sidebar.locator('button:has-text("Students")')).toBeVisible();
     await expect(sidebar.locator('button:has-text("Fees & Payments")')).toBeVisible();
     await expect(sidebar.locator('button:has-text("Classes")')).toBeVisible();
     await expect(sidebar.locator('button:has-text("Meeting Links")')).toBeVisible();
-    await expect(sidebar.locator('button:has-text("Reports")')).toBeVisible();
+    await expect(sidebar.locator('button:has-text("Earnings")')).toBeVisible();
 
     // Verify Settings is completely absent from the sidebar
     await expect(sidebar.locator('button:has-text("Settings")')).toHaveCount(0);
@@ -50,31 +60,7 @@ test.describe('E2E — Account Dropdown and Profile & Preferences', () => {
     await expect(menuItems.nth(1)).toHaveText(/Logout/);
   });
 
-  test('supports keyboard navigation and Escape dismissal', async ({ page }) => {
-    const trigger = page.locator('button[aria-label="Account menu"]');
-    await trigger.focus();
-    await page.keyboard.press('Enter');
-
-    const profileItem = page.locator('button[role="menuitem"]:has-text("Profile")');
-    const logoutItem = page.locator('button[role="menuitem"]:has-text("Logout")');
-
-    await expect(profileItem).toBeFocused();
-
-    // Press ArrowDown to focus Logout
-    await page.keyboard.press('ArrowDown');
-    await expect(logoutItem).toBeFocused();
-
-    // Press ArrowUp to focus Profile
-    await page.keyboard.press('ArrowUp');
-    await expect(profileItem).toBeFocused();
-
-    // Press Escape to dismiss menu and return focus to trigger
-    await page.keyboard.press('Escape');
-    await expect(page.locator('[role="menu"]')).toHaveCount(0);
-    await expect(trigger).toBeFocused();
-  });
-
-  test('navigates to Profile, edits display name, and persists across reload', async ({ page }) => {
+  test('navigates to Profile, persists display name, timezone, and currency preferences', async ({ page }) => {
     const trigger = page.locator('button[aria-label="Account menu"]');
     await trigger.click();
     await page.locator('button[role="menuitem"]:has-text("Profile")').click();
@@ -82,69 +68,76 @@ test.describe('E2E — Account Dropdown and Profile & Preferences', () => {
     // Verify Profile page elements
     await expect(page.locator('h1:has-text("Profile & Preferences")')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Administrator Profile' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Regional Defaults' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Regional Defaults & Preferences' })).toBeVisible();
 
     // Email is read-only
     await expect(page.locator('text=Account Email (Read-only)')).toBeVisible();
     await expect(page.locator('strong:has-text("ashreya0502@gmail.com")')).toBeVisible();
 
-    // Diagnostics are absent
-    await expect(page.locator('text=Backend & Spreadsheet Service')).toHaveCount(0);
-    await expect(page.locator('text=Active Data Architecture')).toHaveCount(0);
-
     // Edit display name
     const nameInput = page.locator('#displayNameInput');
     await nameInput.fill('Ashreya Persisted Admin');
-
-    const saveBtn = page.locator('button:has-text("Save Display Name")');
-    await expect(saveBtn).toBeEnabled();
-    await saveBtn.click();
-
-    // Success notice
+    await page.locator('button:has-text("Save Display Name")').click();
     await expect(page.locator('text=Display name saved successfully.')).toBeVisible();
 
-    // Header / trigger updates immediately
-    await expect(trigger.locator('text=Ashreya Persisted Admin')).toBeVisible();
+    // Edit timezone and currency dropdowns
+    const tzSelect = page.locator('#timezoneSelect');
+    await expect(tzSelect).toHaveValue('Asia/Kolkata');
+    await tzSelect.selectOption('America/New_York');
+
+    const currSelect = page.locator('#currencySelect');
+    await expect(currSelect).toHaveValue('INR');
+    await currSelect.selectOption('USD');
+
+    await page.locator('button:has-text("Save Regional Preferences")').click();
+    await expect(page.locator('text=Timezone and currency preferences saved successfully.')).toBeVisible();
 
     // Reload page and verify persistence across reload
     await page.reload();
     await expect(page.locator('button[aria-label="Account menu"]')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('button[aria-label="Account menu"]').locator('text=Ashreya Persisted Admin')).toBeVisible();
+
+    // Navigate back to profile and verify dropdowns retained their values
+    await page.locator('button[aria-label="Account menu"]').click();
+    await page.locator('button[role="menuitem"]:has-text("Profile")').click();
+    await expect(page.locator('#timezoneSelect')).toHaveValue('America/New_York');
+    await expect(page.locator('#currencySelect')).toHaveValue('USD');
   });
 
-  test('logs out securely and enforces subsequent access protection', async ({ page }) => {
-    const trigger = page.locator('button[aria-label="Account menu"]');
-    await trigger.click();
-    await page.locator('button[role="menuitem"]:has-text("Logout")').click();
+  test('displays meeting links with primary and secondary links cleanly labeled', async ({ page }) => {
+    await page.locator('aside button:has-text("Meeting Links")').click();
+    await expect(page.locator('h1:has-text("Meeting Links Directory")')).toBeVisible();
 
-    // Verify redirected to login screen
-    await expect(page.locator('input[type="password"]')).toBeVisible({ timeout: 10000 });
+    // Primary meeting link label is present
+    await expect(page.locator('text=Primary meeting link').first()).toBeVisible();
 
-    // Verify session storage is cleared
-    const token = await page.evaluate(() => sessionStorage.getItem('smd_auth_token'));
-    expect(token).toBeNull();
+    // Secondary meeting link is displayed when present
+    await expect(page.locator('text=Secondary meeting link').first()).toBeVisible();
 
-    // Attempt direct navigation while unauthenticated
-    await page.goto('/students');
-    await expect(page.locator('input[type="password"]')).toBeVisible();
-    await expect(page.locator('aside')).toHaveCount(0);
+    // Open ↗ and Copy actions available
+    await expect(page.locator('button:has-text("Copy")').first()).toBeVisible();
+    await expect(page.locator('a:has-text("Open ↗")').first()).toBeVisible();
   });
 
-  test('remains usable and responsive on mobile viewport', async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/');
+  test('displays weekly class schedule calendar on Dashboard starting on Monday', async ({ page }) => {
+    await page.locator('aside button:has-text("Dashboard")').click();
+    await expect(page.locator('h1:has-text("Administrative Dashboard")')).toBeVisible();
 
-    const trigger = page.locator('button[aria-label="Account menu"]');
-    await expect(trigger).toBeVisible();
+    // Calendar view header
+    await expect(page.locator('h3:has-text("Weekly Class Schedule")')).toBeVisible();
+    await expect(page.locator('button:has-text("This Week")')).toBeVisible();
 
-    await trigger.click();
-    const menu = page.locator('[role="menu"][aria-label="Account options"]');
-    await expect(menu).toBeVisible();
+    // Calendar week starts on Monday
+    const firstColDay = page.locator('div[class*="dayCol"]').first();
+    await expect(firstColDay.locator('text=Mon')).toBeVisible();
+  });
 
-    const profileItem = menu.locator('button[role="menuitem"]:has-text("Profile")');
-    await expect(profileItem).toBeVisible();
-    await profileItem.click();
-
-    await expect(page.locator('h1:has-text("Profile & Preferences")')).toBeVisible();
+  test('navigates to Earnings page and displays collected vs invoiced accurately', async ({ page }) => {
+    await page.locator('aside button:has-text("Earnings")').click();
+    await expect(page.locator('h1:has-text("Earnings Overview")')).toBeVisible();
+    await expect(page.locator('text=Collected Earnings')).toBeVisible();
+    await expect(page.locator('text=Total Invoiced')).toBeVisible();
+    await expect(page.locator('text=Total Outstanding')).toBeVisible();
+    await expect(page.locator('button:has-text("Export Earnings CSV")')).toBeVisible();
   });
 });

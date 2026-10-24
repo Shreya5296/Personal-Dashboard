@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MeetingLinkInput } from './meetingLinkTypes';
+import { MeetingLinkInput, MeetingLink } from './meetingLinkTypes';
 import { FormField } from '../../components/forms/FormField';
 import { Button } from '../../components/buttons/Button';
 import { isValidHttpsUrl } from '../../lib/urlSafety';
@@ -10,6 +10,7 @@ import formStyles from '../../components/forms/forms.module.css';
 
 export interface MeetingLinkFormProps {
   studentId?: string;
+  initialLink?: MeetingLink | null;
   onSubmit: (input: MeetingLinkInput) => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
@@ -17,21 +18,26 @@ export interface MeetingLinkFormProps {
 
 export const MeetingLinkForm: React.FC<MeetingLinkFormProps> = ({
   studentId: initialStudentId,
+  initialLink,
   onSubmit,
   onCancel,
   isLoading = false,
 }) => {
   const { token } = useAuth();
-  const [selectedStudentId, setSelectedStudentId] = useState(initialStudentId || '');
+  const [selectedStudentId, setSelectedStudentId] = useState(
+    initialLink?.student_id || initialStudentId || ''
+  );
   const [students, setStudents] = useState<Student[]>([]);
-  const [provider, setProvider] = useState('GOOGLE_MEET');
-  const [meetingUrl, setMeetingUrl] = useState('');
-  const [label, setLabel] = useState('Standard Class Link');
-  const [isPreferred, setIsPreferred] = useState(true);
+  const [primaryUrl, setPrimaryUrl] = useState(
+    initialLink?.meeting_link_1 || initialLink?.meeting_url || ''
+  );
+  const [secondaryUrl, setSecondaryUrl] = useState(
+    initialLink?.meeting_link_2 || ''
+  );
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!initialStudentId) {
+    if (!initialStudentId && !initialLink?.student_id) {
       fetchStudents({}, token).then((data) => {
         setStudents(data);
         if (data.length > 0 && !selectedStudentId) {
@@ -39,26 +45,37 @@ export const MeetingLinkForm: React.FC<MeetingLinkFormProps> = ({
         }
       });
     }
-  }, [initialStudentId, token]);
+  }, [initialStudentId, initialLink, token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!meetingUrl.trim() || !isValidHttpsUrl(meetingUrl)) {
-      setError('A valid HTTPS meeting URL is required (e.g. https://meet.google.com/...)');
+    if (!primaryUrl.trim() || !isValidHttpsUrl(primaryUrl)) {
+      setError('A valid HTTPS Primary Meeting Link is required (e.g. https://meet.google.com/...)');
       return;
     }
+    if (secondaryUrl.trim() && !isValidHttpsUrl(secondaryUrl)) {
+      setError('Secondary Meeting Link must be a valid HTTPS URL if provided.');
+      return;
+    }
+
+    const pUrl = primaryUrl.trim();
+    const sUrl = secondaryUrl.trim();
+    const provider = pUrl.includes('zoom') ? 'ZOOM' : 'GOOGLE_MEET';
+
     await onSubmit({
       student_id: selectedStudentId || initialStudentId || undefined,
       provider,
-      meeting_url: meetingUrl.trim(),
-      label: label.trim() || undefined,
-      is_preferred: isPreferred,
+      meeting_url: pUrl,
+      meeting_link_1: pUrl,
+      meeting_link_2: sUrl || undefined,
+      link_label: 'Primary Link',
+      is_preferred: true,
     });
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-      {!initialStudentId && (
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+      {!initialStudentId && !initialLink && (
         <FormField label="Assign to Student" required>
           <select
             className={formStyles.select}
@@ -67,62 +84,39 @@ export const MeetingLinkForm: React.FC<MeetingLinkFormProps> = ({
           >
             {students.map((s) => (
               <option key={s.student_id} value={s.student_id}>
-                {s.student_name || s.full_name || s.student_id} ({s.subject || 'General'})
+                {s.student_name || s.student_id} ({s.subject || 'General'})
               </option>
             ))}
           </select>
         </FormField>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--space-3)' }}>
-        <FormField label="Meeting Provider" required>
-          <select
-            className={formStyles.select}
-            value={provider}
-            onChange={(e) => setProvider(e.target.value)}
-          >
-            <option value="GOOGLE_MEET">Google Meet</option>
-            <option value="ZOOM">Zoom</option>
-            <option value="MS_TEAMS">MS Teams</option>
-            <option value="OTHER">Other Provider</option>
-          </select>
-        </FormField>
-        <FormField label="Label / Purpose">
-          <input
-            className={formStyles.input}
-            type="text"
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            placeholder="e.g. Physics Recurring Link"
-          />
-        </FormField>
-      </div>
-
-      <FormField label="Meeting URL (HTTPS)" required error={error}>
+      <FormField label="Primary meeting link (HTTPS)" required error={error}>
         <input
           className={formStyles.input}
           type="url"
-          value={meetingUrl}
-          onChange={(e) => { setMeetingUrl(e.target.value); setError(null); }}
+          value={primaryUrl}
+          onChange={(e) => { setPrimaryUrl(e.target.value); setError(null); }}
           placeholder="https://meet.google.com/abc-defg-hij"
         />
       </FormField>
 
-      <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: 'var(--font-size-sm)', cursor: 'pointer', marginTop: 'var(--space-1)' }}>
+      <FormField label="Secondary meeting link (Optional)">
         <input
-          type="checkbox"
-          checked={isPreferred}
-          onChange={(e) => setIsPreferred(e.target.checked)}
+          className={formStyles.input}
+          type="url"
+          value={secondaryUrl}
+          onChange={(e) => { setSecondaryUrl(e.target.value); setError(null); }}
+          placeholder="https://zoom.us/j/987654321 or backup link"
         />
-        <span>Set as Primary / Default Link for this student</span>
-      </label>
+      </FormField>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', marginTop: 'var(--space-3)' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', marginTop: 'var(--space-2)' }}>
         <Button variant="secondary" type="button" onClick={onCancel} disabled={isLoading}>
           Cancel
         </Button>
         <Button variant="primary" type="submit" isLoading={isLoading}>
-          Save Meeting Link
+          Save Link
         </Button>
       </div>
     </form>

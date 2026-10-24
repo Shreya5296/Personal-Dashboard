@@ -65,11 +65,11 @@ test.describe('Frontend UI/UX Redesign — Screen & Viewport Coverage', () => {
     await expect(page.locator('h1:has-text("Meeting Links Directory")')).toBeVisible();
     await expect(page.locator('button:has-text("+ Add Meeting Link")')).toBeVisible();
 
-    // 6. Reports
-    await navigate(page, 'Reports');
-    await expect(page.locator('h1:has-text("Financial Reports")')).toBeVisible();
+    // 6. Earnings
+    await navigate(page, 'Earnings');
+    await expect(page.locator('h1:has-text("Earnings Overview")')).toBeVisible();
     await expect(page.locator('text=Total Invoiced')).toBeVisible();
-    await expect(page.locator('text=Total Collected')).toBeVisible();
+    await expect(page.locator('text=Collected Earnings')).toBeVisible();
     await expect(page.locator('text=Total Outstanding')).toBeVisible();
     await expect(page.locator('text=Collection Performance')).toBeVisible();
 
@@ -80,7 +80,7 @@ test.describe('Frontend UI/UX Redesign — Screen & Viewport Coverage', () => {
     await profileItem.click();
     await expect(page.locator('h1:has-text("Profile & Preferences")')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Administrator Profile' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Regional Defaults' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Regional Defaults/ })).toBeVisible();
   });
 
   test('verifies desktop 1280px layout without horizontal overflow', async ({ page }) => {

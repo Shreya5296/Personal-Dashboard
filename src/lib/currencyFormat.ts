@@ -1,16 +1,24 @@
-import { CURRENCY_SYMBOL } from '../config/publicConfig';
+import { getSavedCurrency, getCurrencySymbol } from './userPreferences';
 
-export function formatCurrency(amount: number | null | undefined, showSymbol = true): string {
+export function formatCurrency(
+  amount: number | null | undefined,
+  showSymbol = true,
+  currencyOverride?: string
+): string {
+  const currencyCode = currencyOverride || getSavedCurrency();
+  const symbol = getCurrencySymbol(currencyCode);
+
   if (amount === null || amount === undefined || isNaN(amount)) {
-    return showSymbol ? `${CURRENCY_SYMBOL}0` : '0';
+    return showSymbol ? `${symbol}0` : '0';
   }
 
-  const formatted = new Intl.NumberFormat('en-IN', {
+  const locale = currencyCode === 'INR' ? 'en-IN' : 'en-US';
+  const formatted = new Intl.NumberFormat(locale, {
     maximumFractionDigits: 2,
     minimumFractionDigits: 0,
   }).format(amount);
 
-  return showSymbol ? `${CURRENCY_SYMBOL}${formatted}` : formatted;
+  return showSymbol ? `${symbol}${formatted}` : formatted;
 }
 
 export function parseCurrencyInput(input: string): number {

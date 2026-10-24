@@ -33,7 +33,7 @@ const navItems = [
   { id: 'fees' as NavSection, label: 'Fees & Payments', Icon: FeesIcon },
   { id: 'classes' as NavSection, label: 'Classes', Icon: ClassesIcon },
   { id: 'meeting-links' as NavSection, label: 'Meeting Links', Icon: MeetingLinksIcon },
-  { id: 'reports' as NavSection, label: 'Reports', Icon: ReportsIcon },
+  { id: 'reports' as NavSection, label: 'Earnings', Icon: ReportsIcon },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -55,7 +55,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className={styles.sidebarHeader}>
           <div className={styles.brandWrapper}>
             <span className={styles.brandTitle}>{APP_NAME}</span>
-            <span className={styles.brandSubtitle}>Tutor Administration</span>
           </div>
           {onClose && (
             <button

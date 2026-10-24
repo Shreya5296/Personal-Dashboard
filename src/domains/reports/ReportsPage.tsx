@@ -10,7 +10,7 @@ import { LoadingState } from '../../components/feedback/LoadingState';
 import { PageHeader } from '../../layout/PageHeader';
 
 export const ReportsPage: React.FC = () => {
-  usePageTitle('Financial Reports');
+  usePageTitle('Earnings');
   const { token } = useAuth();
   const [summary, setSummary] = useState<FinancialSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -26,18 +26,18 @@ export const ReportsPage: React.FC = () => {
     if (!summary) return;
     const csvContent = 'data:text/csv;charset=utf-8,Metric,Amount\n' +
       `Total Invoiced,${summary.totalInvoiced}\n` +
-      `Total Collected,${summary.totalCollected}\n` +
+      `Collected Earnings,${summary.totalCollected}\n` +
       `Total Outstanding,${summary.totalOutstanding}\n`;
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `financial_summary_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `earnings_summary_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  if (loading) return <LoadingState message="Generating financial reports…" />;
+  if (loading) return <LoadingState message="Loading earnings overview…" />;
 
   const invoiced = summary?.totalInvoiced || 0;
   const collected = summary?.totalCollected || 0;
@@ -47,9 +47,9 @@ export const ReportsPage: React.FC = () => {
   return (
     <div>
       <PageHeader
-        title="Financial Reports"
-        subtitle="Ledger summary of invoiced fees, verified collections, and pending balances."
-        actions={<ExportAction onExport={handleExport} label="Export Summary CSV" />}
+        title="Earnings Overview"
+        subtitle="Ledger summary of collected tuition earnings, invoiced fees, and outstanding balances."
+        actions={<ExportAction onExport={handleExport} label="Export Earnings CSV" />}
       />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-5)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
@@ -65,15 +65,15 @@ export const ReportsPage: React.FC = () => {
           <div style={{ fontSize: '1.75rem', fontWeight: 700, margin: '6px 0 4px', color: 'var(--color-text-main)', fontVariantNumeric: 'tabular-nums' }}>
             {formatCurrency(invoiced)}
           </div>
-          <p style={{ margin: 0, fontSize: 'var(--font-size-xs)', color: 'var(--color-text-subtle)' }}>Total cumulative billed tuition</p>
+          <p style={{ margin: 0, fontSize: 'var(--font-size-xs)', color: 'var(--color-text-subtle)' }}>Total billed tuition obligations</p>
         </div>
 
         <div style={{ padding: '1.25rem 1.5rem', backgroundColor: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-xs)' }}>
-          <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', fontWeight: 500 }}>Total Collected</span>
+          <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)', fontWeight: 500 }}>Collected Earnings</span>
           <div style={{ fontSize: '1.75rem', fontWeight: 700, margin: '6px 0 4px', color: '#059669', fontVariantNumeric: 'tabular-nums' }}>
             {formatCurrency(collected)}
           </div>
-          <p style={{ margin: 0, fontSize: 'var(--font-size-xs)', color: 'var(--color-text-subtle)' }}>Actual received bank and UPI credits</p>
+          <p style={{ margin: 0, fontSize: 'var(--font-size-xs)', color: 'var(--color-text-subtle)' }}>Actual received tuition payments</p>
         </div>
 
         <div style={{ padding: '1.25rem 1.5rem', backgroundColor: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-xs)' }}>
@@ -81,7 +81,7 @@ export const ReportsPage: React.FC = () => {
           <div style={{ fontSize: '1.75rem', fontWeight: 700, margin: '6px 0 4px', color: outstanding > 0 ? '#dc2626' : 'var(--color-text-main)', fontVariantNumeric: 'tabular-nums' }}>
             {formatCurrency(outstanding)}
           </div>
-          <p style={{ margin: 0, fontSize: 'var(--font-size-xs)', color: 'var(--color-text-subtle)' }}>Unpaid receivables due for settlement</p>
+          <p style={{ margin: 0, fontSize: 'var(--font-size-xs)', color: 'var(--color-text-subtle)' }}>Uncollected receivables due for settlement</p>
         </div>
       </div>
 

@@ -4,6 +4,7 @@ import { usePageTitle } from '../../hooks/usePageTitle';
 import { PageHeader } from '../../layout/PageHeader';
 import { Button } from '../../components/buttons/Button';
 import { InlineNotice } from '../../components/feedback/InlineNotice';
+import { RegionalPreferencesCard } from './RegionalPreferencesCard';
 import formStyles from '../../components/forms/forms.module.css';
 
 export const SettingsPage: React.FC = () => {
@@ -42,7 +43,16 @@ export const SettingsPage: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)', maxWidth: '720px' }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 'var(--space-5)',
+        maxWidth: '720px',
+        margin: '0 auto',
+        width: '100%',
+      }}
+    >
       <PageHeader
         title="Profile & Preferences"
         subtitle="Manage administrator display identity and view regional defaults."
@@ -100,21 +110,7 @@ export const SettingsPage: React.FC = () => {
         </form>
       </div>
 
-      <div style={cardStyle}>
-        <h3 style={{ margin: '0 0 var(--space-4)', fontSize: 'var(--font-size-base)', fontWeight: 600 }}>
-          Regional Defaults
-        </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-3)', fontSize: 'var(--font-size-sm)' }}>
-          <div>
-            <span style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-xs)', display: 'block' }}>Application Timezone</span>
-            <strong>Asia/Kolkata (IST)</strong>
-          </div>
-          <div>
-            <span style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-xs)', display: 'block' }}>Base Currency</span>
-            <strong>Indian Rupee (₹ INR)</strong>
-          </div>
-        </div>
-      </div>
+      <RegionalPreferencesCard />
     </div>
   );
 };

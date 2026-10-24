@@ -1,12 +1,12 @@
-import { APP_TIMEZONE } from '../config/publicConfig';
+import { getSavedTimezone } from './userPreferences';
 
-export function formatDate(isoString: string | null | undefined): string {
+export function formatDate(isoString: string | null | undefined, timeZone?: string): string {
   if (!isoString) return '—';
   try {
     const date = new Date(isoString);
     if (isNaN(date.getTime())) return '—';
     return new Intl.DateTimeFormat('en-IN', {
-      timeZone: APP_TIMEZONE,
+      timeZone: timeZone || getSavedTimezone(),
       day: '2-digit',
       month: 'short',
       year: 'numeric',
@@ -16,16 +16,32 @@ export function formatDate(isoString: string | null | undefined): string {
   }
 }
 
-export function formatDateTime(isoString: string | null | undefined): string {
+export function formatDateTime(isoString: string | null | undefined, timeZone?: string): string {
   if (!isoString) return '—';
   try {
     const date = new Date(isoString);
     if (isNaN(date.getTime())) return '—';
     return new Intl.DateTimeFormat('en-IN', {
-      timeZone: APP_TIMEZONE,
+      timeZone: timeZone || getSavedTimezone(),
       day: '2-digit',
       month: 'short',
       year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    }).format(date);
+  } catch {
+    return '—';
+  }
+}
+
+export function formatTimeOnly(isoString: string | null | undefined, timeZone?: string): string {
+  if (!isoString) return '—';
+  try {
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return '—';
+    return new Intl.DateTimeFormat('en-IN', {
+      timeZone: timeZone || getSavedTimezone(),
       hour: '2-digit',
       minute: '2-digit',
       hour12: true,

@@ -40,8 +40,8 @@ export const ROUTE_CONFIGS: Record<NavSection, RouteConfig> = {
   },
   reports: {
     id: 'reports',
-    title: 'Reports & Analytics',
-    subtitle: 'View financial performance, package burn-rates, and export accounting summaries.',
+    title: 'Earnings Overview',
+    subtitle: 'Track collected tuition earnings, invoiced fees, and outstanding balances.',
     requiresAdmin: true,
   },
   settings: {

@@ -320,3 +320,25 @@ NEXT ACTION
     - Clean Vite production build in 842ms.
     - Responsive Playwright visual tests passing (4/4) and reports & cross-cutting tests passing (3/3).
     - Zero remaining active references to retired feature.
+- Profile, Navigation, Branding & Dashboard Extension completed:
+  * 1. Profile & Preferences Extension:
+    - Added IANA timezone dropdown with clear labels (default: Asia/Kolkata) and safe persistence in userPreferences.ts.
+    - Added supported display currency dropdown (default: INR) and safe persistence without automatic FX conversions or altering original records.
+    - Preserved administrator display-name editor and read-only email.
+    - Center-aligned Profile & Preferences container horizontally (maxWidth: 720px, margin: 0 auto).
+  * 2. Top Bar & Branding:
+    - Removed Development / Mock badge from top bar.
+    - Updated single brand name to "Student Manager", removing secondary subtitle line.
+  * 3. Meeting Links Dual Link Display:
+    - Displayed both meeting_link_1 (Primary meeting link) and meeting_link_2 (Secondary meeting link) with copy/open actions and overflow protection.
+    - Form supports creating and editing both links simultaneously without modifying 4-column schema.
+  * 4. Reports Renamed to Earnings:
+    - Renamed navigation item and user-facing headings to "Earnings Overview", communicating collected earnings vs invoiced obligations accurately while keeping routes stable.
+  * 5. Dashboard Calendar:
+    - Added weekly class schedule calendar starting on Monday and ending on Sunday, with prev/next/this week navigation and timezone-aware formatting.
+  * 6. Quality Gates & Verification:
+    - 128/128 Vitest tests passing across 25 suites.
+    - Line limit policy strictly verified: 124/124 files in src/ and public/ <= 149 lines.
+    - Strict TypeScript check passing with 0 errors.
+    - Production Vite build clean in 752ms.
+    - All Playwright test suites (accountDropdown, redesignScreensVisual, auth, reportsAndCrossCutting) passing 100%.

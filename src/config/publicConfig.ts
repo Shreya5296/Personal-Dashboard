@@ -1,4 +1,4 @@
-export const APP_NAME = 'Student Management Dashboard';
+export const APP_NAME = 'Student Manager';
 export const APP_TIMEZONE = 'Asia/Kolkata';
 export const APP_CURRENCY = 'INR';
 export const CURRENCY_SYMBOL = '₹';

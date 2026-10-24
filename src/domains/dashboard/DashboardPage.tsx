@@ -6,6 +6,7 @@ import { fetchClasses } from '../classes/classApi';
 import { fetchFeeObligations } from '../fees/feeApi';
 import { DashboardSummary } from './DashboardSummary';
 import { DashboardFollowUps } from './DashboardFollowUps';
+import { DashboardCalendar } from './DashboardCalendar';
 import { ClassSession } from '../classes/classTypes';
 import { FeeObligation } from '../fees/feeTypes';
 import { LoadingState } from '../../components/feedback/LoadingState';
@@ -99,6 +100,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           </Button>
         </div>
       </div>
+
+      <DashboardCalendar classes={classes} />
 
       <DashboardFollowUps classes={classes} fees={fees} onNavigate={onNavigate} />
     </div>

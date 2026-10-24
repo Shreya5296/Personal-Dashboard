@@ -25,9 +25,9 @@ const MOCK_CLASSES = [
 ];
 
 const MOCK_LINKS = [
-  { meeting_link_id: 'ml_501', student_id: 'stu_101', provider: 'GOOGLE_MEET', link_label: 'Calculus Live Room', meeting_url: 'https://meet.google.com/abc-xyz-pqr', is_preferred: true },
-  { meeting_link_id: 'ml_502', student_id: 'stu_102', provider: 'ZOOM', link_label: 'Physics Discussion Link', meeting_url: 'https://zoom.us/j/987654321', is_preferred: true },
-  { meeting_link_id: 'ml_503', student_id: 'stu_103', provider: 'GOOGLE_MEET', link_label: 'Secondary Room', meeting_url: 'https://meet.google.com/def-uvw-rst', is_preferred: false }
+  { meeting_link_id: 'ml_501', student_id: 'stu_101', student_name: 'Aarav Sharma', provider: 'GOOGLE_MEET', link_label: 'Calculus Live Room', meeting_url: 'https://meet.google.com/abc-xyz-pqr', meeting_link_1: 'https://meet.google.com/abc-xyz-pqr', meeting_link_2: 'https://zoom.us/j/101202303', is_preferred: true },
+  { meeting_link_id: 'ml_502', student_id: 'stu_102', student_name: 'Diya Patel', provider: 'ZOOM', link_label: 'Physics Discussion Link', meeting_url: 'https://zoom.us/j/987654321', meeting_link_1: 'https://zoom.us/j/987654321', meeting_link_2: '', is_preferred: true },
+  { meeting_link_id: 'ml_503', student_id: 'stu_103', student_name: 'Rohan Verma', provider: 'GOOGLE_MEET', link_label: 'Secondary Room', meeting_url: 'https://meet.google.com/def-uvw-rst', meeting_link_1: 'https://meet.google.com/def-uvw-rst', meeting_link_2: 'https://meet.google.com/rohan-backup', is_preferred: false }
 ];
 
 const MOCK_PACKAGES = [
