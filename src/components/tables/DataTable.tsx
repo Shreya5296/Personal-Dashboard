@@ -12,12 +12,13 @@ export interface DataTableProps<T> {
   columns: Column<T>[];
   data: T[];
   keyExtractor: (row: T) => string;
+  fixedLayout?: boolean;
 }
 
-export function DataTable<T>({ columns, data, keyExtractor }: DataTableProps<T>) {
+export function DataTable<T>({ columns, data, keyExtractor, fixedLayout }: DataTableProps<T>) {
   return (
     <div className={styles.tableWrapper}>
-      <table className={styles.table}>
+      <table className={`${styles.table} ${fixedLayout ? styles.tableFixed : ''}`}>
         <thead>
           <tr>
             {columns.map((col) => (

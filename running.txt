@@ -733,3 +733,37 @@ NEXT ACTION
     - Line limit check: 168/168 files in src/ and public/ strictly <= 149 lines (PASS).
     - Strict TypeScript check (tsc --noEmit): 0 errors (PASS).
     - Clean Vite production build in 913ms (PASS).
+- Meeting Links, Navigation, Layout, and End-to-End Data Persistence Fixes completed & verified:
+  * 1. Fix Meeting Links Table Layout (Requirement 1):
+    - Added DataTable fixedLayout prop with table-layout: fixed; width: 100% and text-overflow/word-break cell styling.
+    - Configured balanced, predictable column widths: Student (~28%), Primary Link (~30%), Secondary Link (~30%), Actions (~12%).
+    - Safe wrapping / truncation with min-width: 0 and max-width: 100% to eliminate table and page horizontal scrolling.
+    - Preserved green Google Meet and blue Zoom button styling and clean 'No link configured' fallback.
+  * 2. Side Drawer Fixed Navigation (Requirement 2):
+    - Updated AppShell layout styling: shell set to height: 100vh with overflow: hidden.
+    - Navigation drawer remains stationary at full viewport height (height: 100vh).
+    - Main content area (.mainArea) scrolls vertically with overflow-y: auto and overflow-x: hidden.
+    - Eliminated nested scrollbars and horizontal scrolling while preserving responsive mobile drawer overlay.
+  * 3. Meeting Links Hover Actions for Copy and Delete (Requirement 3):
+    - Removed automatic URL copy on clicking the link button.
+    - Hover/focus/touch revealed Copy and Delete buttons inside MeetingLinkButton.
+    - Explicit clipboard copy on clicking Copy with visual tooltip confirmation.
+    - Delete confirms with window.confirm, clears only the selected link slot (primary or secondary) to empty string while strictly preserving the other link slot and all other student fields.
+    - Persisted changes to backend/Google Sheets via meetingLinks.update with toast feedback.
+  * 4. Reorder Navigation (Requirement 4):
+    - Exactly reordered navigation menu in Sidebar.tsx: 1. Dashboard, 2. Students, 3. Class Schedule, 4. Finances, 5. Meeting Links.
+    - Renamed 'Classes' to 'Class Schedule' while preserving its existing route ('classes') and all underlying views/flows.
+  * 5. Remove Student-Row Arrow (Requirement 5):
+    - Removed triangle indicator beside Edit button in StudentRow.tsx.
+    - Preserved row expansion toggle on name/row click with stopPropagation on Edit and Actions buttons.
+  * 6. End-to-End Google Sheets Persistence Verification (Requirement 6):
+    - Deployed Apps Script backend updates in-place to Version @29 on deployment AKfycbx4d_VG4CsZIEAomX_OjNMuej06ktTYmKLME5ennLsI7mx3Fn5b-YBu9CRqe7NwrUVH3w (added packages.update handler, resolved recursion in PackageService.gs, adjusted RowWriter header bounds).
+    - Executed live persistence suite (tests/live-e2e-sheets-verification.js) against live canonical spreadsheet.
+    - Verified live persistence for: Student creation & editing (PASS), Package creation & updates (PASS), Meeting-link creation, updates, and individual-link deletion (PASS), Generated class sessions (PASS), Attendance & class-balance deductions (PASS), Payments (PASS), Student notes & note history (PASS).
+    - Documented honest status for Recurring class schedules and Class duration (NOT VERIFIED due to absent physical sheet/column in canonical spreadsheet).
+    - Verified safe archiving of test student records.
+  * 7. Quality Gates:
+    - 220/220 Vitest unit/integration tests passing across 39 test suites.
+    - All 168 files in src/ and public/ strictly <= 149 lines (check:lines PASS).
+    - Strict TypeScript check (tsc --noEmit): 0 errors (PASS).
+    - Clean Vite production build in 1.08s (PASS).

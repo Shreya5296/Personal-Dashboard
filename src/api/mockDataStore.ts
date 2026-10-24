@@ -58,7 +58,7 @@ export function handleMockApiRequest<T>(operation: string, payload: Record<strin
     const sid = payload.student_id as string | undefined;
     return { ok: true, data: (sid ? MOCK_LINKS.filter(l => l.student_id === sid) : MOCK_LINKS) as T, meta };
   }
-  if (operation === 'meetingLinks.create') {
+  if (operation === 'meetingLinks.create' || operation === 'meetingLinks.update') {
     const sid = String(payload.student_id || '');
     let ex = MOCK_LINKS.find(l => l.student_id === sid);
     const l1 = payload.meeting_link_1 !== undefined ? String(payload.meeting_link_1).trim() : (payload.meeting_url !== undefined ? String(payload.meeting_url).trim() : undefined);

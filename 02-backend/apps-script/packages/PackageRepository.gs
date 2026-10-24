@@ -43,10 +43,14 @@ function Packages_insert(spreadsheet, record) {
   return _pkgRowWriter.appendRecord(sheet, _pkgMapper, headers, record);
 }
 
-function Packages_update(spreadsheet, packageId, updates) {
+function Packages_repoUpdate(spreadsheet, packageId, updates) {
   var sheet = spreadsheet.getSheetByName(_pkgRegistry.SHEET_NAMES.PACKAGES);
   var headers = _pkgRegistry.getExpectedHeaders(_pkgRegistry.SHEET_NAMES.PACKAGES);
   return _pkgRowWriter.updateRecordById(sheet, _pkgMapper, headers, 'package_id', packageId, updates);
+}
+
+function Packages_update(spreadsheet, packageId, updates) {
+  return Packages_repoUpdate(spreadsheet, packageId, updates);
 }
 
 if (typeof module !== 'undefined' && module.exports) {

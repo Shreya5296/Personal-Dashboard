@@ -57,8 +57,8 @@ test.describe('Frontend UI/UX Redesign — Screen & Viewport Coverage', () => {
     await expect(page.locator('text=Total Outstanding')).toBeVisible();
     await expect(page.locator('text=Collection Performance')).toBeVisible();
 
-    // 4. Classes
-    await navigate(page, 'Classes');
+    // 4. Class Schedule
+    await navigate(page, 'Class Schedule');
     await expect(page.locator('h1:has-text("Class Schedule & Attendance")')).toBeVisible();
     await expect(page.locator('button:has-text("+ Schedule Class")')).toBeVisible();
 

@@ -34,7 +34,8 @@ function appendRecord(sheet, headerMapper, headerList, record) {
 
   var headerRow = rawData[0];
   var map = headerMapper.createHeaderMap(headerRow);
-  var row = headerMapper.recordToRow(map, headerList, record);
+  var targetHeaders = (headerRow && headerRow.length) ? headerRow : headerList;
+  var row = headerMapper.recordToRow(map, targetHeaders, record);
 
   sheet.appendRow(row);
   return record;
@@ -60,7 +61,8 @@ function updateRecordById(sheet, headerMapper, headerList, idField, idValue, upd
           currentRecord[key] = updates[key];
         }
       }
-      var updatedRow = headerMapper.recordToRow(map, headerList, currentRecord);
+      var targetHeaders = (headerRow && headerRow.length) ? headerRow : headerList;
+      var updatedRow = headerMapper.recordToRow(map, targetHeaders, currentRecord);
       if (typeof sheet.setRow === 'function') {
         sheet.setRow(i, updatedRow); // Mock support
       } else if (typeof sheet.getRange === 'function') {

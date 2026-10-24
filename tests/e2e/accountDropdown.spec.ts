@@ -32,8 +32,8 @@ test.describe('E2E — Account Dropdown, Branding, Preferences & Calendar', () =
     const sidebar = page.locator('aside');
     await expect(sidebar.locator('button:has-text("Dashboard")')).toBeVisible();
     await expect(sidebar.locator('button:has-text("Students")')).toBeVisible();
+    await expect(sidebar.locator('button:has-text("Class Schedule")')).toBeVisible();
     await expect(sidebar.locator('button:has-text("Finances")')).toBeVisible();
-    await expect(sidebar.locator('button:has-text("Classes")')).toBeVisible();
     await expect(sidebar.locator('button:has-text("Meeting Links")')).toBeVisible();
 
     // Verify Settings, Fees & Payments, and Earnings are completely absent from sidebar

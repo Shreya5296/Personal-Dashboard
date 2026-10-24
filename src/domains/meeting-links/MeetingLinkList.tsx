@@ -58,29 +58,39 @@ export const MeetingLinkList: React.FC<{ studentId?: string }> = ({ studentId })
     }, 2500);
   };
 
-  const openAddSlot = (link: MeetingLink, slot: 'primary' | 'secondary') => {
-    setEditingLink(link);
-    setTargetSlot(slot);
-    setIsModalOpen(true);
-  };
+  const handleDeleteSlot = async (link: MeetingLink, slot: 'primary' | 'secondary') => {
+    const slotLabel = slot === 'primary' ? 'primary' : 'secondary';
+    const name = link.student_name || link.student_id;
+    if (!window.confirm(`Delete ${slotLabel} meeting link for ${name}?`)) return;
 
-  const openEdit = (link: MeetingLink) => {
-    setEditingLink(link);
-    setTargetSlot(null);
-    setIsModalOpen(true);
-  };
-
-  const openAddNew = () => {
-    setEditingLink(null);
-    setTargetSlot(null);
-    setIsModalOpen(true);
+    setFormLoading(true);
+    try {
+      const m1 = slot === 'primary' ? '' : (link.meeting_link_1 || link.meeting_url || '');
+      const m2 = slot === 'secondary' ? '' : (link.meeting_link_2 || '');
+      const payload: MeetingLinkInput = {
+        student_id: link.student_id,
+        student_name: link.student_name,
+        meeting_link_1: m1,
+        meeting_link_2: m2,
+        meeting_url: m1 || m2 || '',
+        provider: link.provider || 'OTHER',
+      };
+      await createMeetingLink(payload, token);
+      setFeedback(`${slot === 'primary' ? 'Primary' : 'Secondary'} meeting link deleted.`);
+      setTimeout(() => setFeedback(null), 3000);
+      await loadData();
+    } catch (err: any) {
+      setFeedback(`Failed to delete link: ${err?.message || 'Error'}`);
+    } finally {
+      setFormLoading(false);
+    }
   };
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
         <h3 style={{ margin: 0, fontSize: 'var(--font-size-base)', fontWeight: 600 }}>Registered Meeting Links</h3>
-        <Button variant="secondary" size="sm" onClick={openAddNew}>
+        <Button variant="secondary" size="sm" onClick={() => { setEditingLink(null); setTargetSlot(null); setIsModalOpen(true); }}>
           + Add Meeting Link
         </Button>
       </div>
@@ -98,9 +108,10 @@ export const MeetingLinkList: React.FC<{ studentId?: string }> = ({ studentId })
       {!loading && links.length > 0 && (
         <MeetingLinkTable
           links={links}
-          onEdit={openEdit}
-          onAddSlot={openAddSlot}
+          onEdit={(l) => { setEditingLink(l); setTargetSlot(null); setIsModalOpen(true); }}
+          onAddSlot={(l, s) => { setEditingLink(l); setTargetSlot(s); setIsModalOpen(true); }}
           onCopy={handleCopy}
+          onDeleteLink={handleDeleteSlot}
           copiedKey={copiedKey}
         />
       )}
@@ -111,11 +122,7 @@ export const MeetingLinkList: React.FC<{ studentId?: string }> = ({ studentId })
         initialLink={editingLink}
         targetSlot={targetSlot}
         onSubmit={handleSave}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingLink(null);
-          setTargetSlot(null);
-        }}
+        onClose={() => { setIsModalOpen(false); setEditingLink(null); setTargetSlot(null); }}
         isLoading={formLoading}
       />
     </div>

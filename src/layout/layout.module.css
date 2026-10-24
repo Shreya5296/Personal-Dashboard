@@ -1,6 +1,8 @@
 .shell {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
   background-color: var(--color-bg-base);
   color: var(--color-text-main);
   font-family: var(--font-sans);
@@ -10,6 +12,8 @@
 .sidebarBackdrop { display: none; }
 .sidebar {
   width: var(--sidebar-width);
+  height: 100vh;
+  max-height: 100vh;
   background-color: var(--color-bg-surface);
   border-right: 1px solid var(--color-border-subtle);
   display: flex;
@@ -62,7 +66,16 @@
   font-weight: 600;
 }
 
-.mainArea { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.mainArea {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100vh;
+  max-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
 .topBar {
   height: var(--topbar-height);
   background-color: var(--color-bg-surface);

@@ -30,8 +30,8 @@ export interface SidebarProps {
 const navItems = [
   { id: 'dashboard' as NavSection, label: 'Dashboard', Icon: DashboardIcon },
   { id: 'students' as NavSection, label: 'Students', Icon: StudentsIcon },
+  { id: 'classes' as NavSection, label: 'Class Schedule', Icon: ClassesIcon },
   { id: 'finances' as NavSection, label: 'Finances', Icon: FeesIcon },
-  { id: 'classes' as NavSection, label: 'Classes', Icon: ClassesIcon },
   { id: 'meeting-links' as NavSection, label: 'Meeting Links', Icon: MeetingLinksIcon },
 ];
 

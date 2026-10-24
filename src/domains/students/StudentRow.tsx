@@ -98,7 +98,7 @@ export const StudentRow: React.FC<StudentRowProps> = ({
         </td>
 
         <td style={{ width: '10%', textAlign: 'right' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end' }}>
             <Button
               variant="ghost"
               size="sm"
@@ -109,9 +109,6 @@ export const StudentRow: React.FC<StudentRowProps> = ({
             >
               Edit
             </Button>
-            <span style={{ fontSize: '11px', color: 'var(--color-text-subtle)', userSelect: 'none' }}>
-              {isExpanded ? '▲' : '▼'}
-            </span>
           </div>
         </td>
       </tr>

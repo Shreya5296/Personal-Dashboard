@@ -75,7 +75,11 @@ function registerPackageOperations(router) {
     if (!packageId) {
       return { success: false, code: 'VALIDATION_ERROR', message: 'Missing packageId' };
     }
-    return _pkgSvcH.Packages_update(ctx.spreadsheet, packageId, ctx.payload, {
+    var updateFn = typeof Packages_update === 'function' ? Packages_update : (_pkgSvcH && _pkgSvcH.Packages_update);
+    if (!updateFn) {
+      return { success: false, code: 'UNAVAILABLE', message: 'Packages_update function unavailable' };
+    }
+    return updateFn(ctx.spreadsheet, packageId, ctx.payload, {
       actorId: ctx.actorId,
       email: ctx.verifiedEmail,
       requestId: ctx.requestId

@@ -66,6 +66,9 @@ export async function navigateTo(page: Page, sectionLabel: string): Promise<void
   if (target === 'Fees & Payments' || target === 'Earnings') {
     target = 'Finances';
   }
+  if (target === 'Classes') {
+    target = 'Class Schedule';
+  }
   const navBtn = page.locator(`aside button:has-text("${target}")`);
   await expect(navBtn).toBeVisible({ timeout: 15000 });
   await navBtn.click();

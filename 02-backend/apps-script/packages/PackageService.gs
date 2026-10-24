@@ -4,7 +4,13 @@
 
 var _pkgIdGen = typeof generatePackageId === 'function' ? { generatePackageId: generatePackageId } : (typeof require !== 'undefined' ? require('../shared/IdGenerator.gs') : null);
 var _pkgVal = typeof validatePackageInput === 'function' ? { validatePackageInput: validatePackageInput } : (typeof require !== 'undefined' ? require('./PackageValidation.gs') : null);
-var _pkgRepo = typeof Packages_getAll === 'function' ? { Packages_getAll: Packages_getAll, Packages_getById: Packages_getById, Packages_getByStudentId: Packages_getByStudentId, Packages_insert: Packages_insert, Packages_update: Packages_update } : (typeof require !== 'undefined' ? require('./PackageRepository.gs') : null);
+var _pkgRepo = typeof Packages_getAll === 'function' ? {
+  Packages_getAll: Packages_getAll,
+  Packages_getById: Packages_getById,
+  Packages_getByStudentId: Packages_getByStudentId,
+  Packages_insert: Packages_insert,
+  Packages_repoUpdate: typeof Packages_repoUpdate === 'function' ? Packages_repoUpdate : null
+} : (typeof require !== 'undefined' ? require('./PackageRepository.gs') : null);
 var _pkgStuRepo = typeof Students_getById === 'function' ? { Students_getById: Students_getById } : (typeof require !== 'undefined' ? require('../students/StudentRepository.gs') : null);
 var _pkgAudit = typeof recordAuditEvent === 'function' ? { recordAuditEvent: recordAuditEvent } : (typeof require !== 'undefined' ? require('../audit/AuditService.gs') : null);
 var _pkgReg = {
@@ -182,7 +188,8 @@ function Packages_update(spreadsheet, packageId, data, actor) {
   else if (data.status !== undefined) updates.package_status = data.status;
   updates.updated_at = new Date().toISOString();
 
-  _pkgRepo.Packages_update(spreadsheet, packageId, updates);
+  var updateFn = (_pkgRepo && _pkgRepo.Packages_repoUpdate) ? _pkgRepo.Packages_repoUpdate : (typeof Packages_repoUpdate === 'function' ? Packages_repoUpdate : (_pkgRepo && _pkgRepo.Packages_update));
+  updateFn(spreadsheet, packageId, updates);
 
   if (_pkgAudit && _pkgAudit.recordAuditEvent) {
     _pkgAudit.recordAuditEvent(spreadsheet, _pkgReg, _pkgMap, {
