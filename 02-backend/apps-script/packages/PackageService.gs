@@ -40,6 +40,8 @@ function Packages_create(spreadsheet, data, actor) {
   var planName = String(data.plan_name || data.package_name || '').trim();
   var studentName = data.student_name || student.student_name || student.full_name || (student.first_name ? (student.first_name + ' ' + (student.last_name || '')).trim() : '');
 
+  var rawDuration = data.class_duration !== undefined ? data.class_duration : data.duration_minutes;
+
   var record = {
     package_id: id,
     student_id: data.student_id,
@@ -50,6 +52,7 @@ function Packages_create(spreadsheet, data, actor) {
     package_price: rawPrice,
     per_class: rawPerClass,
     classes_purchased: rawQty !== undefined && rawQty !== '' ? Number(rawQty) : 0,
+    class_duration: rawDuration !== undefined && rawDuration !== '' ? Number(rawDuration) : '',
     start_date: data.start_date || '',
     end_date: data.end_date || data.expiry_date || '',
     expiry_date: data.end_date || data.expiry_date || '',
@@ -146,6 +149,8 @@ function Packages_enrichWithBalance(spreadsheet, pkgRecord) {
   enriched.end_date = pkgRecord.end_date || pkgRecord.expiry_date || '';
   enriched.expiry_date = enriched.end_date;
   enriched.price = (pkgRecord.package_price !== '' && pkgRecord.package_price !== undefined) ? Number(pkgRecord.package_price) : 0;
+  enriched.class_duration = (pkgRecord.class_duration !== '' && pkgRecord.class_duration !== undefined) ? Number(pkgRecord.class_duration) : undefined;
+  enriched.duration_minutes = enriched.class_duration;
   enriched.status = pkgRecord.package_status || 'ACTIVE';
 
   return enriched;
@@ -166,6 +171,8 @@ function Packages_update(spreadsheet, packageId, data, actor) {
   if (data.per_class !== undefined && data.per_class !== '') updates.per_class = Number(data.per_class);
   var rawQty = data.classes_purchased !== undefined ? data.classes_purchased : (data.purchased_classes !== undefined ? data.purchased_classes : data.total_classes);
   if (rawQty !== undefined && rawQty !== '') updates.classes_purchased = Number(rawQty);
+  var rawDuration = data.class_duration !== undefined ? data.class_duration : data.duration_minutes;
+  if (rawDuration !== undefined && rawDuration !== '') updates.class_duration = Number(rawDuration);
   if (data.start_date !== undefined) updates.start_date = data.start_date;
   if (data.end_date !== undefined) updates.end_date = data.end_date;
   if (data.expiry_date !== undefined) updates.expiry_date = data.expiry_date;

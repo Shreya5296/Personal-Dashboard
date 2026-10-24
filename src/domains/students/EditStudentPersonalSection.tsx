@@ -46,14 +46,14 @@ export const EditStudentPersonalSection: React.FC<EditStudentPersonalSectionProp
         <FormField label="Parent Email" error={errors.parent_email}>
           <input className={formStyles.input} type="email" value={values.parent_email || ''} onChange={(e) => onChange('parent_email', e.target.value)} placeholder="parent@example.com" disabled={disabled} />
         </FormField>
-        <FormField label="Student Email" error={errors.student_email}>
-          <input className={formStyles.input} type="email" value={values.student_email || ''} onChange={(e) => onChange('student_email', e.target.value)} placeholder="student@example.com" disabled={disabled} />
+        <FormField label="Student Email (Inactive)" error={errors.student_email}>
+          <input className={formStyles.input} type="email" value={values.student_email || ''} disabled={true} readOnly={true} placeholder="Field inactive" title="Student Email is inactive" />
         </FormField>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--space-3)' }}>
-        <FormField label="Student Phone" error={errors.student_phone}>
-          <input className={formStyles.input} type="tel" value={values.student_phone || ''} onChange={(e) => onChange('student_phone', e.target.value)} placeholder="Optional student mobile" disabled={disabled} />
+        <FormField label="Student Phone (Inactive)" error={errors.student_phone}>
+          <input className={formStyles.input} type="tel" value={values.student_phone || ''} disabled={true} readOnly={true} placeholder="Field inactive" title="Student Phone is inactive" />
         </FormField>
         <FormField label="Status" error={errors.status}>
           <select className={formStyles.select} value={values.status || 'ACTIVE'} onChange={(e) => onChange('status', e.target.value)} disabled={disabled}>
@@ -63,8 +63,8 @@ export const EditStudentPersonalSection: React.FC<EditStudentPersonalSectionProp
         </FormField>
       </div>
 
-      <FormField label="Administrative Notes" error={errors.notes}>
-        <textarea className={formStyles.textarea} value={values.notes || ''} onChange={(e) => onChange('notes', e.target.value)} rows={2} placeholder="Optional syllabus notes or schedule preferences…" disabled={disabled} />
+      <FormField label="Administrative Notes (Inactive)" error={errors.notes}>
+        <textarea className={formStyles.textarea} value={values.notes || ''} disabled={true} readOnly={true} rows={2} placeholder="Field inactive" title="Administrative Notes on student details is inactive" />
       </FormField>
     </div>
   );

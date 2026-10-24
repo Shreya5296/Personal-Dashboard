@@ -50,13 +50,19 @@ export const StudentForm: React.FC<StudentFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setServerError(null);
-    const validation = validateStudentInput(formData);
+    const submissionData: StudentInput = {
+      ...formData,
+      student_phone: initialStudent?.student_phone || '',
+      student_email: initialStudent?.student_email || initialStudent?.email || '',
+      notes: initialStudent?.notes || '',
+    };
+    const validation = validateStudentInput(submissionData);
     if (!validation.isValid) {
       setErrors(validation.errors);
       return;
     }
     try {
-      await onSubmit(formData);
+      await onSubmit(submissionData);
     } catch (err: unknown) {
       if (err instanceof ApiClientError && err.details) setErrors(mapApiErrorsToFields(err.details));
       setServerError((err as Error).message || 'Failed to save student');
@@ -93,14 +99,14 @@ export const StudentForm: React.FC<StudentFormProps> = ({
         <FormField label="Parent Email" error={errors.parent_email}>
           <input className={formStyles.input} type="email" value={formData.parent_email || ''} onChange={(e) => handleChange('parent_email', e.target.value)} placeholder="parent@example.com" />
         </FormField>
-        <FormField label="Student Email" error={errors.student_email}>
-          <input className={formStyles.input} type="email" value={formData.student_email || ''} onChange={(e) => handleChange('student_email', e.target.value)} placeholder="student@example.com" />
+        <FormField label="Student Email (Inactive)" error={errors.student_email}>
+          <input className={formStyles.input} type="email" value={formData.student_email || ''} disabled={true} readOnly={true} placeholder="Field inactive" title="Student Email is inactive" />
         </FormField>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-3)' }}>
-        <FormField label="Student Phone" error={errors.student_phone}>
-          <input className={formStyles.input} type="tel" value={formData.student_phone || ''} onChange={(e) => handleChange('student_phone', e.target.value)} placeholder="Optional student mobile" />
+        <FormField label="Student Phone (Inactive)" error={errors.student_phone}>
+          <input className={formStyles.input} type="tel" value={formData.student_phone || ''} disabled={true} readOnly={true} placeholder="Field inactive" title="Student Phone is inactive" />
         </FormField>
         <FormField label="Status" error={errors.status}>
           <select className={formStyles.select} value={formData.status || 'ACTIVE'} onChange={(e) => handleChange('status', e.target.value)}>
@@ -110,8 +116,8 @@ export const StudentForm: React.FC<StudentFormProps> = ({
         </FormField>
       </div>
 
-      <FormField label="Administrative Notes" error={errors.notes}>
-        <textarea className={formStyles.textarea} value={formData.notes || ''} onChange={(e) => handleChange('notes', e.target.value)} rows={2} placeholder="Optional notes regarding syllabus, schedule preferences, or parent agreements…" />
+      <FormField label="Administrative Notes (Inactive)" error={errors.notes}>
+        <textarea className={formStyles.textarea} value={formData.notes || ''} disabled={true} readOnly={true} rows={2} placeholder="Field inactive" title="Administrative Notes is inactive" />
       </FormField>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', marginTop: 'var(--space-3)' }}>

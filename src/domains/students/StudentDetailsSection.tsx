@@ -46,24 +46,26 @@ export const StudentDetailsSection: React.FC<StudentDetailsSectionProps> = ({
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-3)' }}>
-        <FormField label="Student Phone" error={errors?.student_phone}>
+        <FormField label="Student Phone (Inactive)" error={errors?.student_phone}>
           <input
             type="tel"
             className={formStyles.input}
-            placeholder="+91 98765 43210 (Optional)"
+            placeholder="Field inactive"
             value={values.student_phone}
-            onChange={(e) => onChange('student_phone', e.target.value)}
-            disabled={disabled}
+            disabled={true}
+            readOnly={true}
+            title="Student Phone is currently inactive"
           />
         </FormField>
-        <FormField label="Student Email" error={errors?.student_email}>
+        <FormField label="Student Email (Inactive)" error={errors?.student_email}>
           <input
             type="email"
-            className={`${formStyles.input} ${errors?.student_email ? formStyles.inputError : ''}`}
-            placeholder="student@example.com (Optional)"
+            className={formStyles.input}
+            placeholder="Field inactive"
             value={values.student_email}
-            onChange={(e) => onChange('student_email', e.target.value)}
-            disabled={disabled}
+            disabled={true}
+            readOnly={true}
+            title="Student Email is currently inactive"
           />
         </FormField>
       </div>

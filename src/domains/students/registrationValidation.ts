@@ -1,4 +1,5 @@
 import { RegistrationFormData, RegistrationErrors } from './registrationTypes';
+import { isValidClassDuration, calculateEndTime } from '../classes/scheduleDurationCalculator';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -38,9 +39,20 @@ export function validateRegistrationForm(data: RegistrationFormData): {
   }
   if (Object.keys(parentErrors).length > 0) errors.parent = parentErrors;
 
-  // 3. Package Details (optional, but validated if populated)
+  // 3. Package Details
   const pkgErrors: Record<string, string> = {};
-  const hasPkgInput = data.pkg.package_price.trim() || data.pkg.per_class.trim() || data.pkg.classes_purchased.trim();
+  const hasPkgInput = Boolean(
+    data.pkg.package_price.trim() || data.pkg.per_class.trim() || data.pkg.classes_purchased.trim() || data.pkg.class_duration
+  );
+
+  if (data.pkg.class_duration && !isValidClassDuration(Number(data.pkg.class_duration))) {
+    pkgErrors.class_duration = 'Class duration must be 30, 40, or 60 minutes.';
+    valid = false;
+  } else if (data.schedules.length > 0 && !isValidClassDuration(Number(data.pkg.class_duration)) && data.schedules.some((s) => !s.end_time)) {
+    pkgErrors.class_duration = 'Class duration (30, 40, or 60 min) is required to configure schedules.';
+    valid = false;
+  }
+
   if (hasPkgInput) {
     if (data.pkg.package_price.trim()) {
       const p = Number(data.pkg.package_price);
@@ -68,6 +80,7 @@ export function validateRegistrationForm(data: RegistrationFormData): {
 
   // 4. Class Schedules
   const scheduleErrors: Record<string, string> = {};
+  const dur = Number(data.pkg.class_duration);
   data.schedules.forEach((entry) => {
     if (!entry.day_of_week) {
       scheduleErrors[`entry_${entry.id}_day`] = 'Select a day of the week.';
@@ -76,12 +89,18 @@ export function validateRegistrationForm(data: RegistrationFormData): {
     if (!TIME_REGEX.test(entry.start_time)) {
       scheduleErrors[`entry_${entry.id}_start`] = 'Valid start time required (HH:MM).';
       valid = false;
+    } else if (isValidClassDuration(dur)) {
+      const calcEnd = calculateEndTime(entry.start_time, dur);
+      if (!calcEnd) {
+        scheduleErrors[`entry_${entry.id}_time`] = 'Class cannot cross midnight. Please select an earlier start time.';
+        valid = false;
+      }
     }
-    if (!TIME_REGEX.test(entry.end_time)) {
+    if (entry.end_time && !TIME_REGEX.test(entry.end_time)) {
       scheduleErrors[`entry_${entry.id}_end`] = 'Valid end time required (HH:MM).';
       valid = false;
     }
-    if (TIME_REGEX.test(entry.start_time) && TIME_REGEX.test(entry.end_time) && entry.end_time <= entry.start_time) {
+    if (!scheduleErrors[`entry_${entry.id}_time`] && TIME_REGEX.test(entry.start_time) && TIME_REGEX.test(entry.end_time) && entry.end_time <= entry.start_time) {
       scheduleErrors[`entry_${entry.id}_time`] = 'End time must be after start time.';
       valid = false;
     }

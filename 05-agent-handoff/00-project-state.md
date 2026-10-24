@@ -38,16 +38,16 @@ The Git history and this file are the recovery sources of truth. Chat history an
 |---|---|
 | Project | Student Management Dashboard / Personal Dashboard |
 | Execution mode | Autonomous, sequential implementation |
-| Current phase | Student Management — Editing, Scheduling, Active/Inactive Tabs |
+| Current phase | Student Management — Inactive Fields and Configurable Class Duration |
 | Current phase status | PASSED |
-| Last completed phase | Student Management — Editing, Scheduling, Active/Inactive Tabs |
+| Last completed phase | Student Management — Inactive Fields and Configurable Class Duration |
 | Current Git branch | main |
-| Last full regression run | 209 Vitest tests passed (37 test files) + line-limit check passing (167 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build (881ms) + Playwright E2E passed |
+| Last full regression run | 215 Vitest tests passed (38 test files) + line-limit check passing (168 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build (913ms) + Playwright E2E passed |
 | Canonical Spreadsheet | `Private Class Dashboard` (ID: `1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8`, Owner: `ashreya0502@gmail.com`) — 6 approved business tables + 1 AuditLog operational table |
 | Backup Spreadsheet | `Master Backup (Pre-Launch 2026-10-21T12-13-40-537Z)` (ID: `1kIFYmI81DfNIAqb-ZHsTifiKE6JxhfQrXqpfphrw9eU`) — Verified accessible and preserved intact |
 | Apps Script Project | `1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL` — ConfigService, IdGenerator (STU_001), StudentService, ClassScheduleService, StudentIdMigration engine implemented |
 | Web App Deployment | Active at version `@26` (`AKfycbx4d_VG4CsZIEAomX_OjNMuej06ktTYmKLME5ennLsI7mx3Fn5b-YBu9CRqe7NwrUVH3w`) — Deployment ID preserved; updated in-place to version 26 |
-| Last state update | Implemented all six requirements for Student Management: 1. Edit Student (schedule, meeting links, package editing with audit tracking and history preservation); 2. New Student Form multi-entry recurring schedules; 3. Aligned full student details with responsive grid, truncation/wrapping, and no link collisions; 4. Auto-scheduling purchased classes from recurring schedules with conflict detection, timezone safety, and non-consuming scheduling; 5. Active and Inactive tabs on Students page; 6. Remaining-class balance classification rules without deleting/modifying inactive records. 209 Vitest tests passing, 167 micro-files <= 149 lines, Playwright E2E verified. |
+| Last state update | Implemented all three requirements for Student Management: 1. Student Email, Student Phone, and Notes made inactive/disabled with read-only styling in student registration and edit forms; backend update logic protects existing saved values in Google Sheets from being cleared or overwritten by empty strings. 2. Added Class Duration dropdown strictly allowing 30, 40, or 60 minutes across packages, class plans, and backend schema, with 'Not configured' state for legacy packages. 3. Class schedules ask only for Day of Week and Start Time, automatically calculating and displaying end time from package duration, recalculating future schedules when duration changes, rejecting midnight-crossing schedules, and applying duration to auto-schedule generation and conflict detection. 215 Vitest tests passing, 168 files <= 149 lines, clean Vite build. |
 
 ## 5. Phase Register
 

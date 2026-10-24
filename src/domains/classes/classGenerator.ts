@@ -1,5 +1,6 @@
 import { WeeklyScheduleEntry } from './scheduleApi';
 import { ClassSession } from './classTypes';
+import { calculateEndTime } from './scheduleDurationCalculator';
 
 export interface ProposedSession {
   dateStr: string;
@@ -15,15 +16,8 @@ export interface ProposedSession {
 }
 
 const DAY_MAP: Record<string, number> = {
-  SUNDAY: 0,
-  MONDAY: 1,
-  TUESDAY: 2,
-  WEDNESDAY: 3,
-  THURSDAY: 4,
-  FRIDAY: 5,
-  SATURDAY: 6,
+  SUNDAY: 0, MONDAY: 1, TUESDAY: 2, WEDNESDAY: 3, THURSDAY: 4, FRIDAY: 5, SATURDAY: 6,
 };
-
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 function parseTimeToMinutes(t: string): number {
@@ -36,7 +30,8 @@ export function generateProposedSessions(
   startDateStr: string,
   count: number,
   existingSessions: ClassSession[] = [],
-  studentId?: string
+  studentId?: string,
+  durationMinutes?: number
 ): ProposedSession[] {
   if (!schedules.length || !startDateStr || count <= 0) return [];
 
@@ -46,7 +41,7 @@ export function generateProposedSessions(
   const curr = new Date(startY, startM - 1, startD, 12, 0, 0);
 
   let iterations = 0;
-  const maxDays = 365 * 2; // Safeguard up to 2 years
+  const maxDays = 365 * 2;
 
   while (proposed.length < count && iterations < maxDays) {
     const dayOfWeek = curr.getDay();
@@ -60,11 +55,11 @@ export function generateProposedSessions(
       const d = String(curr.getDate()).padStart(2, '0');
       const dateStr = `${y}-${m}-${d}`;
 
-      const dur = Math.max(15, parseTimeToMinutes(entry.end_time) - parseTimeToMinutes(entry.start_time));
+      const computedEnd = (durationMinutes && calculateEndTime(entry.start_time, durationMinutes)) || entry.end_time;
+      const dur = durationMinutes || Math.max(15, parseTimeToMinutes(computedEnd) - parseTimeToMinutes(entry.start_time));
       const scheduledStart = `${dateStr}T${entry.start_time}:00.000Z`;
-      const scheduledEnd = `${dateStr}T${entry.end_time}:00.000Z`;
+      const scheduledEnd = `${dateStr}T${computedEnd}:00.000Z`;
 
-      // Check conflict and duplicate
       let hasConflict = false;
       let isDuplicate = false;
       let conflictDetails: string | undefined;
@@ -73,7 +68,6 @@ export function generateProposedSessions(
         const exStart = ex.scheduled_start || ex.start_time;
         if (!exStart) continue;
 
-        // Duplicate check for same student and date/time
         if (ex.student_id === studentId && exStart.slice(0, 16) === scheduledStart.slice(0, 16)) {
           isDuplicate = true;
           hasConflict = true;
@@ -81,13 +75,12 @@ export function generateProposedSessions(
           break;
         }
 
-        // Overlap conflict check
         if (exStart.slice(0, 10) === dateStr) {
           const exStartMin = parseTimeToMinutes(exStart.slice(11, 16));
           const exDur = ex.duration_minutes || 60;
           const exEndMin = exStartMin + exDur;
           const propStartMin = parseTimeToMinutes(entry.start_time);
-          const propEndMin = parseTimeToMinutes(entry.end_time);
+          const propEndMin = parseTimeToMinutes(computedEnd);
 
           if (propStartMin < exEndMin && propEndMin > exStartMin) {
             hasConflict = true;
@@ -100,7 +93,7 @@ export function generateProposedSessions(
         dateStr,
         dayName: DAY_NAMES[dayOfWeek],
         startTime: entry.start_time,
-        endTime: entry.end_time,
+        endTime: computedEnd,
         scheduledStart,
         scheduledEnd,
         durationMinutes: dur,

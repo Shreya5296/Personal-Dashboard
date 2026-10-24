@@ -7,6 +7,7 @@ const DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'
 
 export interface ScheduleDetailsSectionProps {
   schedules: ScheduleItem[];
+  classDuration?: number | string;
   errors?: Record<string, string>;
   onAdd: () => void;
   onRemove: (id: string) => void;
@@ -16,22 +17,36 @@ export interface ScheduleDetailsSectionProps {
 
 export const ScheduleDetailsSection: React.FC<ScheduleDetailsSectionProps> = ({
   schedules,
+  classDuration,
   errors = {},
   onAdd,
   onRemove,
   onChange,
   disabled = false,
 }) => {
+  const dur = Number(classDuration) || 0;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border-subtle)', paddingBottom: '6px' }}>
-        <h4 style={{ margin: 0, fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--color-text-main)' }}>
-          4. Class Schedule (Recurring Weekly)
-        </h4>
+        <div>
+          <h4 style={{ margin: 0, fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--color-text-main)' }}>
+            4. Class Schedule (Recurring Weekly)
+          </h4>
+          <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+            {dur > 0 ? `Duration: ${dur} min (end time calculated automatically)` : 'Duration: Not configured'}
+          </span>
+        </div>
         <Button variant="secondary" size="sm" type="button" onClick={onAdd} disabled={disabled}>
           + Add Schedule
         </Button>
       </div>
+
+      {!dur && (
+        <div style={{ padding: '6px 12px', backgroundColor: '#fffbeb', border: '1px solid #fef3c7', borderRadius: 'var(--radius-md)', fontSize: '12px', color: '#92400e' }}>
+          Select a <strong>Class Duration</strong> (30, 40, or 60 minutes) in Package Details above to calculate schedule end times.
+        </div>
+      )}
 
       {schedules.length === 0 ? (
         <p style={{ margin: 0, fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
@@ -88,15 +103,22 @@ export const ScheduleDetailsSection: React.FC<ScheduleDetailsSectionProps> = ({
                   {startErr && <span style={{ fontSize: '11px', color: 'var(--color-danger)' }}>{startErr}</span>}
                 </div>
 
-                <div style={{ flex: '1 1 120px' }}>
-                  <input
-                    type="time"
-                    className={formStyles.input}
-                    value={entry.end_time}
-                    onChange={(e) => onChange(entry.id, 'end_time', e.target.value)}
-                    disabled={disabled}
-                    aria-label={`Schedule entry ${idx + 1} end time`}
-                  />
+                <div style={{ flex: '1 1 130px' }}>
+                  <div
+                    style={{
+                      padding: '0.45rem 0.65rem',
+                      backgroundColor: 'var(--color-bg-surface)',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: 'var(--radius-md)',
+                      fontSize: 'var(--font-size-sm)',
+                      color: entry.end_time ? 'var(--color-text-main)' : 'var(--color-text-muted)',
+                      lineHeight: '1.25rem',
+                      whiteSpace: 'nowrap',
+                    }}
+                    title="End time is automatically calculated from duration"
+                  >
+                    {entry.end_time ? `End: ${entry.end_time}` : 'End: --:--'}
+                  </div>
                   {endErr && <span style={{ fontSize: '11px', color: 'var(--color-danger)' }}>{endErr}</span>}
                 </div>
 

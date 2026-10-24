@@ -49,6 +49,14 @@ function validatePackageInput(data, isUpdate) {
     }
   }
 
+  var rawDuration = data.class_duration !== undefined ? data.class_duration : data.duration_minutes;
+  if (rawDuration !== undefined && rawDuration !== null && rawDuration !== '') {
+    var dur = Number(rawDuration);
+    if ([30, 40, 60].indexOf(dur) === -1) {
+      errors.class_duration = 'Class duration must be 30, 40, or 60 minutes';
+    }
+  }
+
   var endDate = data.end_date || data.expiry_date;
   if (data.start_date && endDate) {
     if (String(endDate) < String(data.start_date)) {

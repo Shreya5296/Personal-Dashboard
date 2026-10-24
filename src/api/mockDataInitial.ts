@@ -80,6 +80,11 @@ export function updateMockPackage(payload: Record<string, unknown>) {
       ex.classes_purchased = Number(rawQty);
       ex.total_classes = Number(rawQty);
     }
+    const rawDur = payload.class_duration !== undefined ? payload.class_duration : payload.duration_minutes;
+    if (rawDur !== undefined) {
+      ex.class_duration = Number(rawDur);
+      ex.duration_minutes = Number(rawDur);
+    }
     if (payload.start_date !== undefined) ex.start_date = String(payload.start_date);
     if (payload.end_date !== undefined) ex.end_date = String(payload.end_date);
     if (payload.expiry_date !== undefined) ex.expiry_date = String(payload.expiry_date);

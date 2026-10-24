@@ -31,11 +31,11 @@ SHEET_SCHEMAS[SHEET_NAMES.ENROLLMENTS] = [
   'billing_notes', 'created_at', 'updated_at', 'closed_at'
 ];
 
-// Table 2: Packages (11 columns)
+// Table 2: Packages (12 columns)
 SHEET_SCHEMAS[SHEET_NAMES.PACKAGES] = [
   'package_id', 'student_id', 'student_name', 'plan_type',
   'currency', 'package_price', 'per_class', 'classes_purchased',
-  'start_date', 'end_date', 'next_due_date'
+  'class_duration', 'start_date', 'end_date', 'next_due_date'
 ];
 
 // Preserved for legacy transition fallback; superseded by Payment Details

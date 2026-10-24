@@ -17,6 +17,7 @@ export interface PackageDetails {
   package_price: string;
   per_class: string;
   classes_purchased: string;
+  class_duration: string;
 }
 
 export interface ScheduleItem {

@@ -5,6 +5,11 @@ import formStyles from '../../components/forms/forms.module.css';
 
 const PLAN_TYPES = ['Package', 'Per Class', 'Hourly', 'Monthly'];
 const CURRENCIES = ['INR', 'USD', 'GBP', 'EUR', 'CAD', 'AUD', 'SGD', 'AED'];
+const DURATION_OPTIONS = [
+  { value: '30', label: '30 minutes' },
+  { value: '40', label: '40 minutes' },
+  { value: '60', label: '60 minutes' },
+];
 
 export interface PackageDetailsSectionProps {
   values: PackageDetails;
@@ -25,7 +30,7 @@ export const PackageDetailsSection: React.FC<PackageDetailsSectionProps> = ({
         3. Package Details
       </h4>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-3)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-3)' }}>
         <FormField label="Plan Type">
           <select
             className={formStyles.select}
@@ -49,6 +54,20 @@ export const PackageDetailsSection: React.FC<PackageDetailsSectionProps> = ({
           >
             {CURRENCIES.map((c) => (
               <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </FormField>
+        <FormField label="Class Duration" error={errors?.class_duration}>
+          <select
+            className={`${formStyles.select} ${errors?.class_duration ? formStyles.inputError : ''}`}
+            style={{ paddingRight: '2.5rem' }}
+            value={values.class_duration || ''}
+            onChange={(e) => onChange('class_duration', e.target.value)}
+            disabled={disabled}
+          >
+            <option value="">Select duration…</option>
+            {DURATION_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
         </FormField>

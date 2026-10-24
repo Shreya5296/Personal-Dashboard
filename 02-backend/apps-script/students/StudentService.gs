@@ -161,7 +161,12 @@ function Students_update(spreadsheet, studentId, updates, actor) {
   for (var i = 0; i < allowedFields.length; i++) {
     var f = allowedFields[i];
     if (normalized[f] !== undefined) {
-      safeUpdates[f] = normalized[f] !== null ? String(normalized[f]).trim() : '';
+      var val = normalized[f] !== null ? String(normalized[f]).trim() : '';
+      if ((f === 'student_phone' || f === 'student_email' || f === 'notes') && val === '' && existing[f]) {
+        safeUpdates[f] = existing[f];
+      } else {
+        safeUpdates[f] = val;
+      }
     }
   }
 

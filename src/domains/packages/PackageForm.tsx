@@ -20,6 +20,7 @@ export const PackageForm: React.FC<PackageFormProps> = ({
 }) => {
   const [packageName, setPackageName] = useState('10-Class Package');
   const [totalClasses, setTotalClasses] = useState(10);
+  const [classDuration, setClassDuration] = useState<number>(60);
   const [price, setPrice] = useState(10000);
   const [startDate, setStartDate] = useState(toInputDateFormat());
 
@@ -29,6 +30,8 @@ export const PackageForm: React.FC<PackageFormProps> = ({
       student_id: studentId,
       package_name: packageName.trim(),
       total_classes: Number(totalClasses),
+      class_duration: classDuration,
+      duration_minutes: classDuration,
       price: Number(price),
       start_date: startDate,
     });
@@ -57,6 +60,20 @@ export const PackageForm: React.FC<PackageFormProps> = ({
             onChange={(e) => setTotalClasses(parseInt(e.target.value, 10) || 1)}
           />
         </FormField>
+        <FormField label="Class Duration" required>
+          <select
+            className={formStyles.select}
+            value={classDuration}
+            onChange={(e) => setClassDuration(Number(e.target.value))}
+          >
+            <option value={30}>30 minutes</option>
+            <option value={40}>40 minutes</option>
+            <option value={60}>60 minutes</option>
+          </select>
+        </FormField>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-3)' }}>
         <FormField label="Price (₹ INR)">
           <input
             className={formStyles.input}
@@ -67,16 +84,15 @@ export const PackageForm: React.FC<PackageFormProps> = ({
             onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
           />
         </FormField>
+        <FormField label="Start Date" required>
+          <input
+            className={formStyles.input}
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+          />
+        </FormField>
       </div>
-
-      <FormField label="Start Date" required>
-        <input
-          className={formStyles.input}
-          type="date"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-        />
-      </FormField>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)', marginTop: 'var(--space-3)' }}>
         <Button variant="secondary" type="button" onClick={onCancel} disabled={isLoading}>

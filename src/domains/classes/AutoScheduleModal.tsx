@@ -31,6 +31,7 @@ export const AutoScheduleModal: React.FC<AutoScheduleModalProps> = ({
   const { token } = useAuth();
   const [schedule, setSchedule] = useState<WeeklyScheduleEntry[]>(initialSchedule || []);
   const [packageId, setPackageId] = useState<string | undefined>(initialPackageId);
+  const [pkgDuration, setPkgDuration] = useState<number | undefined>(undefined);
   const [startDate, setStartDate] = useState('');
   const [count, setCount] = useState(String(Math.max(1, initialRemaining || 10)));
   const [existingSessions, setExistingSessions] = useState<ClassSession[]>([]);
@@ -47,9 +48,11 @@ export const AutoScheduleModal: React.FC<AutoScheduleModalProps> = ({
     ]).then(([cls, scheds, pkgs]) => {
       setExistingSessions(cls);
       setSchedule(scheds);
-      if (pkgs.length > 0 && !initialPackageId) {
-        setPackageId(pkgs[0].package_id);
+      if (pkgs.length > 0) {
         const p = pkgs[0];
+        if (!initialPackageId) setPackageId(p.package_id);
+        const d = p.class_duration || p.duration_minutes;
+        if (d) setPkgDuration(Number(d));
         const rem = Math.max(0, Number(p.classes_purchased || p.total_classes || 0) - Number(p.consumed_classes || p.classes_consumed || 0));
         if (rem > 0 && !initialRemaining) setCount(String(rem));
       }
@@ -61,7 +64,7 @@ export const AutoScheduleModal: React.FC<AutoScheduleModalProps> = ({
     if (!startDate) { setError('Start date is required.'); return; }
     const num = parseInt(count, 10);
     if (isNaN(num) || num <= 0) { setError('Number of classes must be a positive integer.'); return; }
-    const generated = generateProposedSessions(schedule, startDate, num, existingSessions, student.student_id);
+    const generated = generateProposedSessions(schedule, startDate, num, existingSessions, student.student_id, pkgDuration);
     if (generated.length === 0) { setError('No sessions could be generated. Check schedule days and start date.'); return; }
     setProposed(generated);
   };
@@ -76,14 +79,9 @@ export const AutoScheduleModal: React.FC<AutoScheduleModalProps> = ({
     try {
       for (const s of proposed) {
         await scheduleClass({
-          student_id: student.student_id,
-          student_name: student.student_name,
-          package_id: packageId,
-          class_title: `${student.subject || 'Class'} Session`,
-          start_time: s.scheduledStart,
-          scheduled_start: s.scheduledStart,
-          scheduled_end: s.scheduledEnd,
-          duration_minutes: s.durationMinutes,
+          student_id: student.student_id, student_name: student.student_name, package_id: packageId,
+          class_title: `${student.subject || 'Class'} Session`, start_time: s.scheduledStart,
+          scheduled_start: s.scheduledStart, scheduled_end: s.scheduledEnd, duration_minutes: s.durationMinutes,
         }, token);
       }
       await onSuccess(proposed.length);
@@ -98,7 +96,7 @@ export const AutoScheduleModal: React.FC<AutoScheduleModalProps> = ({
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <h3 style={{ margin: 0, fontSize: 'var(--font-size-base)', fontWeight: 600 }}>Auto-Schedule Purchased Classes</h3>
-            <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--color-text-muted)' }}>Generate dates for {student.student_name} ({student.student_id}) from recurring schedule.</p>
+            <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'var(--color-text-muted)' }}>Generate dates for {student.student_name} ({student.student_id}).</p>
           </div>
           <button type="button" onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '18px', color: 'var(--color-text-subtle)' }}>✕</button>
         </div>

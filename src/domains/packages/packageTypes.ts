@@ -15,6 +15,8 @@ export interface Package {
   package_price?: number;
   per_class?: number;
   currency?: string;
+  class_duration?: number;
+  duration_minutes?: number;
   start_date: string;
   end_date?: string;
   expiry_date?: string;
@@ -38,6 +40,8 @@ export interface PackageInput {
   package_price?: number;
   per_class?: number;
   currency?: string;
+  class_duration?: number;
+  duration_minutes?: number;
   start_date: string;
   end_date?: string;
   expiry_date?: string;

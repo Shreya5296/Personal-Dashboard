@@ -705,3 +705,31 @@ NEXT ACTION
     - Strict TypeScript check (tsc --noEmit): 0 errors.
     - Clean Vite production build in 881ms.
     - Playwright browser E2E tests passing 100% (students.spec.ts, notesAndLinks.spec.ts).
+- Student Management — Inactive Fields and Configurable Class Duration completed & verified:
+  * 1. Inactive Student Fields (Requirement 1):
+    - Made Student Email, Student Phone, and Notes inactive in both student registration (StudentDetailsSection) and editing (EditStudentPersonalSection, StudentForm).
+    - Inputs marked disabled={true} and readOnly={true} with cursor: not-allowed and subtle background styling.
+    - Users cannot enter or edit values in these fields through the student forms.
+    - Preserved existing data in Google Sheets: backend update logic in StudentService.gs guards student_phone, student_email, and notes so empty strings never overwrite existing values.
+    - Mock data store (mockDataStore.ts) also protects existing saved values.
+    - Existing notes history workflow (StudentNotes.tsx, noteApi.ts) remains completely untouched and operational.
+  * 2. Configurable Class Duration (Requirement 2):
+    - Added Class Duration dropdown to package interfaces (PackageDetailsSection, EditStudentPackageSection, PackageForm) strictly offering: 30 minutes, 40 minutes, 60 minutes.
+    - Extended SheetRegistry.gs (Packages tab schema now includes class_duration).
+    - Validated in PackageValidation.gs that duration must be 30, 40, or 60.
+    - Preserved and enriched class_duration in PackageService.gs; historical packages without duration display explicit "Not configured" state without guessing or corrupting data.
+  * 3. Recurring Schedules Ask Only for Start Time (Requirement 3):
+    - Removed manual end-time input from recurring schedule forms (ScheduleDetailsSection).
+    - Schedule forms prompt only for Day of Week and Start Time.
+    - End time is calculated automatically from configured package Class Duration (e.g. 30m: 16:00 -> 16:30, 40m: 16:00 -> 16:40, 60m: 16:00 -> 17:00) using scheduleDurationCalculator.ts.
+    - Displayed end time immediately as a clean read-only badge.
+    - When package duration changes, recurring schedule end times recalculate automatically while historical/completed sessions are preserved intact.
+    - Start times crossing midnight are detected and rejected with clear validation error.
+    - Auto-schedule generator (classGenerator.ts) and conflict detection in AutoScheduleModal.tsx use configured class duration.
+  * 4. Testing & Quality Gates:
+    - Added tests/frontend/inactiveFieldsAndDuration.test.ts (6 unit tests covering duration restrictions, end-time calculation, midnight rejection, form validation, and duration-aware conflict detection).
+    - Updated tests/e2e/students.spec.ts to assert inactive fields are disabled.
+    - 215/215 Vitest tests passing across 38 test suites.
+    - Line limit check: 168/168 files in src/ and public/ strictly <= 149 lines (PASS).
+    - Strict TypeScript check (tsc --noEmit): 0 errors (PASS).
+    - Clean Vite production build in 913ms (PASS).

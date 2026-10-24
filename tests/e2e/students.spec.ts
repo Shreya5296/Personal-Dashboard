@@ -35,8 +35,8 @@ test.describe('E2E — Students Domain Workflow', () => {
     // 1. Create Student
     await page.locator('button:has-text("+ Add Student")').click();
     await page.getByLabel(/Student Name|Full Name/i).fill(student.full_name);
-    await page.getByLabel('Student Email').fill(student.email);
-    await page.getByLabel('Student Phone').fill(student.phone);
+    await expect(page.getByLabel(/Student Email/i)).toBeDisabled();
+    await expect(page.getByLabel(/Student Phone/i)).toBeDisabled();
     await page.getByLabel('Parent Name').fill(student.parent_name);
     await page.getByLabel('Parent Phone').fill(student.parent_phone);
 

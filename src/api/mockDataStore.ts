@@ -32,7 +32,13 @@ export function handleMockApiRequest<T>(operation: string, payload: Record<strin
   if (operation === 'students.update') {
     const sid = String(payload.student_id || payload.studentId || '');
     const ex = MOCK_STUDENTS.find(s => s.student_id === sid);
-    if (ex) Object.assign(ex, payload);
+    if (ex) {
+      const p = { ...payload };
+      if (!p.student_phone && ex.student_phone) delete p.student_phone;
+      if (!p.student_email && ex.student_email) delete p.student_email;
+      if (!p.notes && (ex as Record<string, unknown>).notes) delete p.notes;
+      Object.assign(ex, p);
+    }
     return { ok: true, data: (ex || { ...MOCK_STUDENTS[0], ...payload }) as T, meta };
   }
   if (operation === 'fees.list') {
@@ -89,6 +95,7 @@ export function handleMockApiRequest<T>(operation: string, payload: Record<strin
       per_class: Number(payload.per_class || 0),
       classes_purchased: Number(payload.classes_purchased || payload.total_classes || 0),
       total_classes: Number(payload.classes_purchased || payload.total_classes || 0),
+      class_duration: payload.class_duration ? Number(payload.class_duration) : undefined,
       status: 'ACTIVE'
     };
     MOCK_PACKAGES.unshift(newPkg);
