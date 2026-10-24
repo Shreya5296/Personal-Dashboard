@@ -57,6 +57,11 @@ export async function loginAsAdmin(page: Page, key?: string): Promise<boolean> {
 }
 
 export async function navigateTo(page: Page, sectionLabel: string): Promise<void> {
+  const menuToggle = page.locator('button[aria-label="Toggle navigation menu"]');
+  if (await menuToggle.isVisible()) {
+    await menuToggle.click();
+    await page.waitForTimeout(200);
+  }
   const navBtn = page.locator(`aside button:has-text("${sectionLabel}")`);
   await expect(navBtn).toBeVisible({ timeout: 15000 });
   await navBtn.click();

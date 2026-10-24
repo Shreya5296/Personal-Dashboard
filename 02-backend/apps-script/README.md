@@ -12,7 +12,7 @@ Backend API and business services for the Student Management Dashboard.
 - `api/`: API entry point, request parsing, router, response envelope.
 - `auth/`: Identity verification, token validation, admin authorization.
 - `sheets/`: Spreadsheet provider, header mapping, row reading/writing, locking.
-- Domain folders: `students/`, `enrollments/`, `packages/`, `fees/`, `payments/`, `classes/`, `meeting-links/`, `notes/`, `imports/`, `audit/`.
+- Domain folders: `students/`, `enrollments/`, `packages/`, `fees/`, `payments/`, `classes/`, `meeting-links/`, `notes/`, `audit/`.
 - `shared/`: ID generation, date/time formatting, money rounding, error codes.
 - `config/`: Runtime configuration (Script Properties).
 

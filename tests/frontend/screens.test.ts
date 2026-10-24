@@ -11,7 +11,6 @@ describe('Frontend Product Screens & Routing Logic', () => {
       'fees',
       'classes',
       'meeting-links',
-      'imports',
       'reports',
       'settings',
     ];
@@ -22,6 +21,9 @@ describe('Frontend Product Screens & Routing Logic', () => {
       expect(config.title).toBeTruthy();
       expect(config.requiresAdmin).toBe(true);
     }
+
+    // Verify retired imports route is not defined
+    expect((ROUTE_CONFIGS as any)['imports']).toBeUndefined();
   });
 
   it('validates student creation form inputs accurately', () => {

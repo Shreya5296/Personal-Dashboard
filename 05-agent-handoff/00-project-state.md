@@ -38,16 +38,16 @@ The Git history and this file are the recovery sources of truth. Chat history an
 |---|---|
 | Project | Student Management Dashboard / Personal Dashboard |
 | Execution mode | Autonomous, sequential implementation |
-| Current phase | Pre-Launch Functional Verification & Workflow Lifecycle |
+| Current phase | Feature Removal: Import & Reconcile Complete Retirement |
 | Current phase status | PASSED |
-| Last completed phase | Functional Workflow Verification across All 9 User Journeys |
+| Last completed phase | Complete Retirement of Import & Reconcile Feature |
 | Current Git branch | main |
-| Last full regression run | 125 Vitest tests passed (25 test files) + line-limit check passing (117 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build (776ms) + Playwright suites passing |
+| Last full regression run | 121 Vitest tests passed (24 test files) + line-limit check passing (117 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build (842ms) + Playwright suites passing |
 | Canonical Spreadsheet | `Private Class Dashboard` (ID: `1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8`, Owner: `ashreya0502@gmail.com`) — Pristine, physical migration verified, ready for owner onboarding |
 | Backup Spreadsheet | `Master Backup (Pre-Launch 2026-10-21T12-13-40-537Z)` (ID: `1kIFYmI81DfNIAqb-ZHsTifiKE6JxhfQrXqpfphrw9eU`) — Verified accessible and preserved intact |
-| Apps Script Project | `1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL` — All 68 files synchronized with HEAD |
-| Web App Deployment | Active at version `@23` (`AKfycbx4d_VG4CsZIEAomX_OjNMuej06ktTYmKLME5ennLsI7mx3Fn5b-YBu9CRqe7NwrUVH3w`) — Verified live and compatible |
-| Last state update | Complete pre-launch functional verification executed across all 9 user workflows (student CRUD/archive, package management, payment idempotency/voiding, attendance rules, FIFO package deduction, meeting links, notes, dashboard/financial reporting, and import safety gate). All 125 tests passing. Zero defects. Ready for Vercel launch. |
+| Apps Script Project | `1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL` — Backend import handlers/services safely removed locally |
+| Web App Deployment | Active at version `@23` (`AKfycbx4d_VG4CsZIEAomX_OjNMuej06ktTYmKLME5ennLsI7mx3Fn5b-YBu9CRqe7NwrUVH3w`) — Deployment unchanged; live spreadsheet untouched |
+| Last state update | Completely removed Import & Reconcile page, components, routes, icons, navigation, backend handlers/services, and dedicated tests. Historical tabs preserved. 121 tests passing across 24 test files. Clean production build. |
 
 ## 5. Phase Register
 
@@ -68,6 +68,7 @@ The Git history and this file are the recovery sources of truth. Chat history an
 | 12 | Release and Handover | PASSED | a2cf1d5 | Release checklist verified, micro-file architecture intact (111 files <= 149 lines), 43/43 tests passing, owner handover package complete. |
 | 13 | Master Implementation & Schema Finalization | PASSED | HEAD | 108/108 tests passing, 68 backend files synced to Apps Script HEAD, canonical documentation aligned to 9-col Students, 11-col Packages with end_date. |
 | 14 | Consolidated Post-Deployment Audit & Functional Verification | PASSED | HEAD | Apps Script v23 deployed and verified against migrated Google Sheet. All 9 core user workflows verified end-to-end (125/125 Vitest tests passing). Zero defects. Production data pristine. Ready for Vercel deployment. |
+| 15 | Import & Reconcile Feature Retirement | PASSED | HEAD | Fully removed Import & Reconcile UI, routing, icons, backend handlers/services, and dedicated tests. Operational schemas & historical tabs preserved intact. 121 tests passing across 24 test suites. Clean production build. |
 
 ## 6. Live Infrastructure Inspection & Modification Boundary
 

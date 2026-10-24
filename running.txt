@@ -293,3 +293,30 @@ NEXT ACTION
     - Line limit policy strictly verified: 122/122 files in src/ and public/ <= 149 lines.
     - Strict TypeScript check (tsc --noEmit) passing with 0 errors.
     - Production Vite build clean (736ms).
+- Complete Removal of Import & Reconcile Feature completed & verified:
+  * 1. Navigation and Routing:
+    - Removed 'imports' from NavSection type union, navItems array, and removed ImportsIcon from Sidebar.tsx and NavIcons.tsx.
+    - Sidebar spacing verified: .nav uses dynamic flex column layout (gap: 3px); 7 active navigation items contract cleanly without gaps or height artifacts.
+    - Removed 'imports' route mapping from appRoutes.tsx and ROUTE_CONFIGS in routeAccess.ts. Direct navigation to 'imports' safely defaults to Dashboard.
+    - Removed "Spreadsheet Import" button from Quick Actions in DashboardPage.tsx.
+  * 2. Frontend Feature Code Removal:
+    - Deleted src/domains/imports/ directory completely (ImportPage.tsx, ImportPreview.tsx, ImportResults.tsx, importApi.ts, importTypes.ts).
+    - Preserved all shared UI components (DataTable, Button, ConfirmDialog, InlineNotice, PageHeader).
+  * 3. Backend & Apps Script:
+    - Deleted 02-backend/apps-script/imports/ directory completely (ImportHandlers.gs, ImportService.gs, ImportRepository.gs, ImportValidation.gs).
+    - Removed bulk-import endpoints 'imports.preview' and 'imports.execute'.
+    - Intentionally retained operational tab definitions and schemas for ImportBatches and ImportRowResults in SheetRegistry.gs, SpreadsheetBootstrap.gs, SchemaMigration.gs, SystemHandlers.gs, CleanupHandlers.gs, and IdGenerator.gs to preserve historical setup/migration records on the master spreadsheet and protect spreadsheet integrity.
+    - General-purpose student CRUD, validation, audit, locking, and 6 business-table schemas left completely untouched.
+    - Zero Apps Script deployments executed; canonical Google Sheet and Vercel untouched.
+  * 4. Tests and Documentation:
+    - Deleted tests/domains/importAndMigration.test.ts and tests/e2e/imports.spec.ts.
+    - Updated tests/backend/operationAdapters.test.ts, tests/integration/finalizedWorkflowsLifecycle.test.ts, tests/frontend/screens.test.ts, tests/e2e/redesignScreensVisual.spec.ts, and tests/e2e/reportsAndCrossCutting.spec.ts.
+    - Marked historical migration specs 00-documentation/09-data-import-and-migration.md and 03-data/05-existing-sheets-import-and-reconciliation.md as archived.
+    - Updated 05-agent-handoff/00-project-state.md and running.txt.
+  * 5. Quality Gates & Verification:
+    - 121/121 Vitest unit/integration tests passing across 24 test suites.
+    - Line limit policy strictly verified: 117/117 files in src/ and public/ <= 149 lines.
+    - Strict TypeScript check (tsc --noEmit) passing with 0 errors.
+    - Clean Vite production build in 842ms.
+    - Responsive Playwright visual tests passing (4/4) and reports & cross-cutting tests passing (3/3).
+    - Zero remaining active references to retired feature.

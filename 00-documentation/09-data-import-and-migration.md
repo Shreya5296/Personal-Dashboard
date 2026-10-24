@@ -1,5 +1,8 @@
 # 09 — Data Import and Migration
 
+> [!IMPORTANT]
+> **ARCHIVED / RETIRED FEATURE:** The bulk Import & Reconcile UI and endpoints have been completely removed per owner decision. The system uses direct student onboarding and management instead of bulk CSV/sheet imports. This document is retained solely as an archival record of historical migration design.
+
 ## 1. Purpose
 
 Define a safe, repeatable process for consolidating the existing student-specific Google Sheets into the canonical Student Management Dashboard master spreadsheet.

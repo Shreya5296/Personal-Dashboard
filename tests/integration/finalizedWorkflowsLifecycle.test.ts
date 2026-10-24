@@ -20,7 +20,6 @@ const MeetingLinkRepository = require('../../02-backend/apps-script/meeting-link
 const NoteService = require('../../02-backend/apps-script/notes/NoteService.gs');
 const NoteRepository = require('../../02-backend/apps-script/notes/NoteRepository.gs');
 const ReportService = require('../../02-backend/apps-script/reports/ReportService.gs');
-const ImportService = require('../../02-backend/apps-script/imports/ImportService.gs');
 
 describe('Finalized 6-Table End-to-End User Workflows Verification', () => {
   let spreadsheet: MockSpreadsheet;
@@ -441,47 +440,5 @@ describe('Finalized 6-Table End-to-End User Workflows Verification', () => {
     expect(finSummary.data.totalReceived).toBe(2000);
     expect(finSummary.data.totalCollected).toBe(2000);
     expect(finSummary.data.currency).toBe('INR');
-  });
-
-  // Workflow 9: Import Preview vs Explicit Execution Safety Gate
-  it('9. verifies import preview validates and detects duplicates without modifying sheets until explicitly committed', () => {
-    StudentService.Students_create(spreadsheet, {
-      student_name: 'Existing Student',
-      parent_name: 'Existing Parent',
-      parent_phone: '+919876500000',
-      parent_email: 'existing@example.com',
-      status: 'ACTIVE'
-    }, adminActor);
-
-    const initialStudentCount = StudentRepository.Students_getAll(spreadsheet).length;
-    expect(initialStudentCount).toBe(1);
-
-    // Preview import containing 1 new valid candidate, 1 duplicate, and 1 invalid row
-    const rawImportRows = [
-      { rowNumber: 1, fullName: 'Brand New Student', email: 'new@example.com', phone: '+919123456789', courseName: 'Physics' },
-      { rowNumber: 2, fullName: 'Existing Student', email: 'existing@example.com', phone: '+919876500000', courseName: 'Math' },
-      { rowNumber: 3, fullName: '', email: 'missingname@example.com', phone: '+919123400000', courseName: 'Chemistry' }
-    ];
-
-    const preview = ImportService.Imports_preview(spreadsheet, rawImportRows);
-    expect(preview.totalRows).toBe(3);
-    expect(preview.validRows).toBe(1);
-    expect(preview.duplicateRows).toBe(1);
-    expect(preview.errorRows).toBe(1);
-
-    // CRITICAL: Preview MUST NOT write to the spreadsheet!
-    const studentsAfterPreview = StudentRepository.Students_getAll(spreadsheet);
-    expect(studentsAfterPreview.length).toBe(initialStudentCount);
-
-    // Explicit execution commits ONLY valid non-duplicate candidates
-    const executeRes = ImportService.Imports_execute(spreadsheet, rawImportRows, adminActor);
-    expect(executeRes.totalRows).toBe(3);
-    expect(executeRes.importedCount).toBe(1);
-    expect(executeRes.skippedCount).toBe(1);
-    expect(executeRes.errorCount).toBe(1);
-
-    const studentsAfterExecute = StudentRepository.Students_getAll(spreadsheet);
-    expect(studentsAfterExecute.length).toBe(2);
-    expect(studentsAfterExecute.some((s: any) => s.student_name === 'Brand New Student')).toBe(true);
   });
 });

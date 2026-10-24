@@ -461,6 +461,9 @@ Audit operations are read-only through the application API. There is no standard
 
 ## 20. Import Operations
 
+> [!NOTE]
+> **RETIRED FEATURE:** Import operations (`imports.preview`, `imports.execute`, `imports.start`, etc.) have been completely removed from active routing and handlers per owner decision. The system relies on direct student creation and updates.
+
 ### `imports.preview`
 
 Payload:

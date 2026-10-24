@@ -38,12 +38,6 @@ export const ROUTE_CONFIGS: Record<NavSection, RouteConfig> = {
     subtitle: 'Maintain verified Google Meet and Zoom links for remote classes.',
     requiresAdmin: true,
   },
-  imports: {
-    id: 'imports',
-    title: 'Spreadsheet Import & Reconciliation',
-    subtitle: 'Safely parse, preview, detect duplicates, and import historical records.',
-    requiresAdmin: true,
-  },
   reports: {
     id: 'reports',
     title: 'Reports & Analytics',

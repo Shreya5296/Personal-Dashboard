@@ -13,7 +13,6 @@ const { registerFeeOperations } = require('../../02-backend/apps-script/fees/Fee
 const { registerPaymentOperations } = require('../../02-backend/apps-script/payments/PaymentHandlers.gs');
 const { registerClassOperations } = require('../../02-backend/apps-script/classes/ClassHandlers.gs');
 const { registerReportOperations } = require('../../02-backend/apps-script/reports/ReportHandlers.gs');
-const { registerImportOperations } = require('../../02-backend/apps-script/imports/ImportHandlers.gs');
 const { registerNoteOperations } = require('../../02-backend/apps-script/notes/NoteHandlers.gs');
 const { registerMeetingLinkOperations } = require('../../02-backend/apps-script/meeting-links/MeetingLinkHandlers.gs');
 
@@ -35,7 +34,6 @@ describe('Backend Operation Adapters and Compatibility', () => {
     registerPaymentOperations(mockRouter);
     registerClassOperations(mockRouter);
     registerReportOperations(mockRouter);
-    registerImportOperations(mockRouter);
     registerNoteOperations(mockRouter);
     registerMeetingLinkOperations(mockRouter);
   });
@@ -224,34 +222,6 @@ describe('Backend Operation Adapters and Compatibility', () => {
     expect(fin.data.totalBilled).toBeDefined();
     expect(fin.data.totalCollected).toBeDefined();
     expect(fin.data.totalReceived).toBeDefined();
-  });
-
-  it('adapts imports.preview and imports.execute operations safely', () => {
-    const rawRows = [
-      { rowNumber: 1, fullName: 'Import Test Student', email: 'imp@example.com', phone: '+919999911111' },
-      { rowNumber: 2, fullName: '', email: 'invalid@example.com' },
-    ];
-
-    const prevRes = registry['imports.preview']({
-      spreadsheet,
-      payload: { rows: rawRows },
-    });
-    expect(prevRes.success).toBe(true);
-    expect(prevRes.data.totalRows).toBe(2);
-    expect(prevRes.data.validRows).toBe(1);
-    expect(prevRes.data.errorRows).toBe(1);
-
-    const execRes = registry['imports.execute']({
-      spreadsheet,
-      payload: { rows: rawRows },
-      actorId: 'usr_test',
-      verifiedEmail: 'ashreya0502@gmail.com',
-      requestId: 'req_imp_exec',
-    });
-    expect(execRes.success).toBe(true);
-    expect(execRes.data.batchId).toMatch(/^imp_/);
-    expect(execRes.data.importedCount).toBe(1);
-    expect(execRes.data.errorCount).toBe(1);
   });
 
   it('adapts notes and meeting links operations correctly', () => {

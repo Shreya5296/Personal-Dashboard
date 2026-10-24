@@ -7,7 +7,6 @@ import {
   FeesIcon,
   ClassesIcon,
   MeetingLinksIcon,
-  ImportsIcon,
   ReportsIcon,
   SettingsIcon,
 } from '../components/icons/NavIcons';
@@ -19,7 +18,6 @@ export type NavSection =
   | 'fees'
   | 'classes'
   | 'meeting-links'
-  | 'imports'
   | 'reports'
   | 'settings';
 
@@ -36,7 +34,6 @@ const navItems = [
   { id: 'fees' as NavSection, label: 'Fees & Payments', Icon: FeesIcon },
   { id: 'classes' as NavSection, label: 'Classes', Icon: ClassesIcon },
   { id: 'meeting-links' as NavSection, label: 'Meeting Links', Icon: MeetingLinksIcon },
-  { id: 'imports' as NavSection, label: 'Import & Reconcile', Icon: ImportsIcon },
   { id: 'reports' as NavSection, label: 'Reports', Icon: ReportsIcon },
   { id: 'settings' as NavSection, label: 'Settings', Icon: SettingsIcon },
 ];

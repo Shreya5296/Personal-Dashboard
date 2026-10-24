@@ -5,7 +5,6 @@ import { StudentsPage } from '../domains/students/StudentsPage';
 import { FeesPage } from '../domains/fees/FeesPage';
 import { ClassesPage } from '../domains/classes/ClassesPage';
 import { MeetingLinksPage } from '../domains/meeting-links/MeetingLinksPage';
-import { ImportPage } from '../domains/imports/ImportPage';
 import { ReportsPage } from '../domains/reports/ReportsPage';
 import { SettingsPage } from '../domains/settings/SettingsPage';
 
@@ -26,8 +25,6 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({ activeSection, onNavigate 
       return <ClassesPage />;
     case 'meeting-links':
       return <MeetingLinksPage />;
-    case 'imports':
-      return <ImportPage />;
     case 'reports':
       return <ReportsPage />;
     case 'settings':

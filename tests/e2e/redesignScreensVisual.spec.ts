@@ -28,7 +28,7 @@ test.describe('Frontend UI/UX Redesign — Screen & Viewport Coverage', () => {
     await expect(page.locator('button:has-text("Sign Out")')).toBeVisible({ timeout: 10000 });
   });
 
-  test('verifies all 8 redesigned screens at Desktop (1440px)', async ({ page }) => {
+  test('verifies all 7 active screens at Desktop (1440px)', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
 
     // 1. Dashboard
@@ -62,13 +62,7 @@ test.describe('Frontend UI/UX Redesign — Screen & Viewport Coverage', () => {
     await expect(page.locator('h1:has-text("Meeting Links Directory")')).toBeVisible();
     await expect(page.locator('button:has-text("+ Add Meeting Link")')).toBeVisible();
 
-    // 6. Import & Reconcile
-    await navigate(page, 'Import');
-    await expect(page.locator('h1:has-text("Spreadsheet Import & Reconciliation")')).toBeVisible();
-    await expect(page.locator('text=1. Paste CSV Data')).toBeVisible();
-    await expect(page.locator('button:has-text("Load Synthetic Sample")')).toBeVisible();
-
-    // 7. Reports
+    // 6. Reports
     await navigate(page, 'Reports');
     await expect(page.locator('h1:has-text("Financial Reports")')).toBeVisible();
     await expect(page.locator('text=Total Invoiced')).toBeVisible();
@@ -76,7 +70,7 @@ test.describe('Frontend UI/UX Redesign — Screen & Viewport Coverage', () => {
     await expect(page.locator('text=Total Outstanding')).toBeVisible();
     await expect(page.locator('text=Collection Performance')).toBeVisible();
 
-    // 8. Settings
+    // 7. Settings
     await navigate(page, 'Settings');
     await expect(page.locator('h1:has-text("Settings & System Health")')).toBeVisible();
     await expect(page.locator('text=Administrator Identity')).toBeVisible();
