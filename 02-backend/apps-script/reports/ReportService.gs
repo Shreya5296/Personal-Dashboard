@@ -1,5 +1,7 @@
 /**
  * ReportService: Aggregates dashboard metrics and financial reports from canonical data.
+ * Derives financial metrics from the 6 approved business tables (Packages, Payments, Students, ClassSessions).
+ * There is no FeeObligations sheet.
  */
 
 var _repRowReader = typeof readAllRecords === 'function' ? { readAllRecords: readAllRecords } : (typeof require !== 'undefined' ? require('../sheets/RowReader.gs') : null);
@@ -9,17 +11,16 @@ var _repReg = {
   }
 };
 var _repMap = typeof createHeaderMap === 'function' ? { createHeaderMap: createHeaderMap, rowToRecord: rowToRecord } : (typeof require !== 'undefined' ? require('../sheets/HeaderMapper.gs') : null);
-var _repFeeSvc = typeof FeeObligations_enrichWithBalances === 'function' ? { FeeObligations_enrichWithBalances: FeeObligations_enrichWithBalances } : (typeof require !== 'undefined' ? require('../fees/FeeService.gs') : null);
 var _repPkgSvc = typeof Packages_enrichWithBalance === 'function' ? { Packages_enrichWithBalance: Packages_enrichWithBalance } : (typeof require !== 'undefined' ? require('../packages/PackageService.gs') : null);
 
 function Reports_getDashboardOverview(spreadsheet) {
   var stuSheet = spreadsheet.getSheetByName(_repReg.SHEET_NAMES.STUDENTS);
-  var students = _repRowReader.readAllRecords(stuSheet, _repMap);
+  var students = stuSheet ? _repRowReader.readAllRecords(stuSheet, _repMap) : [];
   var activeStudents = students.filter(function(s) { return (s.status || s.student_status || 'ACTIVE') === 'ACTIVE'; }).length;
 
   // Upcoming classes in next 7 days
   var clsSheet = spreadsheet.getSheetByName(_repReg.SHEET_NAMES.CLASS_SESSIONS);
-  var sessions = _repRowReader.readAllRecords(clsSheet, _repMap);
+  var sessions = clsSheet ? _repRowReader.readAllRecords(clsSheet, _repMap) : [];
   var now = new Date();
   var next7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
   var nowIso = now.toISOString();
@@ -35,18 +36,19 @@ function Reports_getDashboardOverview(spreadsheet) {
     }
   }
 
-  // Outstanding fees derived from financial summary
+  // Outstanding fees derived directly from canonical financial summary
   var finSummary = Reports_getFinancialSummary(spreadsheet);
-  var overdueTotal = (finSummary && finSummary.data) ? finSummary.data.totalOutstanding : 0;
+  var outstandingTotal = (finSummary && finSummary.data) ? finSummary.data.totalOutstanding : 0;
 
   // Exhausted packages
   var pkgSheet = spreadsheet.getSheetByName(_repReg.SHEET_NAMES.PACKAGES);
-  var pkgs = _repRowReader.readAllRecords(pkgSheet, _repMap);
+  var pkgs = pkgSheet ? _repRowReader.readAllRecords(pkgSheet, _repMap) : [];
   var exhaustedCount = 0;
   for (var p = 0; p < pkgs.length; p++) {
-    if (pkgs[p].package_status === 'ACTIVE') {
+    var pStatus = String(pkgs[p].package_status || pkgs[p].status || pkgs[p].plan_type || '').toUpperCase();
+    if (pStatus !== 'CANCELLED' && pStatus !== 'VOID' && _repPkgSvc && _repPkgSvc.Packages_enrichWithBalance) {
       var enrichedPkg = _repPkgSvc.Packages_enrichWithBalance(spreadsheet, pkgs[p]);
-      if (enrichedPkg.is_exhausted) exhaustedCount++;
+      if (enrichedPkg && enrichedPkg.is_exhausted) exhaustedCount++;
     }
   }
 
@@ -56,8 +58,8 @@ function Reports_getDashboardOverview(spreadsheet) {
       activeStudentsCount: activeStudents,
       upcomingClassesCount: upcomingCount,
       classesUpcoming7Days: upcomingCount,
-      overdueFeesTotal: overdueTotal,
-      outstandingFeesTotal: overdueTotal,
+      overdueFeesTotal: outstandingTotal,
+      outstandingFeesTotal: outstandingTotal,
       exhaustedPackagesCount: exhaustedCount,
       currency: 'INR',
       generatedAt: now.toISOString()
@@ -73,12 +75,32 @@ function Reports_getFinancialSummary(spreadsheet, options) {
   var pkgSheet = spreadsheet.getSheetByName(_repReg.SHEET_NAMES.PACKAGES);
   var pkgs = pkgSheet ? _repRowReader.readAllRecords(pkgSheet, _repMap) : [];
 
-  var feeSheet = spreadsheet.getSheetByName(_repReg.SHEET_NAMES.FEE_OBLIGATIONS);
-  var obligations = feeSheet ? _repRowReader.readAllRecords(feeSheet, _repMap) : [];
+  var stuSheet = spreadsheet.getSheetByName(_repReg.SHEET_NAMES.STUDENTS);
+  var students = stuSheet ? _repRowReader.readAllRecords(stuSheet, _repMap) : [];
+
+  // Bidirectional student identity resolver (handles student_id vs student_name consistency)
+  var nameToIdMap = {};
+  for (var s = 0; s < students.length; s++) {
+    var st = students[s];
+    var sId = st.student_id ? String(st.student_id).trim() : '';
+    var sName = String(st.student_name || st.full_name || (st.first_name ? (st.first_name + ' ' + (st.last_name || '')).trim() : '')).trim().toLowerCase();
+    if (sId && sName) {
+      nameToIdMap[sName] = sId;
+    }
+  }
+
+  function resolveStudentKey(record) {
+    var sid = record.student_id ? String(record.student_id).trim() : '';
+    if (sid) return sid;
+    var sname = record.student_name ? String(record.student_name).trim().toLowerCase() : '';
+    if (sname && nameToIdMap[sname]) return nameToIdMap[sname];
+    return sname || 'UNKNOWN_STUDENT';
+  }
 
   var startDate = options.startDate ? String(options.startDate).slice(0, 10) : '';
   var endDate = options.endDate ? String(options.endDate).slice(0, 10) : '';
 
+  // 1. Process and aggregate Payments
   var paymentsByStudent = {};
   var totalReceived = 0;
 
@@ -93,24 +115,44 @@ function Reports_getFinancialSummary(spreadsheet, options) {
     if (startDate && payDate && payDate < startDate) continue;
     if (endDate && payDate && payDate > endDate) continue;
 
-    var payAmt = (pay.in_inr !== undefined && pay.in_inr !== null && pay.in_inr !== '')
-      ? Number(pay.in_inr)
-      : (Number(pay.amount) || 0);
+    var payCurrency = pay.currency ? String(pay.currency).trim().toUpperCase() : 'INR';
+    var hasInInr = pay.in_inr !== undefined && pay.in_inr !== null && pay.in_inr !== '';
+    var payAmt = 0;
+
+    if (hasInInr) {
+      // Manually supplied INR value takes precedence
+      payAmt = Number(pay.in_inr) || 0;
+    } else if (payCurrency === 'INR') {
+      // Domestic INR payment amount
+      payAmt = Number(pay.amount) || 0;
+    } else {
+      // Foreign currency payment with no manual in_inr: do not invent exchange rates
+      payAmt = 0;
+    }
 
     totalReceived += payAmt;
-    var payStudent = (pay.student_id ? String(pay.student_id).trim() : '') || (pay.student_name ? String(pay.student_name).trim().toLowerCase() : '');
-    if (payStudent) {
-      paymentsByStudent[payStudent] = (paymentsByStudent[payStudent] || 0) + payAmt;
-    }
+    var payStudentKey = resolveStudentKey(pay);
+    paymentsByStudent[payStudentKey] = (paymentsByStudent[payStudentKey] || 0) + payAmt;
+  }
+
+  // 2. Deduplicate and aggregate Packages
+  // Prevent counting the same package multiple times due to duplicated or historical rows
+  var uniquePackagesMap = {};
+  for (var k = 0; k < pkgs.length; k++) {
+    var rawPkg = pkgs[k];
+    var pkgId = rawPkg.package_id ? String(rawPkg.package_id).trim() : '';
+    var studentKey = resolveStudentKey(rawPkg);
+    var pkgKey = pkgId || ('_synth_' + studentKey + '_' + (rawPkg.start_date || '') + '_' + (rawPkg.package_price || ''));
+    // Latest row overwrites earlier duplicate row
+    uniquePackagesMap[pkgKey] = rawPkg;
   }
 
   var billedByStudent = {};
   var totalBilled = 0;
 
-  // Primary source: Packages (canonical 6-sheet data model)
-  if (pkgs && pkgs.length > 0) {
-    for (var k = 0; k < pkgs.length; k++) {
-      var pkg = pkgs[k];
+  if (Object.keys(uniquePackagesMap).length > 0) {
+    for (var pKey in uniquePackagesMap) {
+      var pkg = uniquePackagesMap[pKey];
       var pkgStatus = String(pkg.package_status || pkg.status || pkg.plan_type || '').toUpperCase();
       if (pkgStatus === 'VOID' || pkgStatus === 'CANCELLED') {
         continue;
@@ -120,16 +162,23 @@ function Reports_getFinancialSummary(spreadsheet, options) {
       if (startDate && pkgDate && pkgDate < startDate) continue;
       if (endDate && pkgDate && pkgDate > endDate) continue;
 
-      var pkgPrice = Number(pkg.package_price) || 0;
-      totalBilled += pkgPrice;
-
-      var pkgStudent = (pkg.student_id ? String(pkg.student_id).trim() : '') || (pkg.student_name ? String(pkg.student_name).trim().toLowerCase() : '');
-      if (pkgStudent) {
-        billedByStudent[pkgStudent] = (billedByStudent[pkgStudent] || 0) + pkgPrice;
+      var pkgCurrency = pkg.currency ? String(pkg.currency).trim().toUpperCase() : 'INR';
+      var pkgPrice = 0;
+      if (pkgCurrency === 'INR' || !pkg.currency) {
+        pkgPrice = Number(pkg.package_price) || 0;
+      } else {
+        // Non-INR package: without explicit in_inr in package schema, preserve original value if INR default
+        pkgPrice = Number(pkg.package_price) || 0;
       }
+
+      totalBilled += pkgPrice;
+      var pkgStudentKey = resolveStudentKey(pkg);
+      billedByStudent[pkgStudentKey] = (billedByStudent[pkgStudentKey] || 0) + pkgPrice;
     }
-  } else if (obligations && obligations.length > 0) {
-    // Legacy fallback: FeeObligations sheet
+  } else if (_repReg.SHEET_NAMES.FEE_OBLIGATIONS) {
+    // Legacy fallback: If no packages exist in sheet (e.g. legacy FeeObligations environments), read obligations
+    var feeSheet = spreadsheet.getSheetByName(_repReg.SHEET_NAMES.FEE_OBLIGATIONS);
+    var obligations = feeSheet ? _repRowReader.readAllRecords(feeSheet, _repMap) : [];
     for (var i = 0; i < obligations.length; i++) {
       var obl = obligations[i];
       var oblStatus = String(obl.obligation_status || obl.status || '').toUpperCase();
@@ -144,29 +193,29 @@ function Reports_getFinancialSummary(spreadsheet, options) {
       var oblAmt = Number(obl.amount_due) || 0;
       totalBilled += oblAmt;
 
-      var oblStudent = (obl.student_id ? String(obl.student_id).trim() : '') || (obl.student_name ? String(obl.student_name).trim().toLowerCase() : '');
-      if (oblStudent) {
-        billedByStudent[oblStudent] = (billedByStudent[oblStudent] || 0) + oblAmt;
-      }
+      var oblStudentKey = resolveStudentKey(obl);
+      billedByStudent[oblStudentKey] = (billedByStudent[oblStudentKey] || 0) + oblAmt;
     }
   }
 
   totalBilled = Math.round(totalBilled * 100) / 100;
   totalReceived = Math.round(totalReceived * 100) / 100;
 
-  var studentIds = {};
-  for (var s1 in billedByStudent) studentIds[s1] = true;
-  for (var s2 in paymentsByStudent) studentIds[s2] = true;
+  // 3. Calculate Outstanding Balance per Student (prevents credit cross-subsidization)
+  var allStudentKeys = {};
+  for (var bKey in billedByStudent) allStudentKeys[bKey] = true;
+  for (var pKey in paymentsByStudent) allStudentKeys[pKey] = true;
 
   var totalOutstanding = 0;
-  var studentKeys = Object.keys(studentIds);
+  var keysList = Object.keys(allStudentKeys);
 
-  if (studentKeys.length > 0) {
-    for (var s = 0; s < studentKeys.length; s++) {
-      var sid = studentKeys[s];
-      var sBilled = billedByStudent[sid] || 0;
-      var sPaid = paymentsByStudent[sid] || 0;
+  if (keysList.length > 0) {
+    for (var i = 0; i < keysList.length; i++) {
+      var studentId = keysList[i];
+      var sBilled = billedByStudent[studentId] || 0;
+      var sPaid = paymentsByStudent[studentId] || 0;
       var sBalance = sBilled - sPaid;
+      // Balance cannot go below zero unless business rules explicitly allow negative debt
       if (sBalance > 0) {
         totalOutstanding += sBalance;
       }

@@ -393,3 +393,28 @@ NEXT ACTION
     - Strict TypeScript check (tsc --noEmit) passing with 0 errors.
     - Production Vite build clean in 958ms.
     - 10/10 Playwright e2e tests passing in 21.2s.
+- Earnings Calculation Bug Resolution & Deduplication Hardening completed:
+  * 1. Data Flow & Root Cause Analysis:
+    - Traced end-to-end data flow: Google Sheets -> OperationRouter -> ReportHandlers.gs -> ReportService.gs (Reports_getFinancialSummary & Reports_getDashboardOverview) -> apiClient.ts -> reportApi.ts -> ReportsPage.tsx.
+    - Identified why live sheet rendered ₹0 invoiced and ₹0 outstanding: Apps Script deployment @23 previously queried the deprecated FeeObligations sheet. Following manual deletion of FeeObligations from the canonical sheet, getSheetByName returned null, yielding totalBilled = 0. totalReceived evaluated to ₹1,66,800 from Payments, driving totalOutstanding = Math.max(0, 0 - 166800) = 0.
+  * 2. Calculation Implementation & Safeguards in ReportService.gs:
+    - Primary Invoiced Derivation: Computed from Packages.package_price (excluding CANCELLED and VOID packages) with backward-compatible fallback to FeeObligations only if Packages is absent/empty in older test mock environments.
+    - Package Deduplication: Deduplicated packages by package_id (or synthetic deterministic key when missing) taking the latest row, strictly preventing double-counting of duplicated or historical revision rows.
+    - Bidirectional Student Identity Resolution: Implemented resolveStudentKey mapping student_name <-> student_id across Students, Packages, and Payments, allowing payments with missing student_id or packages with student_name to link reliably.
+    - Currency Handling: INR payments use amount; payments with manual in_inr use in_inr; foreign payments lacking manual in_inr are excluded from INR totals without inventing exchange rates.
+    - Outstanding Balance Aggregation: Derived per student as sum of max(0, billed - paid), strictly insulating each learner's balance against cross-subsidization from overpayments or credits.
+    - Date Filters: Preserved startDate and endDate filtering across packages (start_date) and payments (payment_date).
+  * 3. Canonical Figures Verified:
+    - Rehaan: ₹1,00,000 package, 3 x ₹25,000 = ₹75,000 paid -> ₹25,000 outstanding.
+    - Vivaan: ₹1,00,000 package, 3 x ₹25,000 = ₹75,000 paid -> ₹25,000 outstanding.
+    - Seerat: ₹16,800 package, 1 x ₹16,800 = ₹16,800 paid -> ₹0 outstanding.
+    - Total Invoiced / Package Value: ₹2,16,800.
+    - Collected Earnings: ₹1,66,800.
+    - Total Outstanding: ₹50,000.
+  * 4. Regression Testing & Verification:
+    - Added comprehensive regression tests in tests/domains/earningsCalculations.test.ts (10 tests covering canonical data, deduplication, student name matching, foreign currency, multiple packages per student, debtor balance insulation, date filters, archived students, voided records, and zero handling).
+    - 143/143 Vitest tests passing across 27 test files (100% pass rate).
+    - Line limit check: all 124 files in src/ and public/ <= 149 lines.
+    - Strict TypeScript check (tsc --noEmit): 0 errors.
+    - Production Vite build: clean build in 2.42s.
+    - Playwright e2e tests (reportsAndCrossCutting.spec.ts & accountDropdown.spec.ts): 10/10 passed in 30.9s.

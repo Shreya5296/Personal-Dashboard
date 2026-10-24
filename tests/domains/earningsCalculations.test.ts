@@ -126,6 +126,96 @@ describe('Earnings Calculations & Canonical Financial Summary', () => {
     expect(overview.data.overdueFeesTotal).toBe(50000);
   });
 
+  it('deduplicates packages with identical package_id so duplicated rows are never double-counted', () => {
+    const stu = StudentService.Students_create(spreadsheet, {
+      first_name: 'Dedup Student',
+      parent_guardian_name: 'Parent Dedup',
+      primary_phone: '+919876501111'
+    }, actor).data;
+
+    // Create a package
+    const pkg = PackageService.Packages_create(spreadsheet, {
+      student_id: stu.student_id,
+      package_name: 'Single Agreed Pack',
+      package_price: 60000,
+      classes_purchased: 20
+    }, actor).data;
+
+    // Simulate an accidental duplicate row in the Packages sheet with the same package_id
+    const pkgSheet = spreadsheet.getSheetByName('Packages')!;
+    pkgSheet.appendRow([
+      pkg.package_id, stu.student_id, 'Dedup Student', 'PACKAGE',
+      'INR', 60000, 3000, 20, '2026-01-01', '', ''
+    ]);
+
+    // Record partial payment
+    PaymentService.Payments_record(spreadsheet, {
+      student_id: stu.student_id,
+      amount: 40000,
+      currency: 'INR'
+    }, actor);
+
+    const summary = ReportService.Reports_getFinancialSummary(spreadsheet);
+    // Billed must be 60,000, NOT 120,000
+    expect(summary.data.totalInvoiced).toBe(60000);
+    expect(summary.data.totalCollected).toBe(40000);
+    expect(summary.data.totalOutstanding).toBe(20000);
+  });
+
+  it('reliably matches payments by student_name when student_id is empty in payments', () => {
+    const stu = StudentService.Students_create(spreadsheet, {
+      first_name: 'NameMatch Student',
+      parent_guardian_name: 'Parent NameMatch',
+      primary_phone: '+919876502222'
+    }, actor).data;
+
+    // Package has student_id
+    PackageService.Packages_create(spreadsheet, {
+      student_id: stu.student_id,
+      student_name: 'NameMatch Student',
+      package_name: 'Name Match Pack',
+      package_price: 50000,
+      classes_purchased: 15
+    }, actor);
+
+    // Payment has NO student_id, only student_name (as might happen if manually entered in Google Sheet)
+    const paySheet = spreadsheet.getSheetByName('Payments')!;
+    paySheet.appendRow(['', 'NameMatch Student', '2026-03-01', 30000, 'INR', 30000]);
+
+    const summary = ReportService.Reports_getFinancialSummary(spreadsheet);
+    expect(summary.data.totalInvoiced).toBe(50000);
+    expect(summary.data.totalCollected).toBe(30000);
+    expect(summary.data.totalOutstanding).toBe(20000);
+  });
+
+  it('handles foreign currency payments with manual in_inr and ignores foreign payments missing in_inr', () => {
+    const stu = StudentService.Students_create(spreadsheet, {
+      first_name: 'Global Student',
+      parent_guardian_name: 'Parent Global',
+      primary_phone: '+919876503333'
+    }, actor).data;
+
+    PackageService.Packages_create(spreadsheet, {
+      student_id: stu.student_id,
+      package_name: 'Global Pack',
+      package_price: 100000,
+      classes_purchased: 25
+    }, actor);
+
+    // Payment 1: USD 500 with manually recorded in_inr = ₹41,500
+    const paySheet = spreadsheet.getSheetByName('Payments')!;
+    paySheet.appendRow([stu.student_id, 'Global Student', '2026-03-01', 500, 'USD', 41500]);
+
+    // Payment 2: EUR 200 with NO manual in_inr (cannot invent exchange rate; must not add 200 as INR)
+    paySheet.appendRow([stu.student_id, 'Global Student', '2026-03-05', 200, 'EUR', '']);
+
+    const summary = ReportService.Reports_getFinancialSummary(spreadsheet);
+    // Only Payment 1's ₹41,500 is collected
+    expect(summary.data.totalInvoiced).toBe(100000);
+    expect(summary.data.totalCollected).toBe(41500);
+    expect(summary.data.totalOutstanding).toBe(58500);
+  });
+
   it('handles multiple packages per student without double-counting', () => {
     const stu = StudentService.Students_create(spreadsheet, {
       first_name: 'Aanya',

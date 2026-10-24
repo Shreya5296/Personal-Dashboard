@@ -38,16 +38,16 @@ The Git history and this file are the recovery sources of truth. Chat history an
 |---|---|
 | Project | Student Management Dashboard / Personal Dashboard |
 | Execution mode | Autonomous, sequential implementation |
-| Current phase | Operational Tabs Retirement: AppConfig, ImportBatches, ImportRowResults Complete Removal |
+| Current phase | Earnings Calculation Bug Resolution & Deduplication Hardening |
 | Current phase status | PASSED |
-| Last completed phase | Operational Tabs Retirement & ConfigService Replacement |
+| Last completed phase | Earnings Calculation Data Flow & Deduplication |
 | Current Git branch | main |
-| Last full regression run | 140 Vitest tests passed (27 test files) + line-limit check passing (124 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build (958ms) + Playwright suites passing |
+| Last full regression run | 143 Vitest tests passed (27 test files) + line-limit check passing (124 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build (2.42s) + Playwright suites passing (10/10) |
 | Canonical Spreadsheet | `Private Class Dashboard` (ID: `1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8`, Owner: `ashreya0502@gmail.com`) — 6 approved business tables + 1 AuditLog operational table |
 | Backup Spreadsheet | `Master Backup (Pre-Launch 2026-10-21T12-13-40-537Z)` (ID: `1kIFYmI81DfNIAqb-ZHsTifiKE6JxhfQrXqpfphrw9eU`) — Verified accessible and preserved intact |
-| Apps Script Project | `1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL` — ConfigService implemented; AppConfig/ImportBatches/ImportRowResults safely retired |
+| Apps Script Project | `1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL` — ConfigService implemented; AppConfig/ImportBatches/ImportRowResults safely retired; ReportService earnings calculation updated |
 | Web App Deployment | Active at version `@23` (`AKfycbx4d_VG4CsZIEAomX_OjNMuej06ktTYmKLME5ennLsI7mx3Fn5b-YBu9CRqe7NwrUVH3w`) — Deployment unchanged; live spreadsheet untouched |
-| Last state update | Completely decoupled backend and setup scripts from AppConfig, ImportBatches, and ImportRowResults. Replaced with ConfigService and ScriptProperties. Full CRUD, reports, bootstrap, migration, and health checks verified when obsolete tabs are absent. 140 tests passing across 27 test files. |
+| Last state update | Resolved Earnings page calculations: traced data flow, implemented package deduplication by package_id, bidirectional student identity matching (student_name <-> student_id), manual in_inr currency rules, and debtor balance insulation. 143 tests passing across 27 test files. |
 
 ## 5. Phase Register
 
@@ -69,6 +69,8 @@ The Git history and this file are the recovery sources of truth. Chat history an
 | 13 | Master Implementation & Schema Finalization | PASSED | HEAD | 108/108 tests passing, 68 backend files synced to Apps Script HEAD, canonical documentation aligned to 9-col Students, 11-col Packages with end_date. |
 | 14 | Consolidated Post-Deployment Audit & Functional Verification | PASSED | HEAD | Apps Script v23 deployed and verified against migrated Google Sheet. All 9 core user workflows verified end-to-end (125/125 Vitest tests passing). Zero defects. Production data pristine. Ready for Vercel deployment. |
 | 15 | Import & Reconcile Feature Retirement | PASSED | HEAD | Fully removed Import & Reconcile UI, routing, icons, backend handlers/services, and dedicated tests. Operational schemas & historical tabs preserved intact. 121 tests passing across 24 test suites. Clean production build. |
+| 16 | Operational Tabs Retirement & ConfigService Decoupling | PASSED | 5f1aca1 | Completely removed AppConfig, ImportBatches, ImportRowResults dependencies; implemented ConfigService with ScriptProperties defaults; verified absent-tab scenarios (140/140 tests). |
+| 17 | Earnings Calculations Bug Resolution & Deduplication | PASSED | HEAD | Fixed earnings calculation data flow, package deduplication by package_id, bidirectional student identity matching, currency rules, and debtor balance insulation (143/143 tests). |
 
 ## 6. Live Infrastructure Inspection & Modification Boundary
 
