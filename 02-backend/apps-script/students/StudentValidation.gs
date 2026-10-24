@@ -23,7 +23,7 @@ function validateStudentInput(data, isUpdate) {
   var rawParentEmail = data.parent_email || data.email;
   if (rawParentEmail) {
     var pEmail = String(rawParentEmail).trim();
-    if (pEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pEmail)) {
+    if (pEmail && pEmail !== '-' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pEmail)) {
       errors.parent_email = 'Invalid parent email address format';
     }
   }
@@ -31,7 +31,7 @@ function validateStudentInput(data, isUpdate) {
   var rawStudentEmail = data.student_email;
   if (rawStudentEmail) {
     var sEmail = String(rawStudentEmail).trim();
-    if (sEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sEmail)) {
+    if (sEmail && sEmail !== '-' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sEmail)) {
       errors.student_email = 'Invalid student email address format';
     }
   }

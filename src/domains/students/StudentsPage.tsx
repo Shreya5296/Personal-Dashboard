@@ -23,11 +23,10 @@ export const StudentsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
-
+  const [refreshKey, setRefreshKey] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedQuery = useDebouncedValue(searchQuery, 300);
   const [statusFilter, setStatusFilter] = useState('');
-
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [autoScheduleStudent, setAutoScheduleStudent] = useState<Student | null>(null);
@@ -51,7 +50,8 @@ export const StudentsPage: React.FC = () => {
   const handleEditSuccess = async (updated: Student, msg: string) => {
     if (selectedStudent) setSelectedStudent(updated);
     setEditingStudent(null);
-    setFeedback(msg);
+    setFeedback(msg || 'Student details saved successfully');
+    setRefreshKey((k) => k + 1);
     setTimeout(() => setFeedback(null), 4000);
     await loadStudents();
   };
@@ -59,24 +59,33 @@ export const StudentsPage: React.FC = () => {
   const handleRegistrationSuccess = async (_s: Student, msg: string) => {
     setIsCreating(false);
     setFeedback(msg);
+    setRefreshKey((k) => k + 1);
     setTimeout(() => setFeedback(null), 4000);
     await loadStudents();
   };
 
   const handleAutoScheduleSuccess = async (cnt: number) => {
     setFeedback(`Successfully generated and scheduled ${cnt} class session(s).`);
+    setRefreshKey((k) => k + 1);
     setTimeout(() => setFeedback(null), 4000);
     await loadStudents();
   };
 
   if (selectedStudent && !editingStudent) {
     return (
-      <StudentProfilePage
-        student={selectedStudent}
-        onBack={() => { setSelectedStudent(null); loadStudents(); }}
-        onEdit={() => setEditingStudent(selectedStudent)}
-        onUpdate={(updated) => setSelectedStudent(updated)}
-      />
+      <div>
+        {feedback && (
+          <div style={{ padding: '10px 14px', backgroundColor: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)', fontSize: 'var(--font-size-sm)' }}>
+            ✓ {feedback}
+          </div>
+        )}
+        <StudentProfilePage
+          student={selectedStudent}
+          onBack={() => { setSelectedStudent(null); loadStudents(); }}
+          onEdit={() => setEditingStudent(selectedStudent)}
+          onUpdate={(updated) => setSelectedStudent(updated)}
+        />
+      </div>
     );
   }
 
@@ -127,6 +136,7 @@ export const StudentsPage: React.FC = () => {
       {error && !loading && <ErrorState message={error} onRetry={loadStudents} />}
       {!loading && !error && (
         <StudentList
+          key={refreshKey}
           students={students}
           onSelectStudent={setSelectedStudent}
           onEditStudent={setEditingStudent}

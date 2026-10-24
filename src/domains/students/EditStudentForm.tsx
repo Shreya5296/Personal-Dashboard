@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Student, StudentInput } from './studentTypes';
-import { Package } from '../packages/packageTypes';
-import { fetchSchedules, saveSchedules } from '../classes/scheduleApi';
-import { fetchMeetingLinks, createMeetingLink } from '../meeting-links/meetingLinkApi';
-import { fetchPackages, createPackage, updatePackage } from '../packages/packageApi';
+import { WeeklyScheduleEntry, saveSchedules } from '../classes/scheduleApi';
+import { createMeetingLink } from '../meeting-links/meetingLinkApi';
+import { createPackage, updatePackage } from '../packages/packageApi';
 import { updateStudent } from './studentApi';
 import { useAuth } from '../../auth/AuthProvider';
 import { validateStudentInput } from './studentValidation';
@@ -12,7 +11,7 @@ import { EditStudentPersonalSection } from './EditStudentPersonalSection';
 import { EditStudentLinksSection } from './EditStudentLinksSection';
 import { EditStudentPackageSection, PackageFormData } from './EditStudentPackageSection';
 import { ScheduleDetailsSection } from './ScheduleDetailsSection';
-import { ScheduleItem } from './registrationTypes';
+import { useEditStudentInitialData } from './useEditStudentInitialData';
 import { Button } from '../../components/buttons/Button';
 import { LoadingState } from '../../components/feedback/LoadingState';
 
@@ -24,7 +23,6 @@ export interface EditStudentFormProps {
 
 export const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, onSuccess, onCancel }) => {
   const { token } = useAuth();
-  const [loadingInitial, setLoadingInitial] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -41,40 +39,10 @@ export const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, onSuc
     notes: student.notes || '',
   });
 
-  const [meetingLinks, setMeetingLinks] = useState({ link1: '', link2: '' });
-  const [existingPkg, setExistingPkg] = useState<Package | null>(null);
-  const [packageData, setPackageData] = useState<PackageFormData>({
-    mode: 'EDIT_EXISTING', plan_type: 'Package', currency: 'INR', package_price: '', per_class: '', classes_purchased: '', class_duration: '', end_date: '',
-  });
-  const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
-
-  useEffect(() => {
-    let isMounted = true;
-    Promise.all([
-      fetchMeetingLinks(student.student_id, token).catch(() => []),
-      fetchPackages(student.student_id, token).catch(() => []),
-      fetchSchedules(student.student_id, token).catch(() => []),
-    ]).then(([links, pkgs, scheds]) => {
-      if (!isMounted) return;
-      const ml = links.find((l) => l.student_id === student.student_id);
-      if (ml) setMeetingLinks({ link1: ml.meeting_link_1 || ml.meeting_url || '', link2: ml.meeting_link_2 || '' });
-      if (pkgs.length > 0) {
-        const p = pkgs[0];
-        setExistingPkg(p);
-        const dur = p.class_duration || p.duration_minutes;
-        setPackageData({
-          mode: 'EDIT_EXISTING', package_id: p.package_id, plan_type: p.plan_type || 'Package', currency: p.currency || 'INR',
-          package_price: p.package_price !== undefined ? String(p.package_price) : (p.price !== undefined ? String(p.price) : ''),
-          per_class: p.per_class !== undefined ? String(p.per_class) : '',
-          classes_purchased: p.classes_purchased !== undefined ? String(p.classes_purchased) : (p.total_classes !== undefined ? String(p.total_classes) : ''),
-          class_duration: dur ? String(dur) : '', end_date: p.end_date || p.expiry_date || '',
-        });
-      }
-      setSchedules(scheds.map((s, idx) => ({ id: s.schedule_id || String(idx), day_of_week: s.day_of_week, start_time: s.start_time, end_time: s.end_time })));
-      setLoadingInitial(false);
-    });
-    return () => { isMounted = false; };
-  }, [student.student_id, token]);
+  const {
+    loadingInitial, meetingLinks, setMeetingLinks,
+    existingPkg, packageData, setPackageData, schedules, setSchedules
+  } = useEditStudentInitialData(student, token);
 
   const handlePackageChange = (field: keyof PackageFormData, value: string) => {
     setPackageData((p) => ({ ...p, [field]: value }));
@@ -96,14 +64,25 @@ export const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, onSuc
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setServerError(null);
     const stuVal = validateStudentInput(studentData);
-    if (!stuVal.isValid) { setErrors(stuVal.errors); return; }
-    if (schedules.length > 0 && !isValidClassDuration(Number(packageData.class_duration))) {
-      setServerError('Please select a valid Class Duration (30, 40, or 60 min) in Package Details before saving schedules.'); return;
+    if (!stuVal.isValid) {
+      setErrors(stuVal.errors);
+      setServerError(Object.values(stuVal.errors)[0] || 'Please fix validation errors.');
+      return;
+    }
+    const dur = Number(packageData.class_duration) || 0;
+    if (schedules.length > 0 && !isValidClassDuration(dur)) {
+      setServerError('Please select a valid Class Duration (30, 40, or 60 min) in Package Details before saving schedules.');
+      return;
     }
     for (const s of schedules) {
-      if (s.end_time <= s.start_time) { setServerError(`Schedule entry on ${s.day_of_week}: End time must be after start time.`); return; }
+      const calcEnd = s.end_time || calculateEndTime(s.start_time, dur || 60);
+      if (!s.start_time || !calcEnd || calcEnd <= s.start_time) {
+        setServerError(`Schedule entry on ${s.day_of_week}: End time must be after start time.`);
+        return;
+      }
     }
     setIsSubmitting(true);
     try {
@@ -113,19 +92,27 @@ export const EditStudentForm: React.FC<EditStudentFormProps> = ({ student, onSuc
         await createMeetingLink({ student_id: student.student_id, student_name: updatedStu.student_name, meeting_link_1: meetingLinks.link1.trim(), meeting_link_2: meetingLinks.link2.trim(), meeting_url: meetingLinks.link1.trim(), provider: 'GOOGLE_MEET' }, token);
       }
       const hasPkg = packageData.package_price.trim() || packageData.classes_purchased.trim() || packageData.class_duration;
-      const durNum = Number(packageData.class_duration) || undefined;
+      const durNum = dur || undefined;
       if (hasPkg) {
         if (packageData.mode === 'EDIT_EXISTING' && existingPkg) {
           await updatePackage(existingPkg.package_id, { plan_type: packageData.plan_type, currency: packageData.currency, package_price: Number(packageData.package_price || 0), per_class: Number(packageData.per_class || 0), total_classes: Number(packageData.classes_purchased || 0), classes_purchased: Number(packageData.classes_purchased || 0), class_duration: durNum, end_date: packageData.end_date }, token);
-        } else if (packageData.mode === 'CREATE_NEW' || !existingPkg) {
+        } else if (packageData.classes_purchased || packageData.package_price) {
           await createPackage({ student_id: student.student_id, student_name: updatedStu.student_name, package_name: `${updatedStu.student_name} ${packageData.plan_type}`, plan_type: packageData.plan_type, currency: packageData.currency, package_price: Number(packageData.package_price || 0), per_class: Number(packageData.per_class || 0), total_classes: Number(packageData.classes_purchased || 0), classes_purchased: Number(packageData.classes_purchased || 0), class_duration: durNum, start_date: new Date().toISOString().slice(0, 10), end_date: packageData.end_date }, token);
         }
       }
-      await saveSchedules(student.student_id, schedules, token);
-      await onSuccess(updatedStu, `Student ${updatedStu.student_name} (${updatedStu.student_id}) updated successfully.`);
+      const schedsToSave: WeeklyScheduleEntry[] = schedules.map((s) => ({
+        schedule_id: (s.id && !s.id.startsWith('temp_') && !/^\d+$/.test(s.id)) ? s.id : undefined,
+        day_of_week: s.day_of_week,
+        start_time: s.start_time,
+        end_time: s.end_time || calculateEndTime(s.start_time, dur || 60) || '',
+      }));
+      await saveSchedules(student.student_id, schedsToSave, token);
+      await onSuccess(updatedStu, 'Student details saved successfully');
     } catch (err: unknown) {
       setServerError((err as Error).message || 'Failed to update student details');
-    } finally { setIsSubmitting(false); }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (loadingInitial) return <LoadingState message="Loading student details, schedule, and packages…" />;

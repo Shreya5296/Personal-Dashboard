@@ -59,7 +59,7 @@ export class MockSheet {
     };
   }
 
-  getRange(row: number, col: number, numRows: number, numCols: number) {
+  getRange(row: number, col: number, numRows: number = 1, numCols: number = 1) {
     return {
       getValues: () => {
         const result: any[][] = [];
@@ -74,6 +74,14 @@ export class MockSheet {
           result.push(rowSlice);
         }
         return result;
+      },
+      setValue: (val: any) => {
+        const rowIdx = row - 1;
+        const colIdx = col - 1;
+        while (this.rows.length <= rowIdx) {
+          this.rows.push([]);
+        }
+        this.rows[rowIdx][colIdx] = val;
       },
       setValues: (values: any[][]) => {
         for (let r = 0; r < numRows; r++) {

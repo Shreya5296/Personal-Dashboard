@@ -15,7 +15,7 @@ var TARGET_SCHEMAS = {
   'Packages': [
     'package_id', 'student_id', 'student_name', 'plan_type', 'currency',
     'package_price', 'per_class', 'classes_purchased',
-    'start_date', 'end_date', 'next_due_date'
+    'start_date', 'end_date', 'next_due_date', 'class_duration'
   ],
   'Payments': [
     'student_id', 'student_name', 'payment_date', 'amount', 'currency', 'in_inr'
@@ -23,6 +23,10 @@ var TARGET_SCHEMAS = {
   'ClassSessions': [
     'class_session_id', 'student_id', 'scheduled_start', 'scheduled_end',
     'attendance_status', 'session_status', 'cancellation_reason', 'deduct_class'
+  ],
+  'ClassSchedules': [
+    'schedule_id', 'student_id', 'day_of_week', 'start_time', 'end_time',
+    'is_active', 'created_at', 'updated_at'
   ],
   'MeetingLinks': [
     'student_id', 'student_name', 'meeting_link_1', 'meeting_link_2'
@@ -341,22 +345,67 @@ function runApprovedSchemaMigration(spreadsheet) {
 }
 
 function runRecurringSchedulesMigration(spreadsheet) {
-  var ss = spreadsheet || (typeof SpreadsheetApp !== 'undefined' ? SpreadsheetApp.getActiveSpreadsheet() : null);
-  if (!ss) return { success: false, message: 'Spreadsheet not available' };
-  var tabName = 'ClassSchedules';
-  var headers = ['schedule_id', 'student_id', 'day_of_week', 'start_time', 'end_time', 'is_active', 'created_at', 'updated_at'];
-  var sheet = ss.getSheetByName(tabName);
-  var created = false;
-  if (!sheet) {
-    sheet = ss.insertSheet(tabName);
-    sheet.appendRow(headers);
-    created = true;
+  var targetSpreadsheetId = CANONICAL_SPREADSHEET_ID;
+  var ss = spreadsheet;
+  if (!ss) {
+    try {
+      if (typeof SpreadsheetApp !== 'undefined') {
+        ss = SpreadsheetApp.openById(targetSpreadsheetId);
+      }
+    } catch (err) {
+      if (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet) {
+        var active = SpreadsheetApp.getActiveSpreadsheet();
+        if (active && active.getId() === targetSpreadsheetId) ss = active;
+      }
+    }
   }
+  if (!ss && typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet) {
+    ss = SpreadsheetApp.getActiveSpreadsheet();
+  }
+  if (!ss) return { success: false, message: 'Spreadsheet not available' };
+
+  var tabName = 'ClassSchedules';
+  var schedHeaders = ['schedule_id', 'student_id', 'day_of_week', 'start_time', 'end_time', 'is_active', 'created_at', 'updated_at'];
+  var schedSheet = ss.getSheetByName(tabName);
+  var created = false;
+  if (!schedSheet) {
+    schedSheet = ss.insertSheet(tabName);
+    schedSheet.appendRow(schedHeaders);
+    created = true;
+  } else {
+    var lr = schedSheet.getLastRow ? schedSheet.getLastRow() : 0;
+    if (lr === 0) {
+      schedSheet.appendRow(schedHeaders);
+      created = true;
+    }
+  }
+
+  // Add class_duration to Packages sheet if missing
+  var durationColAdded = false;
+  var pkgSheet = ss.getSheetByName('Packages');
+  if (pkgSheet) {
+    var rawData = pkgSheet.getDataRange ? pkgSheet.getDataRange().getValues() : (pkgSheet.getData ? pkgSheet.getData() : []);
+    if (rawData.length > 0) {
+      var headers = rawData[0].map(function(h) { return String(h || '').trim(); });
+      if (headers.indexOf('class_duration') === -1) {
+        var colPos = headers.length + 1;
+        var rng = pkgSheet.getRange(1, colPos, 1, 1);
+        if (rng && rng.setValue) {
+          rng.setValue('class_duration');
+        } else if (rng && rng.setValues) {
+          rng.setValues([['class_duration']]);
+        }
+        durationColAdded = true;
+      }
+    }
+  }
+
   return {
     success: true,
     tabName: tabName,
     created: created,
-    headers: headers
+    headers: schedHeaders,
+    classDurationColumnAdded: durationColAdded
   };
 }
 

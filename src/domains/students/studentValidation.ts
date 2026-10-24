@@ -36,12 +36,12 @@ export function validateStudentInput(input: Partial<StudentInput>): ValidationRe
   }
 
   const sEmail = input.student_email !== undefined ? String(input.student_email).trim() : '';
-  if (sEmail && !emailRegex.test(sEmail)) {
+  if (sEmail && sEmail !== '-' && !emailRegex.test(sEmail)) {
     errors.student_email = 'Invalid student email address format.';
   }
 
   const email = input.email !== undefined ? String(input.email).trim() : '';
-  if (email && !emailRegex.test(email)) {
+  if (email && email !== '-' && !emailRegex.test(email)) {
     errors.email = 'Invalid email address format.';
   }
 

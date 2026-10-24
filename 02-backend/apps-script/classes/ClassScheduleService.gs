@@ -32,26 +32,70 @@ function validateScheduleEntry(entry) {
   return { valid: true, day: day, start: start, end: end };
 }
 
-function Schedules_list(spreadsheet, studentId) {
-  var sid = String(studentId || '').trim();
-  if (!sid) return { success: true, data: [] };
+function _normalizeTimeStr(val, spreadsheet) {
+  if (!val) return '';
+  if (val instanceof Date || (typeof val === 'object' && typeof val.getTime === 'function')) {
+    if (typeof Utilities !== 'undefined' && typeof Utilities.formatDate === 'function') {
+      var tz = spreadsheet && typeof spreadsheet.getSpreadsheetTimeZone === 'function' ? spreadsheet.getSpreadsheetTimeZone() : 'Asia/Kolkata';
+      return Utilities.formatDate(val, tz, 'HH:mm');
+    }
+    var h = val.getHours();
+    var m = val.getMinutes();
+    return (h < 10 ? '0' + h : '' + h) + ':' + (m < 10 ? '0' + m : '' + m);
+  }
+  var str = String(val).trim();
+  if (str.charAt(0) === "'") {
+    str = str.substring(1);
+  }
+  if (/^1899-12-30T/.test(str)) {
+    var d = new Date(str);
+    if (typeof Utilities !== 'undefined' && typeof Utilities.formatDate === 'function') {
+      var tz2 = spreadsheet && typeof spreadsheet.getSpreadsheetTimeZone === 'function' ? spreadsheet.getSpreadsheetTimeZone() : 'Asia/Kolkata';
+      return Utilities.formatDate(d, tz2, 'HH:mm');
+    }
+    var dh = d.getHours();
+    var dm = d.getMinutes();
+    return (dh < 10 ? '0' + dh : '' + dh) + ':' + (dm < 10 ? '0' + dm : '' + dm);
+  }
+  return str;
+}
 
-  var sheet = spreadsheet && spreadsheet.getSheetByName ? spreadsheet.getSheetByName('ClassSchedules') : null;
+function _ensureClassSchedulesSheet(spreadsheet) {
+  if (!spreadsheet) return null;
+  var sheet = spreadsheet.getSheetByName ? spreadsheet.getSheetByName('ClassSchedules') : null;
+  if (!sheet && typeof spreadsheet.insertSheet === 'function') {
+    sheet = spreadsheet.insertSheet('ClassSchedules');
+    sheet.appendRow(['schedule_id', 'student_id', 'day_of_week', 'start_time', 'end_time', 'is_active', 'created_at', 'updated_at']);
+  }
+  return sheet;
+}
+
+function Schedules_list(spreadsheet, studentId) {
+  var sid = studentId ? String(studentId).trim() : null;
+  var sheet = _ensureClassSchedulesSheet(spreadsheet);
   if (!sheet) {
-    return { success: true, data: _memorySchedules[sid] || [], meta: { persistentSheet: false } };
+    if (sid && _memorySchedules[sid]) return { success: true, data: _memorySchedules[sid], meta: { persistentSheet: false } };
+    return { success: true, data: [], meta: { persistentSheet: false } };
   }
 
-  var data = sheet.getDataRange ? sheet.getDataRange().getValues() : [];
+  var data = sheet.getDataRange ? sheet.getDataRange().getValues() : (sheet.getData ? sheet.getData() : []);
   if (data.length <= 1) return { success: true, data: [] };
 
-  var headers = data[0];
+  var headers = data[0].map(function(h) { return String(h || '').trim(); });
   var stuIdx = headers.indexOf('student_id');
   var results = [];
   for (var i = 1; i < data.length; i++) {
     var row = data[i];
-    if (stuIdx !== -1 && String(row[stuIdx]).trim() === sid) {
+    if (!sid || (stuIdx !== -1 && String(row[stuIdx]).trim() === sid)) {
       var item = {};
-      for (var h = 0; h < headers.length; h++) item[headers[h]] = row[h];
+      for (var h = 0; h < headers.length; h++) {
+        var hName = headers[h];
+        if (hName === 'start_time' || hName === 'end_time') {
+          item[hName] = _normalizeTimeStr(row[h], spreadsheet);
+        } else {
+          item[hName] = row[h];
+        }
+      }
       if (item.is_active !== false && item.is_active !== 'FALSE') {
         results.push(item);
       }
@@ -71,8 +115,9 @@ function Schedules_save(spreadsheet, studentId, entries, actor) {
     if (!check.valid) {
       return { success: false, code: 'VALIDATION_ERROR', message: check.message };
     }
+    var existingId = list[i].schedule_id || (list[i].id && !list[i].id.startsWith('temp_') && !/^\d+$/.test(list[i].id) ? list[i].id : null);
     validated.push({
-      schedule_id: list[i].schedule_id || (_schedIdGen ? _schedIdGen.generateId('csch_') : 'csch_' + Date.now() + '_' + i),
+      schedule_id: existingId || (_schedIdGen ? _schedIdGen.generateId('csch_') : 'csch_' + Date.now() + '_' + i),
       student_id: sid,
       day_of_week: check.day,
       start_time: check.start,
@@ -83,7 +128,7 @@ function Schedules_save(spreadsheet, studentId, entries, actor) {
     });
   }
 
-  var sheet = spreadsheet && spreadsheet.getSheetByName ? spreadsheet.getSheetByName('ClassSchedules') : null;
+  var sheet = _ensureClassSchedulesSheet(spreadsheet);
   if (!sheet) {
     _memorySchedules[sid] = validated;
     return {
@@ -93,8 +138,8 @@ function Schedules_save(spreadsheet, studentId, entries, actor) {
     };
   }
 
-  var data = sheet.getDataRange().getValues();
-  var headers = data[0];
+  var data = sheet.getDataRange ? sheet.getDataRange().getValues() : (sheet.getData ? sheet.getData() : []);
+  var headers = data[0].map(function(h) { return String(h || '').trim(); });
   var stuIdx = headers.indexOf('student_id');
   for (var r = data.length - 1; r >= 1; r--) {
     if (stuIdx !== -1 && String(data[r][stuIdx]).trim() === sid) {
@@ -103,9 +148,17 @@ function Schedules_save(spreadsheet, studentId, entries, actor) {
   }
   for (var v = 0; v < validated.length; v++) {
     var rec = validated[v];
-    var rowData = headers.map(function(h) { return rec[h] !== undefined ? rec[h] : ''; });
+    var rowData = headers.map(function(h) {
+      var val = rec[h] !== undefined ? rec[h] : '';
+      if ((h === 'start_time' || h === 'end_time') && val) {
+        return "'" + String(val).trim();
+      }
+      return val;
+    });
     sheet.appendRow(rowData);
   }
+
+  _memorySchedules[sid] = validated;
 
   return { success: true, data: validated, meta: { persistentSheet: true } };
 }

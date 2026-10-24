@@ -8,6 +8,18 @@ export interface WeeklyScheduleEntry {
   end_time: string;
 }
 
+export function cleanTime(t?: string | null): string {
+  if (!t) return '';
+  const str = String(t).trim();
+  if (/^1899-12-30T/.test(str)) {
+    const d = new Date(str);
+    const h = d.getHours().toString().padStart(2, '0');
+    const m = d.getMinutes().toString().padStart(2, '0');
+    return `${h}:${m}`;
+  }
+  return str.replace(/^'/, '');
+}
+
 export async function fetchSchedules(
   studentId: string,
   token?: string | null
@@ -18,7 +30,12 @@ export async function fetchSchedules(
     { student_id: studentId },
     { token }
   );
-  return Array.isArray(res.data) ? res.data : [];
+  const list = Array.isArray(res.data) ? res.data : [];
+  return list.map((s) => ({
+    ...s,
+    start_time: cleanTime(s.start_time),
+    end_time: cleanTime(s.end_time),
+  }));
 }
 
 export async function saveSchedules(
@@ -26,10 +43,20 @@ export async function saveSchedules(
   schedules: WeeklyScheduleEntry[],
   token?: string | null
 ): Promise<WeeklyScheduleEntry[]> {
+  const sanitized = schedules.map((s) => ({
+    ...s,
+    start_time: cleanTime(s.start_time),
+    end_time: cleanTime(s.end_time),
+  }));
   const res = await sendApiRequest<WeeklyScheduleEntry[]>(
     'schedules.save',
-    { student_id: studentId, schedules },
+    { student_id: studentId, schedules: sanitized },
     { token }
   );
-  return Array.isArray(res.data) ? res.data : [];
+  const list = Array.isArray(res.data) ? res.data : [];
+  return list.map((s) => ({
+    ...s,
+    start_time: cleanTime(s.start_time),
+    end_time: cleanTime(s.end_time),
+  }));
 }

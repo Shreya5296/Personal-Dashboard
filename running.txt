@@ -767,3 +767,45 @@ NEXT ACTION
     - All 168 files in src/ and public/ strictly <= 149 lines (check:lines PASS).
     - Strict TypeScript check (tsc --noEmit): 0 errors (PASS).
     - Clean Vite production build in 1.08s (PASS).
+- Student Schedule Saving, Success Feedback, and Google Sheets Synchronization completed & verified:
+  * 1. Fix Edit Student Save Button & Root Cause:
+    - Root Cause 1: Form validation rejected existing student records whose read-only inactive student_email was '-' (e.g. STU_001 Seerat), silently preventing submission without displaying top-level form errors. Backend StudentValidation.gs also rejected '-' emails.
+    - Root Cause 2: Canonical Google Spreadsheet lacked physical ClassSchedules sheet tab; ClassScheduleService fell back to ephemeral memory cache (_memorySchedules) with persistentSheet: false, which was lost upon Apps Script recycling.
+    - Root Cause 3: Physical Packages sheet tab was missing the class_duration column in Row 1 (only 11 columns existed), dropping class_duration on persistence.
+    - Root Cause 4: Google Sheets automatically coerced raw time strings (e.g. '16:00') into Date objects (1899-12-30T10:38:50.000Z), causing deserialization and comparison mismatches.
+    - Root Cause 5: In StudentsPage.tsx, editing a student from the StudentProfilePage returned StudentProfilePage directly, omitting feedback toast rendering.
+    - Fixes:
+      - Updated studentValidation.ts and StudentValidation.gs to safely allow '-' placeholder emails for inactive/read-only fields.
+      - Extracted initial fetch logic from EditStudentForm.tsx into useEditStudentInitialData.ts (73 lines) to satisfy <= 149-line constraint.
+      - Refactored EditStudentForm.tsx (133 lines) to display top-level serverError notifications on validation/API failures, prevent duplicate submissions with disabled state, validate package duration & calculated end times, and await both student update and schedule persistence.
+      - Implemented _normalizeTimeStr in ClassScheduleService.gs to handle Date objects, formatted time strings, and leading apostrophes, and prepended "'" on appendRow to enforce text storage.
+      - Enhanced StudentsPage.tsx with refreshKey invalidation to force immediate re-render and re-fetch of student aggregates (schedules, packages, balances), and rendered feedback toasts in both directory and profile views.
+  * 2. Success Feedback and Modal Closure:
+    - On successful completion of all save operations, displays the exact notification: "Student details saved successfully".
+    - Automatically closes the Edit Student Details modal/form.
+    - Does not close modal or show success if any save or validation operation fails.
+  * 3. Google Sheets Migration & Persistence:
+    - Updated SheetRegistry.gs to register CLASS_SCHEDULES: 'ClassSchedules' and SHEET_SCHEMAS.PACKAGES with class_duration at column 12.
+    - Updated SchemaMigration.gs and SystemHandlers.gs with runRecurringSchedulesMigration() and system.migrateRecurringSchedules.
+    - Safely created physical ClassSchedules tab (8 columns) and added class_duration column 12 to Packages sheet without shifting or altering existing data.
+    - Deployed Apps Script backend in-place to Version @33 preserving existing deployment ID AKfycbx4d_VG4CsZIEAomX_OjNMuej06ktTYmKLME5ennLsI7mx3Fn5b-YBu9CRqe7NwrUVH3w.
+  * 4. End-to-End Verification Against Live Google Sheets:
+    - Executed genuine live verification suite tests/live-e2e-schedule-verification.js against live Apps Script Web App and canonical Google Spreadsheet (ID: 1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8).
+    - All 11 verification steps PASSED:
+      - Step 1: Created synthetic test student (STU_041).
+      - Step 2: Created package with 40-minute duration.
+      - Step 3: Saved recurring schedule (MONDAY 16:00-16:40) with persistentSheet: true.
+      - Steps 4 & 5: Read back physical ClassSchedules sheet record; verified schedule_id, student_id, day_of_week, start_time (16:00), end_time (16:40), is_active (true).
+      - Step 6: Verified class_duration (40) in physical Packages tab.
+      - Step 7: Re-fetched student and verified schedule remains visible.
+      - Step 8: Updated schedule to WEDNESDAY 17:00-17:40 and verified deduplication (exactly 1 record in ClassSchedules).
+      - Step 9: Updated package duration to 60 min and verified persistence in Packages tab.
+      - Step 10: Tested validation failure (end_time <= start_time); confirmed proper rejection with VALIDATION_ERROR.
+      - Step 11: Safely archived test student and cleaned up synthetic records.
+  * 5. Testing & Quality Gates:
+    - Added tests/frontend/schedulePersistenceAndFeedback.test.ts (6 tests).
+    - Added tests/backend/classSchedulePersistence.test.ts (4 tests).
+    - 230/230 Vitest tests passing across 41 test files (PASS).
+    - Line limit check: 169/169 files in src/ and public/ strictly <= 149 lines (PASS).
+    - Strict TypeScript check (tsc --noEmit): 0 errors (PASS).
+    - Clean Vite production build in 852ms (PASS).

@@ -63,9 +63,9 @@ describe('Physical Schema Migration Runner (SchemaMigration.gs)', () => {
     expect(stuSheet.getMaxColumns()).toBe(9);
     expect(stuSheet.rows[0]).toEqual(TARGET_SCHEMAS['Students']);
 
-    // 2. Packages sheet verification (11 columns)
+    // 2. Packages sheet verification (12 columns including class_duration)
     const pkgSheet = spreadsheet.getSheetByName('Packages')!;
-    expect(pkgSheet.getMaxColumns()).toBe(11);
+    expect(pkgSheet.getMaxColumns()).toBe(12);
     expect(pkgSheet.rows[0]).toEqual(TARGET_SCHEMAS['Packages']);
 
     // 3. Payment Details / Payments sheet verification (6 columns)

@@ -11,6 +11,7 @@ var SHEET_NAMES = {
   FEE_OBLIGATIONS: 'FeeObligations',
   PAYMENTS: 'Payments',
   CLASS_SESSIONS: 'ClassSessions',
+  CLASS_SCHEDULES: 'ClassSchedules',
   MEETING_LINKS: 'MeetingLinks',
   STUDENT_NOTES: 'StudentNotes',
   AUDIT_LOG: 'AuditLog'
@@ -35,7 +36,7 @@ SHEET_SCHEMAS[SHEET_NAMES.ENROLLMENTS] = [
 SHEET_SCHEMAS[SHEET_NAMES.PACKAGES] = [
   'package_id', 'student_id', 'student_name', 'plan_type',
   'currency', 'package_price', 'per_class', 'classes_purchased',
-  'class_duration', 'start_date', 'end_date', 'next_due_date'
+  'start_date', 'end_date', 'next_due_date', 'class_duration'
 ];
 
 // Preserved for legacy transition fallback; superseded by Payment Details
@@ -55,6 +56,12 @@ SHEET_SCHEMAS[SHEET_NAMES.PAYMENTS] = [
 SHEET_SCHEMAS[SHEET_NAMES.CLASS_SESSIONS] = [
   'class_session_id', 'student_id', 'scheduled_start', 'scheduled_end',
   'attendance_status', 'session_status', 'cancellation_reason', 'deduct_class'
+];
+
+// Table 5: Class Schedules (8 columns)
+SHEET_SCHEMAS[SHEET_NAMES.CLASS_SCHEDULES] = [
+  'schedule_id', 'student_id', 'day_of_week', 'start_time', 'end_time',
+  'is_active', 'created_at', 'updated_at'
 ];
 
 // Table 5: Meeting Links (4 columns)
