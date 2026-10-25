@@ -113,6 +113,141 @@ function runFinalCanonicalSchemaMigration(spreadsheet) {
   return { success: true, data: results };
 }
 
+function runBackdateStudentSessions(spreadsheet, params) {
+  var ss = spreadsheet;
+  if (!ss) {
+    if (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet) {
+      ss = SpreadsheetApp.getActiveSpreadsheet();
+    }
+  }
+  if (!ss) return { success: false, code: 'UNAVAILABLE', message: 'Spreadsheet unavailable' };
+
+  var p = params || {};
+  var targetSid = p.student_id || 'STU_001';
+  var startDateStr = p.start_date || '2026-01-19';
+  var totalSessions = Number(p.total_classes) || 48;
+  var classDuration = Number(p.class_duration) || 30;
+
+  var parts = startDateStr.split('-').map(Number);
+  var cur = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 12, 0, 0));
+  var occurrences = [];
+
+  for (var dayStep = 0; dayStep < 365 && occurrences.length < totalSessions; dayStep++) {
+    var dayOfWeek = cur.getUTCDay();
+    if (dayOfWeek === 1 || dayOfWeek === 3 || dayOfWeek === 6) {
+      var yr = cur.getUTCFullYear();
+      var mo = cur.getUTCMonth() + 1;
+      var dt = cur.getUTCDate();
+      var dateStr = yr + '-' + (mo < 10 ? '0' + mo : '' + mo) + '-' + (dt < 10 ? '0' + dt : '' + dt);
+      var timeStr = (dayOfWeek === 6) ? '10:00' : '18:00';
+      occurrences.push({ date: dateStr, time: timeStr });
+    }
+    cur.setUTCDate(cur.getUTCDate() + 1);
+  }
+
+  if (occurrences.length !== totalSessions) {
+    return { success: false, code: 'CALCULATION_ERROR', message: 'Could not generate ' + totalSessions + ' occurrences' };
+  }
+
+  var s1 = occurrences[0];
+  var s44 = occurrences[43];
+  var s48 = occurrences[occurrences.length - 1];
+
+  var clsSheet = ss.getSheetByName('ClassSessions');
+  if (!clsSheet) return { success: false, code: 'NOT_FOUND', message: 'ClassSessions sheet not found' };
+
+  var clsData = clsSheet.getDataRange().getValues();
+  if (clsData.length < totalSessions + 1) {
+    return { success: false, code: 'DATA_MISMATCH', message: 'ClassSessions has fewer than ' + (totalSessions + 1) + ' rows' };
+  }
+
+  var rowsToSet = [];
+  for (var i = 0; i < totalSessions; i++) {
+    var existingRow = clsData[i + 1];
+    var occ = occurrences[i];
+    var stuId = existingRow[0] || targetSid;
+    var stuName = existingRow[1] || 'Seerat';
+    var attStatus = existingRow[4] || 'PRESENT';
+    var sessStatus = existingRow[5] || 'COMPLETED';
+    var cancReason = existingRow[6] !== undefined ? existingRow[6] : '';
+    var deduct = existingRow[7] !== undefined ? existingRow[7] : true;
+
+    rowsToSet.push([
+      stuId,
+      stuName,
+      occ.date,
+      occ.time,
+      attStatus,
+      sessStatus,
+      cancReason,
+      deduct
+    ]);
+  }
+
+  try {
+    clsSheet.getRange(2, 3, totalSessions, 2).setNumberFormat('@');
+  } catch (e) {}
+
+  clsSheet.getRange(2, 1, totalSessions, 8).setValues(rowsToSet);
+
+  var pkgSheet = ss.getSheetByName('Packages');
+  var pkgUpdated = false;
+  if (pkgSheet) {
+    var pkgData = pkgSheet.getDataRange().getValues();
+    if (pkgData.length > 1) {
+      for (var pIdx = 1; pIdx < pkgData.length; pIdx++) {
+        if (pkgData[pIdx][0] === targetSid) {
+          var schedStr = 'Mon - 6:00 PM, Wed - 6:00 PM, Sat - 10:00 AM';
+          pkgSheet.getRange(pIdx + 1, 8).setValue(s1.date);
+          pkgSheet.getRange(pIdx + 1, 9).setValue(s48.date);
+          pkgSheet.getRange(pIdx + 1, 10).setValue(s44.date);
+          pkgSheet.getRange(pIdx + 1, 11).setValue(classDuration);
+          pkgSheet.getRange(pIdx + 1, 12).setValue(schedStr);
+          pkgUpdated = true;
+          break;
+        }
+      }
+    }
+  }
+
+  var stuSheet = ss.getSheetByName('Students');
+  var stuUpdated = false;
+  if (stuSheet) {
+    var stuData = stuSheet.getDataRange().getValues();
+    if (stuData.length > 1) {
+      for (var sIdx = 1; sIdx < stuData.length; sIdx++) {
+        if (stuData[sIdx][0] === targetSid) {
+          stuSheet.getRange(sIdx + 1, 9).setValue('ACTIVE');
+          stuUpdated = true;
+          break;
+        }
+      }
+    }
+  }
+
+  return {
+    success: true,
+    data: {
+      student_id: targetSid,
+      totalSessions: totalSessions,
+      session_1: { index: 1, date: s1.date, time: s1.time },
+      session_44: { index: 44, date: s44.date, time: s44.time },
+      session_48: { index: 48, date: s48.date, time: s48.time },
+      packageUpdated: pkgUpdated,
+      packageDates: {
+        start_date: s1.date,
+        end_date: s48.date,
+        next_due_date: s44.date,
+        class_schedule: 'Mon - 6:00 PM, Wed - 6:00 PM, Sat - 10:00 AM'
+      },
+      studentUpdated: stuUpdated
+    }
+  };
+}
+
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { runFinalCanonicalSchemaMigration: runFinalCanonicalSchemaMigration };
+  module.exports = {
+    runFinalCanonicalSchemaMigration: runFinalCanonicalSchemaMigration,
+    runBackdateStudentSessions: runBackdateStudentSessions
+  };
 }

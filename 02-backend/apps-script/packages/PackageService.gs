@@ -9,7 +9,7 @@ var _pkgRepo = typeof Packages_getAll === 'function' ? {
   Packages_getById: Packages_getById,
   Packages_getByStudentId: Packages_getByStudentId,
   Packages_insert: Packages_insert,
-  Packages_repoUpdate: typeof Packages_repoUpdate === 'function' ? Packages_repoUpdate : null
+  Packages_update: typeof Packages_repoUpdate === 'function' ? Packages_repoUpdate : (typeof Packages_update === 'function' ? Packages_update : null)
 } : (typeof require !== 'undefined' ? require('./PackageRepository.gs') : null);
 var _pkgStuRepo = typeof Students_getById === 'function' ? { Students_getById: Students_getById } : (typeof require !== 'undefined' ? require('../students/StudentRepository.gs') : null);
 var _pkgAudit = typeof recordAuditEvent === 'function' ? { recordAuditEvent: recordAuditEvent } : (typeof require !== 'undefined' ? require('../audit/AuditService.gs') : null);

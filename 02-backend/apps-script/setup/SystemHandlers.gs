@@ -150,6 +150,13 @@ function registerSystemOperations(router) {
     if (!fn) return { success: false, code: 'NOT_FOUND', message: 'runFinalCanonicalSchemaMigration function not found' };
     return fn(ss);
   });
+
+  reg('system.backdateStudentSessions', function(ctx) {
+    var ss = ctx.spreadsheet;
+    var fn = typeof runBackdateStudentSessions === 'function' ? runBackdateStudentSessions : (typeof require !== 'undefined' ? require('./FinalCanonicalSchemaMigration.gs').runBackdateStudentSessions : null);
+    if (!fn) return { success: false, code: 'NOT_FOUND', message: 'runBackdateStudentSessions function not found' };
+    return fn(ss, ctx.payload);
+  });
 }
 
 if (typeof registerOperation === 'function') {

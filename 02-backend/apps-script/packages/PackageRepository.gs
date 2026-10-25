@@ -93,7 +93,7 @@ function Packages_insert(spreadsheet, record) {
   return res;
 }
 
-function Packages_update(spreadsheet, studentId, updates) {
+function Packages_repoUpdate(spreadsheet, studentId, updates) {
   var sheet = spreadsheet.getSheetByName(_pkgRegistry.SHEET_NAMES.PACKAGES);
   if (!sheet) return null;
   var targetSid = studentId || (updates && updates.student_id);
@@ -127,12 +127,15 @@ function Packages_update(spreadsheet, studentId, updates) {
   return _pkgRowWriter.updateRecordById(sheet, _pkgMapper, headers, 'student_id', targetSid, updates);
 }
 
+var Packages_update = Packages_repoUpdate;
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     Packages_getAll: Packages_getAll,
     Packages_getById: Packages_getById,
     Packages_getByStudentId: Packages_getByStudentId,
     Packages_insert: Packages_insert,
-    Packages_update: Packages_update
+    Packages_update: Packages_repoUpdate,
+    Packages_repoUpdate: Packages_repoUpdate
   };
 }

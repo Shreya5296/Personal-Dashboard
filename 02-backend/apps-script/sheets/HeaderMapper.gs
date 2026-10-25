@@ -50,6 +50,17 @@ function rowToRecord(headerMap, rowValues) {
       var val = rowValues[actualIdx];
       if (typeof val === 'string' && val.charAt(0) === "'") {
         val = val.substring(1);
+      } else if (val instanceof Date) {
+        if (headerName === 'schedule_time' || headerName === 'start_time') {
+          var hh = val.getHours();
+          var mm = val.getMinutes();
+          val = (hh < 10 ? '0' + hh : '' + hh) + ':' + (mm < 10 ? '0' + mm : '' + mm);
+        } else if (headerName === 'start_date' || headerName === 'end_date' || headerName === 'next_due_date' || headerName === 'schedule_date' || headerName === 'class_date' || headerName === 'expiry_date') {
+          var y = val.getFullYear();
+          var m = val.getMonth() + 1;
+          var d = val.getDate();
+          val = y + '-' + (m < 10 ? '0' + m : '' + m) + '-' + (d < 10 ? '0' + d : '' + d);
+        }
       }
       record[headerName] = val !== undefined ? val : null;
     }
