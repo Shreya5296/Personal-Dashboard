@@ -16,6 +16,7 @@ describe('Requirement 1 & 2 — Recurring Schedules & Validations', () => {
         { id: '1', day_of_week: 'MONDAY', start_time: '17:00', end_time: '18:00' },
         { id: '2', day_of_week: 'WEDNESDAY', start_time: '16:00', end_time: '15:30' }, // Invalid!
       ],
+      first_class_date: '2026-11-02',
     };
 
     const res = validateRegistrationForm(data);
@@ -32,6 +33,7 @@ describe('Requirement 1 & 2 — Recurring Schedules & Validations', () => {
         { id: '1', day_of_week: 'MONDAY', start_time: '16:00', end_time: '17:00' },
         { id: '2', day_of_week: 'THURSDAY', start_time: '18:30', end_time: '20:00' },
       ],
+      first_class_date: '2026-11-02',
     };
 
     const res = validateRegistrationForm(data);

@@ -38,16 +38,16 @@ The Git history and this file are the recovery sources of truth. Chat history an
 |---|---|
 | Project | Student Management Dashboard / Personal Dashboard |
 | Execution mode | Autonomous, sequential implementation |
-| Current phase | UI Consistency and Student Registration Fixes |
+| Current phase | First Class Date, Schedule Simplification, Meeting Link Tracking & Dashboard Reorganization |
 | Current phase status | PASSED |
-| Last completed phase | UI Consistency and Student Registration Fixes |
+| Last completed phase | First Class Date, Schedule Simplification, Meeting Link Tracking & Dashboard Reorganization |
 | Current Git branch | main |
-| Last full regression run | 282 Vitest tests passed (46 test files) + line-limit check passing (200 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build (968ms) |
+| Last full regression run | 288 Vitest tests passed (47 test files) + line-limit check passing (202 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build (3.18s) |
 | Canonical Spreadsheet | `Private Class Dashboard` (ID: `1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8`, Owner: `ashreya0502@gmail.com`) — 8 approved business tables (including physical ClassSchedules sheet) + 1 AuditLog operational table + 1 StudentId_Migration_Backup table |
 | Backup Spreadsheet | `Master Backup (Pre-Launch 2026-10-21T12-13-40-537Z)` (ID: `1kIFYmI81DfNIAqb-ZHsTifiKE6JxhfQrXqpfphrw9eU`) — Verified accessible and preserved intact |
 | Apps Script Project | `1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL` — ConfigService, IdGenerator (STU_001), StudentService, ClassScheduleService, PackageService, SchemaMigration engine implemented |
 | Web App Deployment | Active at version `@35` (`AKfycbx4d_VG4CsZIEAomX_OjNMuej06ktTYmKLME5ennLsI7mx3Fn5b-YBu9CRqe7NwrUVH3w`) — Deployment ID preserved |
-| Last state update | Implemented all 4 task requirements: 1. Global UI spacing & padding fixes (native select chevron arrow alignment with 0.75rem margin, 2.25rem right-padding, consistent button/input spacing); 2. Optional & editable Student Phone (type="tel") and Student Email (type="email") with validation and persistence; 3. Multi-select Subjects dropdown with the 6 approved subjects (English, Math, Science, Social Science, Hindi, Geeta), chip display, remove tags, and backward-compatible comma-separated persistence; 4. Auto-calculated Per-Class Rate editable by user with priority recalculation when package price or class count changes. 282 Vitest tests passing across 46 suites (+12 new tests), 200 files <= 149 lines, clean Vite build. |
+| Last state update | Implemented all 7 task requirements: 1. Added required First Class Date field to New Student Registration with non-past and recurring weekday matching; 2. Removed Topic / Session Name from Class Scheduling and updated schedule columns; 3. Replaced start datetime input with date-only Class Date input; 4. Auto-derived class duration from package and derived recurring start time, preventing midnight crossings; 5. Displayed missing meeting links for active students in Meeting Links table and surfaced 'Meeting link not configured' in Things That Need Attention; 6. Reorganized Dashboard sections in the specified 6-level order; 7. Removed Quick Actions from Dashboard. 288 Vitest tests passing across 47 suites (+6 new tests), 202 files <= 149 lines, clean Vite build. |
 
 ## 5. Phase Register
 

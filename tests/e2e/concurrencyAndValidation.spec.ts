@@ -48,14 +48,14 @@ test.describe('E2E — Concurrency, Validation, and Responsive Layouts', () => {
     // Desktop viewport
     await page.setViewportSize({ width: 1280, height: 800 });
     await expect(page.locator('aside')).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Quick Actions' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: "Today's Classes" })).toBeVisible();
 
     // Tablet viewport
     await page.setViewportSize({ width: 768, height: 1024 });
-    await expect(page.getByRole('heading', { name: 'Quick Actions' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: "Today's Classes" })).toBeVisible();
 
     // Mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
-    await expect(page.getByRole('heading', { name: 'Quick Actions' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: "Today's Classes" })).toBeVisible();
   });
 });

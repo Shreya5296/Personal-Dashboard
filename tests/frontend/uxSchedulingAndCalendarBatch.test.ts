@@ -92,8 +92,10 @@ describe('Next Implementation Batch — UX, Scheduling & Calendar', () => {
         packages: [{ package_id: 'p1', student_id: 'STU_001', classes_purchased: 10, consumed_classes: 2 }],
       });
 
-      const linkAlert = alerts.find((a) => a.reason.includes('No meeting link'));
+      const linkAlert = alerts.find((a) => a.reason.toLowerCase().includes('meeting link'));
       expect(linkAlert).toBeDefined();
+      expect(linkAlert?.reason).toBe('Meeting link not configured');
+      expect(linkAlert?.actionLabel).toBe('Configure Link');
       expect(linkAlert?.studentId).toBe('STU_001');
       expect(linkAlert?.targetSection).toBe('meeting-links');
     });

@@ -48,9 +48,9 @@ export function generateAttentionAlerts(params: {
         id: `alert_link_${sid}`,
         studentId: sid,
         studentName: sName,
-        reason: 'No meeting link configured',
+        reason: 'Meeting link not configured',
         severity: 'warning',
-        actionLabel: 'Add Meeting Link',
+        actionLabel: 'Configure Link',
         targetSection: 'meeting-links',
         student: stu,
       });

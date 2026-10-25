@@ -5,6 +5,7 @@ export interface ClassSession {
   class_session_id?: string;
   student_id: string;
   student_name?: string;
+  subject?: string;
   package_id?: string;
   meeting_link_id?: string;
   topic?: string;
@@ -29,6 +30,7 @@ export interface ClassSession {
 export interface ClassSessionInput {
   student_id: string;
   student_name?: string;
+  subject?: string;
   package_id?: string;
   meeting_link_id?: string;
   topic?: string;

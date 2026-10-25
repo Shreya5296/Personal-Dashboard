@@ -944,26 +944,33 @@ NEXT ACTION
     - Source-file line limit check: all 197 files in `src/` and `public/` strictly <= 149 lines (PASS).
     - Strict TypeScript check (`tsc --noEmit`): 0 errors (PASS).
     - Clean Vite production build in 677ms (PASS).
-- UI Consistency and Student Registration Fixes completed & verified:
-  * 1. Global UI Spacing & Padding Consistency:
-    - Fixed All Status dropdown on Students Directory with balanced left/right padding (0.75rem left, 2.25rem right with chevron at right 0.75rem), ensuring arrow has adequate margin and text never touches or runs under the chevron.
-    - Added shared base styling for select elements in global.css and forms.module.css with consistent SVG arrow, disabled styles, and spacing.
-    - Verified buttons, text inputs, search inputs, and comboboxes maintain consistent horizontal/vertical padding and alignment across pages without clipping.
-  * 2. Student Phone & Student Email Optional & Editable:
-    - Removed disabled state, readOnly attribute, and "(Inactive)" labels from Student Phone (type="tel") and Student Email (type="email") across New Student Registration (StudentDetailsSection.tsx) and Edit Student modal (EditStudentPersonalSection.tsx).
-    - Updated registration validation (registrationValidation.ts) and submission (StudentRegistrationForm.tsx) to accept empty contact fields, validate nonempty emails, and forward both fields in the creation payload.
-    - Verified backend validation (StudentValidation.gs) and service (StudentService.gs) persist and restore student phone and email cleanly without affecting required fields (Student Name, Parent Name, Parent Phone).
-  * 3. Multi-Select Subjects Dropdown:
-    - Replaced free-text Subject input with SubjectMultiSelect component supporting exactly 6 approved options: English, Math, Science, Social Science, Hindi, Geeta.
-    - Supported simultaneous multiple selection, duplicate prevention, chip display with individual remove action (✕), empty placeholder ("Select subjects…"), and keyboard accessibility.
-    - Preserved full backward compatibility with single subjects, legacy comma-separated records, and zero-schema-change Google Sheets persistence.
-  * 4. Editable Per-Class Rate with Priority Recalculation:
-    - Removed disabled state and readOnly restriction from Per-Class Rate in PackageDetailsSection.tsx and EditStudentPackageSection.tsx.
-    - Calculated default rate automatically (Package Price / Classes Purchased) with safe guard against negative prices/rates and division by zero.
-    - Implemented predictable manual override policy: user edits are preserved during unrelated form updates, while changing package price or classes purchased automatically recalculates rate and returns to automatic mode.
-  * 5. Quality Gates & Verification:
-    - 282/282 Vitest unit/integration tests passing across 46 test suites (+12 new tests in registrationControlsAndPolish.test.ts).
-    - Strict line limit check: all 200 files in src/ and public/ strictly <= 149 lines (PASS).
-    - Strict TypeScript check (tsc --noEmit): 0 errors (PASS).
-    - Clean Vite production build in 968ms (PASS).
-- Next Action: Owner manually tests student registration in the running application and reports results.
+- UI Consistency and Student Registration Fixes completed & verified.
+- First Class Date, Schedule Simplification, Meeting Link Tracking & Dashboard Reorganization completed & verified:
+  * 1. First Class Date in New Student Registration:
+    - Added required `first_class_date` field (`type="date"`) to New Student Registration form and `ScheduleDetailsSection`.
+    - Validated format (`YYYY-MM-DD`), non-past constraint (`>= today`), and weekday match against configured recurring schedule days with actionable error message.
+    - Used `first_class_date` as package `start_date` and initial recurring schedule generation baseline.
+  * 2. Removed Topic / Session Name from Class Scheduling:
+    - Removed Topic / Session Name form input and validation requirement from `ClassSessionForm`.
+    - Automatically defaults topic and `class_title` to `${student.student_name} - Class Session` (or `'Class Session'`).
+    - Updated `classScheduleColumns.tsx` to display student name, subject, and time prominently without requiring a unique topic.
+  * 3. Date-Only Class Scheduling:
+    - Replaced `datetime-local` input with clean date-only picker (`type="date"`, labeled "Class Date").
+    - Validated valid calendar date selection before submitting.
+  * 4. Auto-Derived Duration & Start Time:
+    - Automatically retrieves active package `class_duration` (or falls back to 60 min default) and displays read-only indicator.
+    - Automatically derives class start time from the student's recurring schedule matching the chosen date's weekday, with manual time input fallback for unconfigured days. Never defaults to midnight.
+    - Automatically calculates class end time and rejects schedules crossing the midnight boundary.
+  * 5. Missing Meeting Link Tracking & Attention Alerts:
+    - `MeetingLinkList` loads registered active students and merges unconfigured students with "No link configured" status and a prominent "Configure" button.
+    - `attentionAlerts.ts` generates action item `reason: 'Meeting link not configured'`, `actionLabel: 'Configure Link'`, targeting `meeting-links`, clearing automatically once saved.
+  * 6. Reorganized Dashboard Sections:
+    - Exact display order implemented: 1. Today's Classes, 2. Active Students, 3. Upcoming Classes (7 Days), 4. Outstanding Fees, 5. Weekly Class Schedule, 6. Things That Need Attention.
+  * 7. Removed Quick Actions from Dashboard:
+    - Completely removed Quick Actions section and container from `DashboardPage`.
+  * 8. Quality Gates & Verification:
+    - 288/288 Vitest unit/integration tests passing across 47 test suites (+6 new tests in `scheduleSimplificationAndDashboard.test.ts`).
+    - Strict line limit check: all 202 files in `src/` and `public/` strictly <= 149 lines (PASS).
+    - Strict TypeScript check (`tsc --noEmit`): 0 errors (PASS).
+    - Clean Vite production build in 3.18s (PASS).
+- Next Action: Report results to user for manual testing of registration, class scheduling, and dashboard reorganizations.

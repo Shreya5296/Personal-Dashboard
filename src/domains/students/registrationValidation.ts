@@ -107,5 +107,29 @@ export function validateRegistrationForm(data: RegistrationFormData): {
   });
   if (Object.keys(scheduleErrors).length > 0) errors.schedules = scheduleErrors;
 
+  // 5. First Class Date
+  if (!data.first_class_date || !data.first_class_date.trim()) {
+    errors.first_class_date = 'First class date is required.';
+    valid = false;
+  } else if (!/^\d{4}-\d{2}-\d{2}$/.test(data.first_class_date.trim())) {
+    errors.first_class_date = 'Invalid date format (YYYY-MM-DD required).';
+    valid = false;
+  } else {
+    const today = new Date().toISOString().slice(0, 10);
+    if (data.first_class_date < today) {
+      errors.first_class_date = 'First class date cannot be in the past.';
+      valid = false;
+    } else if (data.schedules && data.schedules.length > 0) {
+      const [y, m, d] = data.first_class_date.split('-').map(Number);
+      const dayNames = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+      const firstClassDay = dayNames[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+      const configuredDays = data.schedules.map((s) => s.day_of_week).filter(Boolean);
+      if (configuredDays.length > 0 && !configuredDays.includes(firstClassDay)) {
+        errors.first_class_date = `First class date (${data.first_class_date}) is a ${firstClassDay}, but configured recurring days are ${configuredDays.join(', ')}.`;
+        valid = false;
+      }
+    }
+  }
+
   return { isValid: valid, errors };
 }

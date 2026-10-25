@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { MeetingLink, MeetingLinkInput } from './meetingLinkTypes';
 import { fetchMeetingLinks, createMeetingLink } from './meetingLinkApi';
+import { fetchStudents } from '../students/studentApi';
 import { MeetingLinkTable } from './MeetingLinkTable';
 import { MeetingLinkModal } from './MeetingLinkModal';
 import { Button } from '../../components/buttons/Button';
@@ -22,8 +23,29 @@ export const MeetingLinkList: React.FC<{ studentId?: string }> = ({ studentId })
   const loadData = async () => {
     setLoading(true);
     try {
-      const data = await fetchMeetingLinks(studentId, token);
-      setLinks(data);
+      const [data, studentList] = await Promise.all([
+        fetchMeetingLinks(studentId, token),
+        fetchStudents({}, token).catch(() => []),
+      ]);
+      const matched = studentId ? studentList.filter((s) => s.student_id === studentId) : studentList;
+      const active = matched.filter((s) => {
+        const st = (s.status || '').trim().toUpperCase();
+        return st === 'ACTIVE' || (!st && (s as unknown as { is_active?: boolean }).is_active !== false);
+      });
+      const existingIds = new Set(data.map((l) => l.student_id));
+      const placeholders: MeetingLink[] = active
+        .filter((s) => !existingIds.has(s.student_id))
+        .map((s) => ({
+          meeting_link_id: `pending_${s.student_id}`,
+          student_id: s.student_id,
+          student_name: s.student_name || s.full_name || s.student_id,
+          meeting_link_1: '',
+          meeting_link_2: '',
+          meeting_url: '',
+          is_preferred: false,
+          provider: 'OTHER',
+        }));
+      setLinks([...data, ...placeholders]);
     } finally {
       setLoading(false);
     }
@@ -35,9 +57,7 @@ export const MeetingLinkList: React.FC<{ studentId?: string }> = ({ studentId })
     setFormLoading(true);
     try {
       await createMeetingLink(input, token);
-      setIsModalOpen(false);
-      setEditingLink(null);
-      setTargetSlot(null);
+      setIsModalOpen(false); setEditingLink(null); setTargetSlot(null);
       setFeedback('Meeting link saved successfully.');
       setTimeout(() => setFeedback(null), 3000);
       await loadData();
@@ -47,15 +67,10 @@ export const MeetingLinkList: React.FC<{ studentId?: string }> = ({ studentId })
   };
 
   const handleCopy = (key: string, url: string) => {
-    if (navigator?.clipboard?.writeText) {
-      navigator.clipboard.writeText(url).catch(() => {});
-    }
+    if (navigator?.clipboard?.writeText) navigator.clipboard.writeText(url).catch(() => {});
     setCopiedKey(key);
     setFeedback('Meeting link copied to clipboard.');
-    setTimeout(() => {
-      setCopiedKey(null);
-      setFeedback(null);
-    }, 2500);
+    setTimeout(() => { setCopiedKey(null); setFeedback(null); }, 2500);
   };
 
   const handleDeleteSlot = async (link: MeetingLink, slot: 'primary' | 'secondary') => {

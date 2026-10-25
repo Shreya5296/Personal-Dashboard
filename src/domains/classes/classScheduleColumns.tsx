@@ -35,7 +35,7 @@ export function buildClassScheduleColumns(params: {
             {c.student_name || c.student_id}
           </span>
           <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
-            {c.topic || c.class_title || 'Class Session'}
+            {c.subject || c.topic || c.class_title || 'Class Session'}
           </span>
         </div>
       ),

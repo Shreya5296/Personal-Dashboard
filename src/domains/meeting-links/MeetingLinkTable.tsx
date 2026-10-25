@@ -83,11 +83,18 @@ export const MeetingLinkTable: React.FC<MeetingLinkTableProps> = ({
       key: 'actions',
       header: 'Actions',
       width: '12%',
-      render: (l) => (
-        <Button variant="outline" size="sm" onClick={() => onEdit(l)}>
-          Edit
-        </Button>
-      ),
+      render: (l) => {
+        const hasAny = Boolean(
+          (l.meeting_link_1 && l.meeting_link_1.trim()) ||
+          (l.meeting_link_2 && l.meeting_link_2.trim()) ||
+          (l.meeting_url && l.meeting_url.trim())
+        );
+        return (
+          <Button variant={hasAny ? 'outline' : 'primary'} size="sm" onClick={() => onEdit(l)}>
+            {hasAny ? 'Edit' : 'Configure'}
+          </Button>
+        );
+      },
     },
   ];
 

@@ -33,6 +33,7 @@ export interface RegistrationFormData {
   parent: ParentDetails;
   pkg: PackageDetails;
   schedules: ScheduleItem[];
+  first_class_date: string;
 }
 
 export interface RegistrationErrors {
@@ -40,4 +41,5 @@ export interface RegistrationErrors {
   parent?: Partial<Record<keyof ParentDetails, string>>;
   pkg?: Partial<Record<keyof PackageDetails, string>>;
   schedules?: Record<string, string>;
+  first_class_date?: string;
 }

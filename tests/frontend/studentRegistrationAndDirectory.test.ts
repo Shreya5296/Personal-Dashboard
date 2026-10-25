@@ -44,6 +44,7 @@ describe('Student Registration and Directory Improvements', () => {
           { id: '1', day_of_week: 'MONDAY', start_time: '16:00', end_time: '17:00' },
           { id: '2', day_of_week: 'THURSDAY', start_time: '18:30', end_time: '19:30' },
         ],
+        first_class_date: '2026-11-02',
       };
 
       const result = validateRegistrationForm(validForm);

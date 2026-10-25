@@ -36,6 +36,7 @@ describe('Registration Controls and UI Polish', () => {
         parent: { parent_name: 'Karan Patel', parent_phone: '+91 98765 00000', parent_email: '' },
         pkg: { plan_type: 'Package', currency: 'INR', package_price: '25000', per_class: '1250', classes_purchased: '20', class_duration: '60' },
         schedules: [],
+        first_class_date: '2026-11-02',
       };
       const res = validateRegistrationForm(form);
       expect(res.isValid).toBe(true);
@@ -53,6 +54,7 @@ describe('Registration Controls and UI Polish', () => {
         parent: { parent_name: 'Anita Sen', parent_phone: '+91 98222 11111', parent_email: 'anita@example.com' },
         pkg: { plan_type: 'Package', currency: 'INR', package_price: '', per_class: '', classes_purchased: '', class_duration: '60' },
         schedules: [],
+        first_class_date: '2026-11-02',
       };
       const res = validateRegistrationForm(form);
       expect(res.isValid).toBe(true);
@@ -160,6 +162,7 @@ describe('Registration Controls and UI Polish', () => {
         parent: { parent_name: 'Ravi V', parent_phone: '+91 98765 00000', parent_email: '' },
         pkg: { plan_type: 'Package', currency: 'INR', package_price: '25000', per_class: '1400', classes_purchased: '20', class_duration: '60' },
         schedules: [],
+        first_class_date: '2026-11-02',
       };
       const val = validateRegistrationForm(form);
       expect(val.isValid).toBe(true);
