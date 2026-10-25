@@ -25,13 +25,35 @@ function parseTimeToMinutes(t: string): number {
   return h * 60 + m;
 }
 
+export function localToUtcIso(dateStr: string, timeStr: string, timeZone = 'Asia/Kolkata'): string {
+  const tempDate = new Date(`${dateStr}T12:00:00Z`);
+  let offset = '+05:30';
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone, timeZoneName: 'longOffset',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+    }).formatToParts(tempDate);
+    const tzPart = parts.find((p) => p.type === 'timeZoneName');
+    if (tzPart && tzPart.value.startsWith('GMT')) {
+      offset = tzPart.value.replace('GMT', '');
+      if (!offset.includes(':')) offset = `${offset}:00`;
+    }
+  } catch {}
+  const [hStr, mStr] = (timeStr || '00:00').split(':');
+  const cleanH = String(parseInt(hStr, 10) || 0).padStart(2, '0');
+  const cleanM = String(parseInt(mStr, 10) || 0).padStart(2, '0');
+  return new Date(`${dateStr}T${cleanH}:${cleanM}:00${offset}`).toISOString();
+}
+
 export function generateProposedSessions(
   schedules: WeeklyScheduleEntry[],
   startDateStr: string,
   count: number,
   existingSessions: ClassSession[] = [],
   studentId?: string,
-  durationMinutes?: number
+  durationMinutes?: number,
+  timeZone = 'Asia/Kolkata'
 ): ProposedSession[] {
   if (!schedules.length || !startDateStr || count <= 0) return [];
 
@@ -57,8 +79,10 @@ export function generateProposedSessions(
 
       const computedEnd = (durationMinutes && calculateEndTime(entry.start_time, durationMinutes)) || entry.end_time;
       const dur = durationMinutes || Math.max(15, parseTimeToMinutes(computedEnd) - parseTimeToMinutes(entry.start_time));
-      const scheduledStart = `${dateStr}T${entry.start_time}:00.000Z`;
-      const scheduledEnd = `${dateStr}T${computedEnd}:00.000Z`;
+      const scheduledStart = localToUtcIso(dateStr, entry.start_time, timeZone);
+      const scheduledEnd = localToUtcIso(dateStr, computedEnd, timeZone);
+      const propStartMs = new Date(scheduledStart).getTime();
+      const propEndMs = new Date(scheduledEnd).getTime();
 
       let hasConflict = false;
       let isDuplicate = false;
@@ -69,24 +93,35 @@ export function generateProposedSessions(
         if (!exStart) continue;
         if (ex.session_status === 'CANCELLED' || ex.status === 'CANCELLED') continue;
 
-        if (ex.student_id === studentId && exStart.slice(0, 16) === scheduledStart.slice(0, 16)) {
+        const exStartMs = new Date(exStart).getTime();
+        const exDurMs = (ex.duration_minutes || 60) * 60000;
+        const exEndMs = ex.scheduled_end ? new Date(ex.scheduled_end).getTime() : exStartMs + exDurMs;
+
+        const isExactTimeMatch = exStartMs === propStartMs || exStart.slice(0, 16) === scheduledStart.slice(0, 16);
+        const isLegacyLocalMatch = exStart.slice(0, 10) === dateStr && exStart.slice(11, 16) === entry.start_time;
+
+        if (ex.student_id === studentId && (isExactTimeMatch || isLegacyLocalMatch)) {
           isDuplicate = true;
           hasConflict = true;
           conflictDetails = `Exact duplicate: already scheduled for ${ex.student_name || 'this student'}`;
           break;
         }
 
+        const hasEpochOverlap = propStartMs < exEndMs && propEndMs > exStartMs;
+        let hasLegacyOverlap = false;
         if (exStart.slice(0, 10) === dateStr) {
           const exStartMin = parseTimeToMinutes(exStart.slice(11, 16));
-          const exDur = ex.duration_minutes || 60;
-          const exEndMin = exStartMin + exDur;
+          const exEndMin = exStartMin + (ex.duration_minutes || 60);
           const propStartMin = parseTimeToMinutes(entry.start_time);
           const propEndMin = parseTimeToMinutes(computedEnd);
-
           if (propStartMin < exEndMin && propEndMin > exStartMin) {
-            hasConflict = true;
-            conflictDetails = `Conflict: overlaps with ${ex.student_name || 'student'} (${exStart.slice(11, 16)})`;
+            hasLegacyOverlap = true;
           }
+        }
+
+        if (hasEpochOverlap || hasLegacyOverlap) {
+          hasConflict = true;
+          conflictDetails = `Conflict: overlaps with ${ex.student_name || 'student'} (${exStart.slice(11, 16)})`;
         }
       }
 

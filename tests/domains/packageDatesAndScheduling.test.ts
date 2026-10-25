@@ -222,4 +222,71 @@ describe('Fix Student Data, Class Generation, Calendar Accuracy, Fee Dates, and 
       sendSpy.mockRestore();
     });
   });
+
+  describe('Timezone Precision & Midnight Boundary Verification (Asia/Kolkata)', () => {
+    it('converts Asia/Kolkata 18:00–18:30 IST to exact UTC timestamps 12:30–13:00 UTC', async () => {
+      const { localToUtcIso } = await import('../../src/domains/classes/classGenerator');
+      const startIso = localToUtcIso('2026-10-26', '18:00', 'Asia/Kolkata');
+      const endIso = localToUtcIso('2026-10-26', '18:30', 'Asia/Kolkata');
+
+      expect(startIso).toBe('2026-10-26T12:30:00.000Z');
+      expect(endIso).toBe('2026-10-26T13:00:00.000Z');
+
+      // Verify formatted in Asia/Kolkata: exactly 6:00 pm and 6:30 pm on 26 Oct
+      const { formatIsoTo12Hour } = await import('../../src/lib/time12Format');
+      expect(formatIsoTo12Hour(startIso, 'Asia/Kolkata')).toBe('6:00 pm');
+      expect(formatIsoTo12Hour(endIso, 'Asia/Kolkata')).toBe('6:30 pm');
+
+      // Verify calendar date in Asia/Kolkata: 2026-10-26 (does NOT cross midnight)
+      const istDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date(startIso));
+      expect(istDate).toBe('2026-10-26');
+    });
+
+    it('proves that naive 18:00:00.000Z represents 11:30 PM IST and crosses midnight', () => {
+      const naiveUtcStart = '2026-10-26T18:00:00.000Z';
+      const naiveUtcEnd = '2026-10-26T18:30:00.000Z';
+
+      const istStartTime = new Intl.DateTimeFormat('en-IN', {
+        timeZone: 'Asia/Kolkata', timeStyle: 'short',
+      }).format(new Date(naiveUtcStart));
+      const istEndDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date(naiveUtcEnd));
+
+      expect(istStartTime.toLowerCase()).toBe('11:30 pm');
+      // 18:30 UTC is midnight on the NEXT day (27 Oct) in Asia/Kolkata
+      expect(istEndDate).toBe('2026-10-27');
+    });
+
+    it('generates 48 sessions with correct Asia/Kolkata UTC timestamps agreeing with package dates', async () => {
+      const { generateProposedSessions } = await import('../../src/domains/classes/classGenerator');
+      const schedules = [
+        { id: '1', day_of_week: 'MONDAY', start_time: '18:00', end_time: '18:30' },
+        { id: '2', day_of_week: 'WEDNESDAY', start_time: '18:00', end_time: '18:30' },
+        { id: '3', day_of_week: 'SATURDAY', start_time: '18:00', end_time: '18:30' },
+      ];
+
+      const proposed = generateProposedSessions(schedules, '2026-10-26', 48, [], 'STU_001', 30, 'Asia/Kolkata');
+      expect(proposed).toHaveLength(48);
+
+      // Session 1: 2026-10-26 18:00 IST -> 12:30 UTC
+      expect(proposed[0].scheduledStart).toBe('2026-10-26T12:30:00.000Z');
+      expect(proposed[0].scheduledEnd).toBe('2026-10-26T13:00:00.000Z');
+      expect(proposed[0].dateStr).toBe('2026-10-26');
+
+      // Session 44 (N-4 fee milestone): 2027-02-03 18:00 IST -> 12:30 UTC
+      expect(proposed[43].scheduledStart).toBe('2027-02-03T12:30:00.000Z');
+      expect(proposed[43].scheduledEnd).toBe('2027-02-03T13:00:00.000Z');
+      expect(proposed[43].dateStr).toBe('2027-02-03');
+
+      // Session 48 (Final session): 2027-02-13 18:00 IST -> 12:30 UTC
+      expect(proposed[47].scheduledStart).toBe('2027-02-13T12:30:00.000Z');
+      expect(proposed[47].scheduledEnd).toBe('2027-02-13T13:00:00.000Z');
+      expect(proposed[47].dateStr).toBe('2027-02-13');
+
+      // Check agreement with package dates calculation
+      const pkgDates = calculatePackageDates('2026-10-26', ['MONDAY', 'WEDNESDAY', 'SATURDAY'], 48);
+      expect(pkgDates.startDate).toBe('2026-10-26');
+      expect(pkgDates.nextDueDate).toBe(proposed[43].dateStr); // 2027-02-03
+      expect(pkgDates.endDate).toBe(proposed[47].dateStr);     // 2027-02-13
+    });
+  });
 });
