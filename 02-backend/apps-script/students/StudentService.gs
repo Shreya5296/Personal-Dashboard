@@ -72,6 +72,7 @@ function Students_enrich(s) {
   copy.phone = copy.parent_phone;
   copy.email = copy.parent_email;
   copy.subject = s.subject || '';
+  copy.subjects = s.subjects || (copy.subject ? copy.subject.split(',').map(function(item) { return item.trim(); }).filter(Boolean) : []);
   copy.status = String(s.status || s.student_status || 'ACTIVE').trim().toUpperCase();
   copy.student_status = copy.status;
   copy.notes = s.notes || '';
@@ -85,7 +86,12 @@ function Students_create(spreadsheet, data, actor) {
   var rawStudentPhone = data.student_phone || data.secondary_phone || '';
   var rawParentEmail = data.parent_email || data.email || '';
   var rawStudentEmail = data.student_email || '';
-  var rawSubject = data.subject !== undefined ? String(data.subject).trim() : '';
+  var rawSubject = data.subject !== undefined ? data.subject : (data.subjects !== undefined ? data.subjects : '');
+  if (Array.isArray(rawSubject)) {
+    rawSubject = rawSubject.join(', ');
+  } else {
+    rawSubject = String(rawSubject || '').trim();
+  }
   var rawNotes = data.notes !== undefined ? String(data.notes).trim() : (data.internal_summary !== undefined ? String(data.internal_summary).trim() : '');
 
   var normalized = {
@@ -177,6 +183,11 @@ function Students_update(spreadsheet, studentId, updates, actor) {
   }
   if (updates.email !== undefined && updates.parent_email === undefined) {
     normalized.parent_email = updates.email;
+  }
+  if (updates.subjects !== undefined && updates.subject === undefined) {
+    normalized.subject = Array.isArray(updates.subjects) ? updates.subjects.join(', ') : updates.subjects;
+  } else if (Array.isArray(updates.subject)) {
+    normalized.subject = updates.subject.join(', ');
   }
   if (updates.status !== undefined && updates.status !== null) {
     normalized.status = String(updates.status).trim().toUpperCase();

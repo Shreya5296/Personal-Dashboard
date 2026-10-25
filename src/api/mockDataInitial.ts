@@ -56,7 +56,7 @@ export function createMockStudent(payload: Record<string, unknown>) {
     student_phone: String(payload.student_phone || ''),
     parent_email: String(payload.parent_email || ''),
     student_email: String(payload.student_email || ''),
-    subject: String(payload.subject || ''),
+    subject: Array.isArray(payload.subjects) ? payload.subjects.join(', ') : (Array.isArray(payload.subject) ? (payload.subject as string[]).join(', ') : String(payload.subject || '')),
     status: String(payload.status || 'ACTIVE'),
     created_at: new Date().toISOString()
   };

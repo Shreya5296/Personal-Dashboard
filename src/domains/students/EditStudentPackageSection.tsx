@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Package } from '../packages/packageTypes';
 import { FormField } from '../../components/forms/FormField';
 import formStyles from '../../components/forms/forms.module.css';
@@ -36,15 +36,30 @@ export const EditStudentPackageSection: React.FC<EditStudentPackageSectionProps>
   const remaining = Math.max(0, purchased - consumed);
   const durLabel = existingPackage?.class_duration ? `${existingPackage.class_duration} min` : 'Not configured';
 
-  const autoRate = calculatePerClassRate(values.package_price, values.classes_purchased);
+  const [, setIsManualOverride] = useState(false);
+  const prevPriceRef = useRef(values.package_price);
+  const prevClassesRef = useRef(values.classes_purchased);
+
   const startDate = firstClassDate || existingPackage?.start_date || '';
   const recurringDays = schedules.map((s) => s.day_of_week);
   const projectedLastDate = calculateProjectedLastClassDate(startDate, recurringDays, purchased);
 
   useEffect(() => {
-    if (autoRate > 0 && String(autoRate) !== values.per_class) onChange('per_class', String(autoRate));
+    const priceChanged = prevPriceRef.current !== values.package_price;
+    const classesChanged = prevClassesRef.current !== values.classes_purchased;
+
+    if (priceChanged || classesChanged) {
+      prevPriceRef.current = values.package_price;
+      prevClassesRef.current = values.classes_purchased;
+      setIsManualOverride(false);
+      const rate = calculatePerClassRate(values.package_price, values.classes_purchased);
+      onChange('per_class', rate > 0 ? String(rate) : '');
+    }
+  }, [values.package_price, values.classes_purchased, onChange]);
+
+  useEffect(() => {
     if (projectedLastDate && projectedLastDate !== values.end_date) onChange('end_date', projectedLastDate);
-  }, [autoRate, projectedLastDate]);
+  }, [projectedLastDate, values.end_date, onChange]);
 
   const isAnnual = values.plan_type.toLowerCase().includes('annual') || values.plan_type.toLowerCase().includes('early') || purchased >= 40;
   const annualMetrics = isAnnual && startDate && recurringDays.length > 0
@@ -107,8 +122,8 @@ export const EditStudentPackageSection: React.FC<EditStudentPackageSectionProps>
         <FormField label="Classes Purchased" error={errors.classes_purchased}>
           <input className={formStyles.input} type="number" min="1" step="1" value={values.classes_purchased} onChange={(e) => onChange('classes_purchased', e.target.value)} placeholder="e.g. 10" disabled={disabled} />
         </FormField>
-        <FormField label="Per-Class Rate (Calculated)">
-          <input className={formStyles.input} type="text" readOnly value={autoRate > 0 ? `${values.currency} ${autoRate}` : 'Calculated automatically'} disabled style={{ backgroundColor: 'var(--color-bg-subtle)', cursor: 'not-allowed' }} />
+        <FormField label="Per-Class Rate" error={errors.per_class}>
+          <input className={formStyles.input} type="number" min="0" step="any" value={values.per_class} onChange={(e) => { setIsManualOverride(true); onChange('per_class', e.target.value); }} placeholder="Calculated automatically" disabled={disabled} />
         </FormField>
         <FormField label="Projected Last Class Date">
           <input className={formStyles.input} type="text" readOnly value={projectedLastDate || 'Calculated from schedule & classes'} disabled style={{ backgroundColor: 'var(--color-bg-subtle)', cursor: 'not-allowed' }} />

@@ -7,6 +7,7 @@ export interface Student {
   parent_email?: string;
   student_email?: string;
   subject?: string;
+  subjects?: string[];
   status: 'ACTIVE' | 'INACTIVE' | 'ARCHIVED' | string;
   notes?: string;
   created_at?: string;
@@ -25,7 +26,8 @@ export interface StudentInput {
   student_phone?: string;
   parent_email?: string;
   student_email?: string;
-  subject?: string;
+  subject?: string | string[];
+  subjects?: string[];
   status?: string;
   notes?: string;
   // Convenience aliases for UI components

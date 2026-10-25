@@ -1,5 +1,6 @@
 import React from 'react';
 import { SearchIcon } from '../../components/icons/ActionIcons';
+import formStyles from '../../components/forms/forms.module.css';
 
 export interface StudentSearchProps {
   query: string;
@@ -29,7 +30,7 @@ export const StudentSearch: React.FC<StudentSearchProps> = ({
         <div
           style={{
             position: 'absolute',
-            left: '10px',
+            left: '12px',
             top: '50%',
             transform: 'translateY(-50%)',
             color: 'var(--color-text-subtle)',
@@ -45,15 +46,12 @@ export const StudentSearch: React.FC<StudentSearchProps> = ({
           placeholder="Search students by name, email, or phone…"
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
+          className={formStyles.input}
           style={{
             width: '100%',
-            padding: '0.4375rem 0.75rem 0.4375rem 2rem',
+            padding: '0.4375rem 0.75rem 0.4375rem 2.25rem',
             borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--color-border)',
             fontSize: 'var(--font-size-sm)',
-            backgroundColor: 'var(--color-bg-surface)',
-            color: 'var(--color-text-main)',
-            outline: 'none',
           }}
         />
       </div>
@@ -62,15 +60,13 @@ export const StudentSearch: React.FC<StudentSearchProps> = ({
         value={statusFilter}
         onChange={(e) => onStatusFilterChange(e.target.value)}
         aria-label="Filter students by status"
+        className={formStyles.select}
         style={{
-          padding: '0.4375rem 0.75rem',
+          width: 'auto',
+          minWidth: '140px',
+          padding: '0.4375rem 2.25rem 0.4375rem 0.75rem',
           borderRadius: 'var(--radius-md)',
-          border: '1px solid var(--color-border)',
           fontSize: 'var(--font-size-sm)',
-          backgroundColor: 'var(--color-bg-surface)',
-          color: 'var(--color-text-main)',
-          outline: 'none',
-          cursor: 'pointer',
         }}
       >
         <option value="">All Statuses</option>

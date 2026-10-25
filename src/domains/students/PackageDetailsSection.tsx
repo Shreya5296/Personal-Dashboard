@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PackageDetails } from './registrationTypes';
 import { FormField } from '../../components/forms/FormField';
 import formStyles from '../../components/forms/forms.module.css';
@@ -25,13 +25,27 @@ export const PackageDetailsSection: React.FC<PackageDetailsSectionProps> = ({
   onChange,
   disabled = false,
 }) => {
-  const autoRate = calculatePerClassRate(values.package_price, values.classes_purchased);
+  const [, setIsManualOverride] = useState(false);
+  const prevPriceRef = useRef(values.package_price);
+  const prevClassesRef = useRef(values.classes_purchased);
 
   useEffect(() => {
-    if (autoRate > 0 && String(autoRate) !== values.per_class) {
-      onChange('per_class', String(autoRate));
+    const priceChanged = prevPriceRef.current !== values.package_price;
+    const classesChanged = prevClassesRef.current !== values.classes_purchased;
+
+    if (priceChanged || classesChanged) {
+      prevPriceRef.current = values.package_price;
+      prevClassesRef.current = values.classes_purchased;
+      setIsManualOverride(false);
+      const rate = calculatePerClassRate(values.package_price, values.classes_purchased);
+      onChange('per_class', rate > 0 ? String(rate) : '');
     }
-  }, [autoRate]);
+  }, [values.package_price, values.classes_purchased, onChange]);
+
+  const handlePerClassChange = (val: string) => {
+    setIsManualOverride(true);
+    onChange('per_class', val);
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
@@ -107,14 +121,16 @@ export const PackageDetailsSection: React.FC<PackageDetailsSectionProps> = ({
             disabled={disabled}
           />
         </FormField>
-        <FormField label="Per-Class Rate (Calculated)">
+        <FormField label="Per-Class Rate" error={errors?.per_class}>
           <input
-            type="text"
-            readOnly
-            className={formStyles.input}
-            value={autoRate > 0 ? `${values.currency} ${autoRate}` : 'Calculated automatically'}
-            disabled
-            style={{ backgroundColor: 'var(--color-bg-subtle)', cursor: 'not-allowed' }}
+            type="number"
+            min="0"
+            step="any"
+            className={`${formStyles.input} ${errors?.per_class ? formStyles.inputError : ''}`}
+            placeholder="Calculated automatically"
+            value={values.per_class}
+            onChange={(e) => handlePerClassChange(e.target.value)}
+            disabled={disabled}
           />
         </FormField>
       </div>

@@ -32,9 +32,17 @@ export function adaptStudentInput(input: Partial<StudentInput>): Record<string, 
   const studentPhone = String(input.student_phone || '').trim();
   const parentEmail = String(input.parent_email || '').trim();
   const studentEmail = String(input.student_email || input.email || '').trim();
-  const subject = String(input.subject || '').trim();
+  let subjectStr = '';
+  if (Array.isArray(input.subjects)) {
+    subjectStr = input.subjects.join(', ');
+  } else if (Array.isArray(input.subject)) {
+    subjectStr = (input.subject as string[]).join(', ');
+  } else {
+    subjectStr = String(input.subject || '').trim();
+  }
   const notes = String(input.notes || '').trim();
   const status = input.status ? String(input.status).trim().toUpperCase() : 'ACTIVE';
+  const subjectsArr = subjectStr ? subjectStr.split(',').map((s) => s.trim()).filter(Boolean) : [];
 
   return {
     student_name: name,
@@ -43,13 +51,14 @@ export function adaptStudentInput(input: Partial<StudentInput>): Record<string, 
     student_phone: studentPhone,
     parent_email: parentEmail,
     student_email: studentEmail,
-    subject,
+    subject: subjectStr,
+    subjects: subjectsArr,
     status,
     notes,
     full_name: name,
     phone: parentPhone,
     email: parentEmail,
-    internal_summary: formatSubjectAndNotes(subject, notes),
+    internal_summary: formatSubjectAndNotes(subjectStr, notes),
   };
 }
 
@@ -65,6 +74,9 @@ export function enrichStudentData(student: Student): Student {
       notes = parsed.notes;
     }
   }
+  const subjects = Array.isArray(student.subjects)
+    ? student.subjects
+    : (subject ? subject.split(',').map((s) => s.trim()).filter(Boolean) : []);
   return {
     ...student,
     student_name: name,
@@ -75,6 +87,7 @@ export function enrichStudentData(student: Student): Student {
     parent_email: String(student.parent_email || student.email || ''),
     student_email: String(student.student_email || ''),
     subject,
+    subjects,
     status: student.status ? String(student.status).trim().toUpperCase() : 'ACTIVE',
     notes,
   };

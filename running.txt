@@ -944,3 +944,26 @@ NEXT ACTION
     - Source-file line limit check: all 197 files in `src/` and `public/` strictly <= 149 lines (PASS).
     - Strict TypeScript check (`tsc --noEmit`): 0 errors (PASS).
     - Clean Vite production build in 677ms (PASS).
+- UI Consistency and Student Registration Fixes completed & verified:
+  * 1. Global UI Spacing & Padding Consistency:
+    - Fixed All Status dropdown on Students Directory with balanced left/right padding (0.75rem left, 2.25rem right with chevron at right 0.75rem), ensuring arrow has adequate margin and text never touches or runs under the chevron.
+    - Added shared base styling for select elements in global.css and forms.module.css with consistent SVG arrow, disabled styles, and spacing.
+    - Verified buttons, text inputs, search inputs, and comboboxes maintain consistent horizontal/vertical padding and alignment across pages without clipping.
+  * 2. Student Phone & Student Email Optional & Editable:
+    - Removed disabled state, readOnly attribute, and "(Inactive)" labels from Student Phone (type="tel") and Student Email (type="email") across New Student Registration (StudentDetailsSection.tsx) and Edit Student modal (EditStudentPersonalSection.tsx).
+    - Updated registration validation (registrationValidation.ts) and submission (StudentRegistrationForm.tsx) to accept empty contact fields, validate nonempty emails, and forward both fields in the creation payload.
+    - Verified backend validation (StudentValidation.gs) and service (StudentService.gs) persist and restore student phone and email cleanly without affecting required fields (Student Name, Parent Name, Parent Phone).
+  * 3. Multi-Select Subjects Dropdown:
+    - Replaced free-text Subject input with SubjectMultiSelect component supporting exactly 6 approved options: English, Math, Science, Social Science, Hindi, Geeta.
+    - Supported simultaneous multiple selection, duplicate prevention, chip display with individual remove action (✕), empty placeholder ("Select subjects…"), and keyboard accessibility.
+    - Preserved full backward compatibility with single subjects, legacy comma-separated records, and zero-schema-change Google Sheets persistence.
+  * 4. Editable Per-Class Rate with Priority Recalculation:
+    - Removed disabled state and readOnly restriction from Per-Class Rate in PackageDetailsSection.tsx and EditStudentPackageSection.tsx.
+    - Calculated default rate automatically (Package Price / Classes Purchased) with safe guard against negative prices/rates and division by zero.
+    - Implemented predictable manual override policy: user edits are preserved during unrelated form updates, while changing package price or classes purchased automatically recalculates rate and returns to automatic mode.
+  * 5. Quality Gates & Verification:
+    - 282/282 Vitest unit/integration tests passing across 46 test suites (+12 new tests in registrationControlsAndPolish.test.ts).
+    - Strict line limit check: all 200 files in src/ and public/ strictly <= 149 lines (PASS).
+    - Strict TypeScript check (tsc --noEmit): 0 errors (PASS).
+    - Clean Vite production build in 968ms (PASS).
+- Next Action: Owner manually tests student registration in the running application and reports results.

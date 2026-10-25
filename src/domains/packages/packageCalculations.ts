@@ -9,7 +9,7 @@ const DAY_MAP: Record<string, number> = {
 export function calculatePerClassRate(price: number | string, classes: number | string): number {
   const p = Number(price);
   const c = Number(classes);
-  if (!p || !c || c <= 0 || isNaN(p) || isNaN(c)) return 0;
+  if (!p || !c || c <= 0 || p <= 0 || isNaN(p) || isNaN(c)) return 0;
   return Math.round((p / c) * 100) / 100;
 }
 

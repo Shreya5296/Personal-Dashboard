@@ -1,6 +1,7 @@
 export interface StudentDetails {
   student_name: string;
   subject: string;
+  subjects?: string[];
   student_phone: string;
   student_email: string;
 }

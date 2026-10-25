@@ -31,7 +31,6 @@ export const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = (
   const [serverError, setServerError] = useState<string | null>(null);
   const [persistedStudent, setPersistedStudent] = useState<Student | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const dur = Number(formData.pkg.class_duration) || 60;
 
   const handlePackageChange = (field: string, value: string) => {
@@ -65,13 +64,9 @@ export const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = (
   const updateSchedule = (id: string, field: 'day_of_week' | 'start_time' | 'end_time', value: string) => {
     setFormData((prev) => ({
       ...prev,
-      schedules: prev.schedules.map((s) => {
-        if (s.id !== id) return s;
-        if (field === 'start_time') {
-          return { ...s, start_time: value, end_time: calculateEndTime(value, dur) || s.end_time };
-        }
-        return { ...s, [field]: value };
-      }),
+      schedules: prev.schedules.map((s) => (s.id !== id ? s : field === 'start_time'
+        ? { ...s, start_time: value, end_time: calculateEndTime(value, dur) || s.end_time }
+        : { ...s, [field]: value })),
     }));
   };
 
@@ -89,6 +84,8 @@ export const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = (
         activeStudent = await createStudent({
           student_name: formData.student.student_name,
           subject: formData.student.subject,
+          student_phone: formData.student.student_phone.trim(),
+          student_email: formData.student.student_email.trim(),
           parent_name: formData.parent.parent_name,
           parent_phone: formData.parent.parent_phone,
           parent_email: formData.parent.parent_email,
@@ -97,8 +94,7 @@ export const StudentRegistrationForm: React.FC<StudentRegistrationFormProps> = (
         setPersistedStudent(activeStudent);
       }
 
-      const hasPkg = formData.pkg.package_price.trim() || formData.pkg.classes_purchased.trim();
-      if (hasPkg) {
+      if (formData.pkg.package_price.trim() || formData.pkg.classes_purchased.trim()) {
         await createPackage({
           student_id: activeStudent.student_id,
           student_name: activeStudent.student_name,
