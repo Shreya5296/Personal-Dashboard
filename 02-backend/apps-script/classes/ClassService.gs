@@ -42,9 +42,11 @@ function Classes_schedule(spreadsheet, data, actor) {
   if (!v.valid) return { success: false, code: 'VALIDATION_ERROR', message: 'Validation failed', details: v.errors };
 
   var id = _clsIdGen ? _clsIdGen.generateClassSessionId() : ('cls_' + Date.now());
+  var classDate = normalized.class_date || (normalized.scheduled_start ? String(normalized.scheduled_start).slice(0, 10) : '');
   var record = {
     class_session_id: id,
     student_id: String(normalized.student_id).trim(),
+    class_date: classDate,
     scheduled_start: normalized.scheduled_start,
     scheduled_end: normalized.scheduled_end,
     attendance_status: 'NOT_MARKED',
@@ -132,6 +134,89 @@ function Classes_schedule(spreadsheet, data, actor) {
   }
 
   return { success: true, data: lockRes.result };
+}
+
+function Classes_batchSchedule(spreadsheet, data, actor) {
+  var studentId = data.student_id ? String(data.student_id).trim() : '';
+  if (!studentId) {
+    return { success: false, code: 'VALIDATION_ERROR', message: 'Student ID is required' };
+  }
+  var sessions = data.sessions;
+  if (!sessions || !Array.isArray(sessions) || sessions.length === 0) {
+    return { success: false, code: 'VALIDATION_ERROR', message: 'No sessions provided for batch scheduling' };
+  }
+
+  var student = _clsStuRepo.Students_getById(spreadsheet, studentId);
+  if (!student) {
+    return { success: false, code: 'RECORD_NOT_FOUND', message: 'Student not found: ' + studentId };
+  }
+
+  var lockFn = _clsLock && _clsLock.withLock ? _clsLock.withLock : function(t, fn) { return { success: true, result: fn() }; };
+  var lockRes = lockFn(15000, function() {
+    var allSessions = _clsRepo.Classes_getAll(spreadsheet) || [];
+    var existingKeys = {};
+    for (var i = 0; i < allSessions.length; i++) {
+      var s = allSessions[i];
+      var sStatus = s.session_status || s.status;
+      if (sStatus !== 'CANCELLED' && s.student_id === studentId) {
+        var startRaw = s.scheduled_start || s.start_time;
+        if (startRaw) {
+          existingKeys[String(startRaw).slice(0, 16)] = true;
+        }
+      }
+    }
+
+    var created = [];
+    for (var j = 0; j < sessions.length; j++) {
+      var item = sessions[j];
+      var start = item.scheduled_start || item.start_time;
+      if (!start) continue;
+
+      var timeKey = String(start).slice(0, 16);
+      if (existingKeys[timeKey]) continue; // Skip duplicates idempotently
+
+      var end = item.scheduled_end;
+      if (!end && start) {
+        try {
+          end = new Date(new Date(start).getTime() + (Number(item.duration_minutes) || 60) * 60000).toISOString();
+        } catch (e) {}
+      }
+      var dateStr = item.class_date || String(start).slice(0, 10);
+      var id = _clsIdGen ? _clsIdGen.generateClassSessionId() : ('cls_' + Date.now() + '_' + j);
+
+      var record = {
+        class_session_id: id,
+        student_id: studentId,
+        class_date: dateStr,
+        scheduled_start: start,
+        scheduled_end: end || '',
+        attendance_status: 'NOT_MARKED',
+        session_status: 'SCHEDULED',
+        cancellation_reason: '',
+        deduct_class: false
+      };
+
+      _clsRepo.Classes_insert(spreadsheet, record);
+      existingKeys[timeKey] = true;
+      created.push(record);
+    }
+
+    if (_clsAudit && _clsAudit.recordAuditEvent) {
+      _clsAudit.recordAuditEvent(spreadsheet, _clsReg, _clsMap, {
+        actor_id: actor ? actor.actorId : 'SYSTEM',
+        actor_email: actor ? actor.email : '',
+        entity_type: 'CLASS_SESSION',
+        entity_id: studentId,
+        action: 'BATCH_SCHEDULE',
+        after_summary: { student_id: studentId, count: created.length },
+        request_id: actor ? actor.requestId : ''
+      });
+    }
+
+    return { success: true, count: created.length, data: created };
+  });
+
+  return lockRes.success ? lockRes.result : { success: false, code: lockRes.code || 'LOCK_FAILED', message: lockRes.message };
 }
 
 function Classes_complete(spreadsheet, data, actor) {
@@ -280,6 +365,7 @@ function Classes_restoreCredit(spreadsheet, data, actor) {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     Classes_schedule: Classes_schedule,
+    Classes_batchSchedule: Classes_batchSchedule,
     Classes_complete: Classes_complete,
     Classes_cancel: Classes_cancel,
     Classes_restoreCredit: Classes_restoreCredit

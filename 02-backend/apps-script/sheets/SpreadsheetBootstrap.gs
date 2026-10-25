@@ -31,6 +31,13 @@ function bootstrapSpreadsheet(spreadsheet, registry, schemaVersion) {
         sheet.appendRow(headers);
       }
     }
+
+    if (name === 'Students' && typeof sheet.getRange === 'function') {
+      try {
+        var maxRows = typeof sheet.getMaxRows === 'function' ? sheet.getMaxRows() : 1000;
+        sheet.getRange(2, 4, maxRows - 1, 2).setNumberFormat('@');
+      } catch (e) {}
+    }
   }
 
   return {

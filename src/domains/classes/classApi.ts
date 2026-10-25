@@ -28,6 +28,19 @@ export async function scheduleClass(
   return response.data!;
 }
 
+export async function batchScheduleClasses(
+  studentId: string,
+  sessions: ClassSessionInput[],
+  token?: string | null
+): Promise<ClassSession[]> {
+  const response = await sendApiRequest<ClassSession[]>(
+    'classes.batchSchedule',
+    { student_id: studentId, sessions } as unknown as Record<string, unknown>,
+    { token }
+  );
+  return response.data || [];
+}
+
 export async function recordAttendance(
   sessionId: string,
   outcome: AttendanceStatus,

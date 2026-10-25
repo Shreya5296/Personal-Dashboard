@@ -60,7 +60,7 @@ export const TodayClassesSection: React.FC<TodayClassesSectionProps> = ({
   };
 
   return (
-    <div style={{ backgroundColor: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', padding: '1.25rem 1.5rem', boxShadow: 'var(--shadow-xs)', marginTop: 'var(--space-6)' }}>
+    <div style={{ backgroundColor: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', padding: '1.25rem 1.5rem', boxShadow: 'var(--shadow-xs)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)' }}>
         <h3 style={{ margin: 0, fontSize: 'var(--font-size-base)', fontWeight: 600 }}>Today's Classes</h3>
         <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>{todayKey} ({activeTz})</span>

@@ -35,6 +35,9 @@ function rowToRecord(headerMap, rowValues) {
     if (headerMap.hasOwnProperty(headerName)) {
       var colIdx = headerMap[headerName];
       var val = rowValues[colIdx];
+      if (typeof val === 'string' && val.charAt(0) === "'") {
+        val = val.substring(1);
+      }
       record[headerName] = val !== undefined ? val : null;
     }
   }
@@ -46,7 +49,15 @@ function recordToRow(headerMap, headerList, record) {
   for (var i = 0; i < headerList.length; i++) {
     var headerName = headerList[i];
     var val = record[headerName];
-    row[i] = val !== undefined && val !== null ? val : '';
+    if (val !== undefined && val !== null) {
+      if (typeof val === 'string' && (val.charAt(0) === '+' || val.charAt(0) === '=')) {
+        row[i] = "'" + val;
+      } else {
+        row[i] = val;
+      }
+    } else {
+      row[i] = '';
+    }
   }
   return row;
 }

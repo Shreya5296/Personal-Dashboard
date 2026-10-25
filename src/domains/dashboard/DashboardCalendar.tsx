@@ -3,6 +3,7 @@ import styles from './dashboardCalendar.module.css';
 import { ClassSession } from '../classes/classTypes';
 import { WeeklyScheduleEntry } from '../classes/scheduleApi';
 import { Student } from '../students/studentTypes';
+import { Package } from '../packages/packageTypes';
 import { getSavedTimezone } from '../../lib/userPreferences';
 import { toInputDateFormat } from '../../lib/dateFormat';
 import { formatIsoTo12Hour } from '../../lib/time12Format';
@@ -16,11 +17,12 @@ export interface DashboardCalendarProps {
   classes: ClassSession[];
   schedules?: WeeklyScheduleEntry[];
   students?: Student[];
+  packages?: Package[];
   onRefresh?: () => void;
 }
 
 export const DashboardCalendar: React.FC<DashboardCalendarProps> = ({
-  classes, schedules = [], students = [], onRefresh,
+  classes, schedules = [], students = [], packages = [], onRefresh,
 }) => {
   const activeTz = getSavedTimezone();
   const [mondayStr, setMondayStr] = useState<string>(() =>
@@ -30,7 +32,7 @@ export const DashboardCalendar: React.FC<DashboardCalendarProps> = ({
   const weekDates = getWeekDates(mondayStr);
   const todayKey = toInputDateFormat(new Date(), activeTz);
   const allEvents = generateCalendarEvents({
-    datedSessions: classes, recurringSchedules: schedules, students, weekDates, activeTz,
+    datedSessions: classes, recurringSchedules: schedules, students, packages, weekDates, activeTz,
   });
 
   const rangeText = `${mondayStr} – ${weekDates[6]} (${activeTz})`;

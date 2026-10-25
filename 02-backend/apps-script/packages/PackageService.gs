@@ -24,6 +24,38 @@ var _pkgReg = {
 var _pkgMap = typeof createHeaderMap === 'function' ? { createHeaderMap: createHeaderMap, rowToRecord: rowToRecord, recordToRow: recordToRow } : (typeof require !== 'undefined' ? require('../sheets/HeaderMapper.gs') : null);
 var _pkgSvcRowReader = typeof readAllRecords === 'function' ? { readAllRecords: readAllRecords, findRecordById: findRecordById } : (typeof require !== 'undefined' ? require('../sheets/RowReader.gs') : null);
 
+function _calcPkgDates(startDateStr, recurringDays, totalClasses) {
+  if (!startDateStr || !recurringDays || !recurringDays.length || totalClasses <= 0) return null;
+  var DAY_MAP = { SUNDAY: 0, MONDAY: 1, TUESDAY: 2, WEDNESDAY: 3, THURSDAY: 4, FRIDAY: 5, SATURDAY: 6 };
+  var days = recurringDays.map(function(d) { return DAY_MAP[String(d).trim().toUpperCase()]; }).filter(function(d) { return d !== undefined; });
+  if (!days.length) return null;
+  var parts = startDateStr.split('-').map(Number);
+  if (!parts[0] || !parts[1] || !parts[2]) return null;
+  var curr = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 12, 0, 0));
+  var occ = [];
+  var safety = 0;
+  while (occ.length < totalClasses && safety < 1500) {
+    if (days.indexOf(curr.getUTCDay()) !== -1) {
+      var cy = curr.getUTCFullYear();
+      var cm = String(curr.getUTCMonth() + 1); if (cm.length < 2) cm = '0' + cm;
+      var cd = String(curr.getUTCDate()); if (cd.length < 2) cd = '0' + cd;
+      occ.push(cy + '-' + cm + '-' + cd);
+    }
+    curr.setUTCDate(curr.getUTCDate() + 1);
+    safety++;
+  }
+  if (!occ.length) return null;
+  var targetDueIdx = Math.max(0, occ.length - 5);
+  return {
+    startDate: occ[0],
+    endDate: occ[occ.length - 1],
+    nextDueDate: occ[targetDueIdx],
+    start_date: occ[0],
+    end_date: occ[occ.length - 1],
+    next_due_date: occ[targetDueIdx]
+  };
+}
+
 function Packages_create(spreadsheet, data, actor) {
   var v = _pkgVal.validatePackageInput(data, false);
   if (!v.valid) {
@@ -68,6 +100,28 @@ function Packages_create(spreadsheet, data, actor) {
     created_at: now,
     updated_at: now
   };
+
+  if ((!record.end_date || !record.next_due_date) && record.start_date && record.classes_purchased > 0) {
+    var schedDays = data.recurring_days || (data.schedules ? data.schedules.map(function(s) { return s.day_of_week; }) : null);
+    if (!schedDays && typeof Schedules_list === 'function') {
+      try {
+        var existingScheds = Schedules_list(spreadsheet, data.student_id) || [];
+        schedDays = existingScheds.map(function(s) { return s.day_of_week; });
+      } catch (e) {}
+    }
+    if (schedDays && schedDays.length > 0) {
+      var calculated = _calcPkgDates(record.start_date, schedDays, record.classes_purchased);
+      if (calculated) {
+        if (!record.end_date) {
+          record.end_date = calculated.endDate;
+          record.expiry_date = calculated.endDate;
+        }
+        if (!record.next_due_date) {
+          record.next_due_date = calculated.nextDueDate;
+        }
+      }
+    }
+  }
 
   _pkgRepo.Packages_insert(spreadsheet, record);
 
@@ -210,6 +264,7 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     Packages_create: Packages_create,
     Packages_update: Packages_update,
-    Packages_enrichWithBalance: Packages_enrichWithBalance
+    Packages_enrichWithBalance: Packages_enrichWithBalance,
+    _calcPkgDates: _calcPkgDates
   };
 }

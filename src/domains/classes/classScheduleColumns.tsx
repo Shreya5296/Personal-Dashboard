@@ -49,15 +49,14 @@ export function buildClassScheduleColumns(params: {
       ),
     },
     {
-      key: 'start_time', header: 'Start / End Time',
+      key: 'start_time', header: 'Class Time',
       render: (c) => {
         const raw = c.scheduled_start || c.start_time;
         const start12 = formatIsoTo12Hour(raw, 'Asia/Kolkata');
-        const end12 = c.scheduled_end ? formatIsoTo12Hour(c.scheduled_end, 'Asia/Kolkata') : '';
         return (
           <div>
             <span style={{ fontWeight: 600, color: 'var(--color-text-main)', fontSize: 'var(--font-size-sm)', display: 'block' }}>
-              {end12 ? `${start12} – ${end12}` : start12}
+              {start12}
             </span>
             <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>{c.duration_minutes || 60} min</span>
           </div>

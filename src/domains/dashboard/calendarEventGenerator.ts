@@ -1,6 +1,7 @@
 import { ClassSession } from '../classes/classTypes';
 import { WeeklyScheduleEntry, cleanTime } from '../classes/scheduleApi';
 import { Student } from '../students/studentTypes';
+import { Package } from '../packages/packageTypes';
 
 const WEEKDAYS = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 
@@ -69,11 +70,13 @@ export function generateCalendarEvents(params: {
   datedSessions: ClassSession[];
   recurringSchedules?: WeeklyScheduleEntry[];
   students?: Student[];
+  packages?: Package[];
   weekDates: string[];
   activeTz: string;
 }): ClassSession[] {
-  const { datedSessions = [], recurringSchedules = [], students = [], weekDates, activeTz } = params;
+  const { datedSessions = [], recurringSchedules = [], students = [], packages = [], weekDates, activeTz } = params;
   const stuMap = new Map((students || []).map((s) => [s.student_id, s]));
+  const pkgMap = new Map((packages || []).map((p) => [p.student_id, p]));
   const events: ClassSession[] = [];
 
   for (const dateStr of weekDates) {
@@ -95,43 +98,45 @@ export function generateCalendarEvents(params: {
     );
 
     for (const sched of matchingScheds) {
-      const stu = stuMap.get(sched.student_id || '');
+      const sid = sched.student_id || '';
+      const stu = stuMap.get(sid);
       if (stu && stu.status === 'ARCHIVED') continue;
+
+      const pkg = pkgMap.get(sid);
+      const stuStart = pkg?.start_date || (stu as unknown as { first_class_date?: string })?.first_class_date || '';
+      if (stuStart && dateStr < stuStart) continue; // Respect First Class Date!
+      if (pkg?.end_date && dateStr > pkg.end_date) continue; // Respect package end date
+
+      const stuDated = datedSessions.filter((ds) => ds.student_id === sid && ds.session_status !== 'CANCELLED');
+      if (stuDated.length > 0) {
+        const earliest = stuDated.map((ds) => (ds.scheduled_start || ds.start_time || '').slice(0, 10)).filter(Boolean).sort()[0];
+        if (earliest && dateStr < earliest) continue;
+      }
 
       const startTime = cleanTime(sched.start_time) || '17:00';
       const endTime = cleanTime(sched.end_time) || '18:00';
       const duration = Math.max(15, parseTimeToMin(endTime) - parseTimeToMin(startTime));
 
       const hasDatedDuplicate = dayDated.some((ds) => {
-        if (ds.student_id !== sched.student_id) return false;
+        if (ds.student_id !== sid) return false;
         const dsRaw = ds.start_time || ds.scheduled_start;
         const dsParsed = new Date(String(dsRaw).trim().replace(/T\s+(\d:)/, 'T0$1'));
         if (isNaN(dsParsed.getTime())) return false;
         try {
           const dsTime = new Intl.DateTimeFormat('en-GB', { timeZone: activeTz, hour: '2-digit', minute: '2-digit', hour12: false }).format(dsParsed);
           return dsTime === startTime;
-        } catch {
-          return false;
-        }
+        } catch { return false; }
       });
 
       if (!hasDatedDuplicate) {
         const startIso = makeIsoInTz(dateStr, startTime, activeTz);
         const endIso = makeIsoInTz(dateStr, endTime, activeTz);
         events.push({
-          session_id: `rec_${sched.schedule_id || sched.student_id}_${dateStr}`,
-          student_id: sched.student_id || '',
-          student_name: stu?.student_name || stu?.full_name || sched.student_name || sched.student_id || 'Student',
-          topic: stu?.subject || 'Class Session',
-          start_time: startIso,
-          scheduled_start: startIso,
-          scheduled_end: endIso,
-          duration_minutes: duration,
-          status: 'SCHEDULED',
-          session_status: 'SCHEDULED',
-          attendance_status: 'NOT_MARKED',
-          class_credit_effect: 'PENDING',
-          is_recurring: true,
+          session_id: `rec_${sched.schedule_id || sid}_${dateStr}`, student_id: sid,
+          student_name: stu?.student_name || stu?.full_name || sched.student_name || sid || 'Student',
+          topic: stu?.subject || 'Class Session', start_time: startIso, scheduled_start: startIso,
+          scheduled_end: endIso, duration_minutes: duration, status: 'SCHEDULED', session_status: 'SCHEDULED',
+          attendance_status: 'NOT_MARKED', class_credit_effect: 'PENDING', is_recurring: true,
         } as ClassSession & { is_recurring?: boolean });
       }
     }

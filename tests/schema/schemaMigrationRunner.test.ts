@@ -73,9 +73,9 @@ describe('Physical Schema Migration Runner (SchemaMigration.gs)', () => {
     expect(paySheet.getMaxColumns()).toBe(6);
     expect(paySheet.rows[0]).toEqual(TARGET_SCHEMAS['Payments']);
 
-    // 4. ClassSessions sheet verification (8 columns)
+    // 4. ClassSessions sheet verification (9 columns)
     const clsSheet = spreadsheet.getSheetByName('ClassSessions')!;
-    expect(clsSheet.getMaxColumns()).toBe(8);
+    expect(clsSheet.getMaxColumns()).toBe(9);
     expect(clsSheet.rows[0]).toEqual(TARGET_SCHEMAS['ClassSessions']);
 
     // 5. MeetingLinks sheet verification (4 columns)

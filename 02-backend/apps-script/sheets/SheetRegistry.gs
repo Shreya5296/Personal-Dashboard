@@ -52,9 +52,9 @@ SHEET_SCHEMAS[SHEET_NAMES.PAYMENTS] = [
   'student_id', 'student_name', 'payment_date', 'amount', 'currency', 'in_inr'
 ];
 
-// Table 4: Class Sessions (8 columns)
+// Table 4: Class Sessions (9 columns)
 SHEET_SCHEMAS[SHEET_NAMES.CLASS_SESSIONS] = [
-  'class_session_id', 'student_id', 'scheduled_start', 'scheduled_end',
+  'class_session_id', 'student_id', 'class_date', 'scheduled_start', 'scheduled_end',
   'attendance_status', 'session_status', 'cancellation_reason', 'deduct_class'
 ];
 

@@ -22,7 +22,6 @@ export const ThingsThatNeedAttention: React.FC<ThingsThatNeedAttentionProps> = (
         borderRadius: 'var(--radius-xl)',
         padding: '1.25rem 1.5rem',
         boxShadow: 'var(--shadow-xs)',
-        marginTop: 'var(--space-6)',
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)' }}>

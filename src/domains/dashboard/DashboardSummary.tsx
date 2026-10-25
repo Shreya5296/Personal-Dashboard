@@ -41,7 +41,6 @@ export const DashboardSummary: React.FC<DashboardSummaryProps> = ({ overview }) 
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
         gap: 'var(--space-4)',
-        marginBottom: 'var(--space-6)',
       }}
     >
       {cards.map((c) => {

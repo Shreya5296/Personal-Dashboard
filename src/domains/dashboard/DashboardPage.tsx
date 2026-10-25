@@ -54,7 +54,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   });
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       <PageHeader
         title="Administrative Dashboard"
         subtitle="Operational overview of student enrollments, upcoming class sessions, and pending collections."
@@ -75,6 +75,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         classes={classes}
         schedules={schedules}
         students={students}
+        packages={packages}
         onRefresh={refreshData}
       />
 

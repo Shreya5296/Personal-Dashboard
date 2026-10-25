@@ -43,7 +43,7 @@ describe('Absent Operational Tabs Regression (AppConfig, ImportBatches, ImportRo
       ['student_id', 'student_name', 'payment_date', 'amount', 'currency', 'in_inr']
     ];
     ss.insertSheet('ClassSessions').rows = [
-      ['class_session_id', 'student_id', 'scheduled_start', 'scheduled_end', 'attendance_status', 'session_status', 'cancellation_reason', 'deduct_class']
+      ['class_session_id', 'student_id', 'class_date', 'scheduled_start', 'scheduled_end', 'attendance_status', 'session_status', 'cancellation_reason', 'deduct_class']
     ];
     ss.insertSheet('MeetingLinks').rows = [
       ['student_id', 'student_name', 'meeting_link_1', 'meeting_link_2']

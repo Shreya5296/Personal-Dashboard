@@ -21,7 +21,7 @@ var TARGET_SCHEMAS = {
     'student_id', 'student_name', 'payment_date', 'amount', 'currency', 'in_inr'
   ],
   'ClassSessions': [
-    'class_session_id', 'student_id', 'scheduled_start', 'scheduled_end',
+    'class_session_id', 'student_id', 'class_date', 'scheduled_start', 'scheduled_end',
     'attendance_status', 'session_status', 'cancellation_reason', 'deduct_class'
   ],
   'ClassSchedules': [

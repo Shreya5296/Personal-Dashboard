@@ -4,8 +4,10 @@ import { usePageTitle } from '../../hooks/usePageTitle';
 import { fetchClasses } from '../classes/classApi';
 import { fetchSchedules, WeeklyScheduleEntry } from '../classes/scheduleApi';
 import { fetchStudents } from '../students/studentApi';
+import { fetchPackages } from '../packages/packageApi';
 import { ClassSession } from '../classes/classTypes';
 import { Student } from '../students/studentTypes';
+import { Package } from '../packages/packageTypes';
 import { getSavedTimezone } from '../../lib/userPreferences';
 import { toInputDateFormat } from '../../lib/dateFormat';
 import { getMondayForDateStr, shiftMondayStr, getWeekDates } from '../dashboard/calendarEventGenerator';
@@ -28,6 +30,7 @@ export const CalendarPage: React.FC = () => {
   const [classes, setClasses] = useState<ClassSession[]>([]);
   const [schedules, setSchedules] = useState<WeeklyScheduleEntry[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
+  const [packages, setPackages] = useState<Package[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,14 +38,16 @@ export const CalendarPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const [cls, scheds, stuList] = await Promise.all([
+      const [cls, scheds, stuList, pkgs] = await Promise.all([
         fetchClasses(undefined, token).catch(() => []),
         fetchSchedules(undefined, token).catch(() => []),
         fetchStudents({}, token).catch(() => []),
+        fetchPackages(undefined, token).catch(() => []),
       ]);
       setClasses(cls);
       setSchedules(scheds);
       setStudents(stuList);
+      setPackages(pkgs);
     } catch (err: unknown) {
       setError((err as Error).message || 'Failed to load calendar data');
     } finally {
@@ -63,6 +68,7 @@ export const CalendarPage: React.FC = () => {
     students,
     weekDates,
     activeTz,
+    packages,
   });
 
   const totalEvents = dayColumns.reduce((acc, col) => acc + col.events.length, 0);

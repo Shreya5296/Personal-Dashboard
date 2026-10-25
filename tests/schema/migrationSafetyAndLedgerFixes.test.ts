@@ -30,7 +30,7 @@ describe('Audit Findings Fixes: Migration Safety, Payment Ops, Notes & Class Ded
       ['student_id', 'student_name', 'payment_date', 'amount', 'currency', 'in_inr']
     ];
     ss.insertSheet('ClassSessions').rows = [
-      ['class_session_id', 'student_id', 'scheduled_start', 'scheduled_end', 'attendance_status', 'session_status', 'cancellation_reason', 'deduct_class']
+      ['class_session_id', 'student_id', 'class_date', 'scheduled_start', 'scheduled_end', 'attendance_status', 'session_status', 'cancellation_reason', 'deduct_class']
     ];
     ss.insertSheet('MeetingLinks').rows = [
       ['student_id', 'student_name', 'meeting_link_1', 'meeting_link_2']
@@ -314,7 +314,7 @@ describe('Audit Findings Fixes: Migration Safety, Payment Ops, Notes & Class Ded
       // 7 attended sessions for Bob
       for (let i = 1; i <= 7; i++) {
         clsSheet.rows.push([
-          `sess_${i}`, 'stu_pkg_01', `2026-01-0${i}T10:00:00Z`, `2026-01-0${i}T11:00:00Z`, 'ATTENDED', 'COMPLETED', '', true
+          `sess_${i}`, 'stu_pkg_01', `2026-01-0${i}`, `2026-01-0${i}T10:00:00Z`, `2026-01-0${i}T11:00:00Z`, 'ATTENDED', 'COMPLETED', '', true
         ]);
       }
 

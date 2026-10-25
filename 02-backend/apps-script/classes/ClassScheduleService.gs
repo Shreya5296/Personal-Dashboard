@@ -57,6 +57,15 @@ function _normalizeTimeStr(val, spreadsheet) {
     var dm = d.getMinutes();
     return (dh < 10 ? '0' + dh : '' + dh) + ':' + (dm < 10 ? '0' + dm : '' + dm);
   }
+  var ampm = str.match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/i);
+  if (ampm) {
+    var hours = parseInt(ampm[1], 10);
+    var mins = ampm[2];
+    var isPm = ampm[3].toLowerCase() === 'pm';
+    if (isPm && hours < 12) hours += 12;
+    if (!isPm && hours === 12) hours = 0;
+    return (hours < 10 ? '0' + hours : '' + hours) + ':' + mins;
+  }
   return str;
 }
 

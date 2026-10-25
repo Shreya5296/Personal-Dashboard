@@ -973,4 +973,36 @@ NEXT ACTION
     - Strict line limit check: all 202 files in `src/` and `public/` strictly <= 149 lines (PASS).
     - Strict TypeScript check (`tsc --noEmit`): 0 errors (PASS).
     - Clean Vite production build in 3.18s (PASS).
-- Next Action: Report results to user for manual testing of registration, class scheduling, and dashboard reorganizations.
+- Fix Student Data, Class Generation, Calendar Accuracy, Fee Dates, and Global Spacing completed & verified:
+  * 1. International Phone Numbers Formula Error Fix:
+    - In `HeaderMapper.gs`, prepended single quote `'` to values starting with `+` or `=` when mapping records to spreadsheet rows (`recordToRow`), preventing Google Sheets from evaluating strings like `+66 83 167 5035` as invalid formulas `#ERROR!`.
+    - In `rowToRecord`, stripped leading single quote so frontend reads always receive pure phone strings without apostrophe artifacts.
+    - In `StudentService.gs`, added `_cleanPhone` sanitizer during student enrichment.
+    - In `SpreadsheetBootstrap.gs`, applied plain-text number format (`@`) to `parent_phone` and `student_phone` columns.
+  * 2. Calendar Event Start Date Boundary & Accurate Classes:
+    - In `calendarEventGenerator.ts`, filtered recurring schedule occurrences so slots falling prior to the student's `first_class_date` / package `start_date` or after package `end_date` are excluded.
+    - Today's Classes populated by actual dated sessions in `Asia/Kolkata`.
+  * 3. Calendar Positioning & 30-Minute Duration Height:
+    - In `WeeklyTimeGrid.tsx`, eliminated artificial `50px` min-height clamping.
+    - Calculated exact event height: `Math.max(22, Math.round((duration / 60) * 56) - 2)` (26px for 30 minutes, 54px for 60 minutes), with `overflow: hidden` and compact single-line layout for `<= 30` minutes.
+    - Passed packages to `buildDayColumns` in `CalendarPage.tsx` and `DashboardCalendar.tsx`.
+  * 4. Automatic Package End Date & Next Fee Due Date Derivation:
+    - In `packageCalculations.ts` and `PackageService.gs` (`_calcPkgDates`), calculated package `end_date` (occurrence $N$) and `next_due_date` (occurrence $N - 4$, ensuring 4 classes remain through final occurrence) from `start_date`, recurring days, and purchased class count across month/year boundaries.
+    - Persisted `start_date`, `end_date`, and `next_due_date` in Google Sheets `Packages`.
+  * 5. Individual Dated Class Sessions Generation & Persistence:
+    - Added `class_date` column to `ClassSessions` schema in `SheetRegistry.gs` and `SchemaMigration.gs`.
+    - Added `Classes_batchSchedule` endpoint with script locking and idempotency to batch-insert dated sessions.
+    - Automatically batch-scheduled all $N$ purchased classes in `useStudentRegistrationForm.ts` upon registration with explicit `class_date`.
+  * 6. 12-Hour Clock Parsing & Simplified Schedule Columns:
+    - In `scheduleApi.ts`, updated `cleanTime` to accurately parse 12-hour AM/PM time strings (`6:00 PM` -> `18:00`, `12:15 AM` -> `00:15`).
+    - In `ClassScheduleService.gs`, updated `_normalizeTimeStr` to normalize AM/PM strings.
+    - In `classScheduleColumns.tsx`, renamed header to `Class Time`, displaying 12-hour start time and duration without redundant end time.
+  * 7. Standardized Section Spacing Across Dashboard & App:
+    - Standardized spacing on Dashboard by wrapping sections in a single layout container with `display: flex`, `flexDirection: column`, `gap: var(--space-6)`.
+    - Removed conflicting child-level margins from `TodayClassesSection.tsx`, `DashboardSummary.tsx`, `ThingsThatNeedAttention.tsx`, and `dashboardCalendar.module.css`.
+  * 8. Quality Gates & Verification:
+    - 299/299 Vitest unit/integration tests passing across 48 test suites (+11 new tests in `packageDatesAndScheduling.test.ts`).
+    - Strict line limit check: all 202 files in `src/` and `public/` strictly <= 149 lines (PASS).
+    - Strict TypeScript check (`tsc --noEmit`): 0 errors (PASS).
+    - Clean Vite production build in 1.24s (PASS).
+- Next Action: Report results to user for manual testing of phone number entry, package dates, session generation, and calendar display.

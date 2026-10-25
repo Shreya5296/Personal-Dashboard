@@ -34,6 +34,15 @@ export function cleanTime(t?: string | null): string {
     }
   }
   const clean = str.replace(/^'/, '');
+  const ampmMatch = clean.match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/i);
+  if (ampmMatch) {
+    let hours = parseInt(ampmMatch[1], 10);
+    const mins = ampmMatch[2];
+    const isPm = ampmMatch[3].toLowerCase() === 'pm';
+    if (isPm && hours < 12) hours += 12;
+    if (!isPm && hours === 12) hours = 0;
+    return `${hours.toString().padStart(2, '0')}:${mins}`;
+  }
   const match = clean.match(/^(\d{1,2}):(\d{2})/);
   if (match) {
     return `${match[1].padStart(2, '0')}:${match[2]}`;

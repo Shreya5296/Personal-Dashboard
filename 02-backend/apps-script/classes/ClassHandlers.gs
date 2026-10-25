@@ -2,7 +2,7 @@
  * ClassHandlers: Adapts API requests to ClassService calls and registers operations.
  */
 
-var _clsSvcH = typeof Classes_schedule === 'function' ? { Classes_schedule: Classes_schedule, Classes_complete: Classes_complete, Classes_cancel: Classes_cancel, Classes_restoreCredit: Classes_restoreCredit } : (typeof require !== 'undefined' ? require('./ClassService.gs') : null);
+var _clsSvcH = typeof Classes_schedule === 'function' ? { Classes_schedule: Classes_schedule, Classes_batchSchedule: Classes_batchSchedule, Classes_complete: Classes_complete, Classes_cancel: Classes_cancel, Classes_restoreCredit: Classes_restoreCredit } : (typeof require !== 'undefined' ? require('./ClassService.gs') : null);
 var _clsRepoH = typeof Classes_getAll === 'function' ? { Classes_getAll: Classes_getAll } : (typeof require !== 'undefined' ? require('./ClassRepository.gs') : null);
 
 function registerClassOperations(router) {
@@ -45,6 +45,12 @@ function registerClassOperations(router) {
   };
   reg('classes.create', scheduleHandler);
   reg('classes.schedule', scheduleHandler);
+
+  reg('classes.batchSchedule', function(ctx) {
+    return _clsSvcH.Classes_batchSchedule(ctx.spreadsheet, ctx.payload, {
+      actorId: ctx.actorId, email: ctx.verifiedEmail, requestId: ctx.requestId
+    });
+  });
 
   var completeHandler = function(ctx) {
     return _clsSvcH.Classes_complete(ctx.spreadsheet, ctx.payload, {

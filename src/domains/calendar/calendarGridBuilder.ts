@@ -1,6 +1,7 @@
 import { ClassSession } from '../classes/classTypes';
 import { WeeklyScheduleEntry } from '../classes/scheduleApi';
 import { Student } from '../students/studentTypes';
+import { Package } from '../packages/packageTypes';
 import { CalendarEventItem, DayColumnData } from './calendarTypes';
 import { generateCalendarEvents, getDateKeyInTz } from '../dashboard/calendarEventGenerator';
 import { formatIsoTo12Hour } from '../../lib/time12Format';
@@ -12,8 +13,9 @@ export function buildDayColumns(params: {
   students: Student[];
   weekDates: string[];
   activeTz: string;
+  packages?: Package[];
 }): DayColumnData[] {
-  const { datedSessions, recurringSchedules, students, weekDates, activeTz } = params;
+  const { datedSessions, recurringSchedules, students, weekDates, activeTz, packages } = params;
   const todayKey = toInputDateFormat(new Date(), activeTz);
   const nowMs = Date.now();
 
@@ -23,6 +25,7 @@ export function buildDayColumns(params: {
     students,
     weekDates,
     activeTz,
+    packages,
   });
 
   return weekDates.map((dayKey) => {

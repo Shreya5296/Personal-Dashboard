@@ -13,40 +13,64 @@ export function calculatePerClassRate(price: number | string, classes: number | 
   return Math.round((p / c) * 100) / 100;
 }
 
+export interface PackageCalculatedDates {
+  startDate: string;
+  endDate: string;
+  nextDueDate: string;
+}
+
+export function generatePackageOccurrences(
+  startDateStr: string,
+  recurringDays: string[],
+  count: number
+): string[] {
+  if (!startDateStr || !recurringDays.length || count <= 0) return [];
+  const days = recurringDays.map((d) => DAY_MAP[d.trim().toUpperCase()]).filter((d) => d !== undefined);
+  if (!days.length) return [];
+  const [y, m, d] = startDateStr.split('-').map(Number);
+  if (!y || !m || !d) return [];
+
+  const curr = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+  const occurrences: string[] = [];
+  let safetyDays = 0;
+  const maxDays = 365 * 4;
+
+  while (occurrences.length < count && safetyDays < maxDays) {
+    if (days.includes(curr.getUTCDay())) {
+      const cy = curr.getUTCFullYear();
+      const cm = String(curr.getUTCMonth() + 1).padStart(2, '0');
+      const cd = String(curr.getUTCDate()).padStart(2, '0');
+      occurrences.push(`${cy}-${cm}-${cd}`);
+    }
+    curr.setUTCDate(curr.getUTCDate() + 1);
+    safetyDays++;
+  }
+  return occurrences;
+}
+
+export function calculatePackageDates(
+  startDateStr: string,
+  recurringDays: string[],
+  totalClasses: number
+): PackageCalculatedDates {
+  const occ = generatePackageOccurrences(startDateStr, recurringDays, totalClasses);
+  if (!occ.length) return { startDate: startDateStr || '', endDate: '', nextDueDate: '' };
+  // Next due date: 4 classes remain through final occurrence (e.g. 44th for 48-class pkg)
+  const targetDueIdx = Math.max(0, occ.length - 5);
+  return {
+    startDate: occ[0],
+    endDate: occ[occ.length - 1],
+    nextDueDate: occ[targetDueIdx],
+  };
+}
+
 export function calculateProjectedLastClassDate(
   startDateStr: string,
   recurringDays: string[],
   totalClasses: number
 ): string {
-  if (!startDateStr || !recurringDays.length || totalClasses <= 0) return '';
-  const days = recurringDays.map((d) => DAY_MAP[d.trim().toUpperCase()]).filter((d) => d !== undefined);
-  if (!days.length) return '';
-
-  const [y, m, d] = startDateStr.split('-').map(Number);
-  if (!y || !m || !d) return '';
-
-  const curr = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
-  let remaining = totalClasses;
-  let lastDateStr = startDateStr;
-  let safetyDays = 0;
-  const maxDays = 365 * 3; // 3 years max safety bound
-
-  while (remaining > 0 && safetyDays < maxDays) {
-    const dayOfWeek = curr.getUTCDay();
-    if (days.includes(dayOfWeek)) {
-      const cy = curr.getUTCFullYear();
-      const cm = String(curr.getUTCMonth() + 1).padStart(2, '0');
-      const cd = String(curr.getUTCDate()).padStart(2, '0');
-      lastDateStr = `${cy}-${cm}-${cd}`;
-      remaining--;
-    }
-    if (remaining > 0) {
-      curr.setUTCDate(curr.getUTCDate() + 1);
-    }
-    safetyDays++;
-  }
-
-  return lastDateStr;
+  const occ = generatePackageOccurrences(startDateStr, recurringDays, totalClasses);
+  return occ.length ? occ[occ.length - 1] : '';
 }
 
 export function calculateRescheduledProjectedDate(

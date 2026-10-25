@@ -59,14 +59,20 @@ function _hasActiveSchedulesOrSessions(spreadsheet, studentId) {
   return { hasActive: false };
 }
 
+function _cleanPhone(p) {
+  if (!p) return '';
+  var s = String(p).trim();
+  return s.charAt(0) === "'" ? s.substring(1) : s;
+}
+
 function Students_enrich(s) {
   if (!s) return s;
   var copy = Object.assign({}, s);
   copy.student_name = s.student_name || s.full_name || (s.first_name ? (s.first_name + (s.last_name ? ' ' + s.last_name : '')).trim() : '');
   copy.full_name = copy.student_name;
   copy.parent_name = s.parent_name || s.parent_guardian_name || '';
-  copy.parent_phone = s.parent_phone || s.primary_phone || s.phone || '';
-  copy.student_phone = s.student_phone || s.secondary_phone || '';
+  copy.parent_phone = _cleanPhone(s.parent_phone || s.primary_phone || s.phone || '');
+  copy.student_phone = _cleanPhone(s.student_phone || s.secondary_phone || '');
   copy.parent_email = s.parent_email || s.email || '';
   copy.student_email = s.student_email || '';
   copy.phone = copy.parent_phone;
