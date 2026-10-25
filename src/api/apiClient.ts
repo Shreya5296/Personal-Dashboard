@@ -63,7 +63,12 @@ export async function sendApiRequest<T = unknown>(
       throw new ApiNetworkError(`HTTP Error ${response.status}: ${response.statusText}`);
     }
 
-    const json: ApiResponse<T> = await response.json();
+    let json: ApiResponse<T>;
+    try {
+      json = await response.json();
+    } catch {
+      throw new ApiNetworkError('Backend returned invalid response (HTML or non-JSON)');
+    }
 
     if (!json.ok && json.error) {
       throw new ApiClientError(json.error, json.meta?.requestId || requestId);
@@ -76,8 +81,10 @@ export async function sendApiRequest<T = unknown>(
       throw err;
     }
     if ((err as Error)?.name === 'AbortError') {
-      throw new ApiNetworkError('Request timed out');
+      const sec = Math.round((options.timeoutMs || 60000) / 1000);
+      throw new ApiNetworkError(`Request timed out after ${sec}s`);
     }
-    throw new ApiNetworkError('Network request failed', err);
+    const rawMsg = (err as Error)?.message || '';
+    throw new ApiNetworkError(rawMsg ? `Network request failed: ${rawMsg}` : 'Network request failed', err);
   }
 }

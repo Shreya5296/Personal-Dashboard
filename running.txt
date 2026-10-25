@@ -1028,4 +1028,26 @@ NEXT ACTION
     - Strict line limit check: all 202 files in `src/` and `public/` strictly <= 149 lines (PASS).
     - Strict TypeScript check (`tsc --noEmit`): 0 errors (PASS).
     - Clean Vite production build in 959ms (PASS).
-- Next Action: Report findings, deployment requirements, and recovery runbook to user.
+- Critical Bug Fix: Student Registration Hangs and Fails with "Network request failed" completed & verified:
+  * 1. Root Cause Analysis:
+    - In commit `6dc81da`, `batchScheduleClasses` fell back to a client-side sequential `for (const s of sessions)` loop executing 48 individual HTTP requests when `classes.batchSchedule` returned `Unknown operation` against deployed Version `@35`.
+    - 48 sequential round-trips over HTTPS took ~50-80 seconds, colliding with the 60s timeout in `apiClient.ts` or Google Cloud concurrency throttling, throwing an abort/network exception while blocking the submit button in "Processing...".
+  * 2. Live Spreadsheet Inspection (Read-Only):
+    - Verified all 7 working tabs (`Students`, `Packages`, `ClassSchedules`, `ClassSessions`, `MeetingLinks`, `Payments`, `StudentNotes`) have `rows: 1` (header row only, 0 data rows).
+    - Confirmed no residual data rows exist on the live spreadsheet.
+  * 3. Robust Error Reporting & Asynchronous Delegation:
+    - Hardened `apiClient.ts` (90 lines <= 149) to distinguish timeouts (`Request timed out after Xs`) and non-JSON responses from generic network errors, preserving the underlying error message.
+    - Extracted `registrationSubmitter.ts` (111 lines <= 149) and updated `useStudentRegistrationForm.ts` (72 lines <= 149):
+      - If `classes.batchSchedule` returns `Unknown operation`, it delegates session scheduling to `startAsyncScheduling` worker instead of freezing the form for 60+ seconds.
+      - User sees immediate feedback while `SchedulingProgressToast` tracks progress (1 to 48) in the background.
+      - Detects existing sessions via `fetchClasses` before generating sessions to prevent duplicate sessions on retries.
+      - Reuses existing student without duplicating records, repairing phone/email fields.
+      - Reuses existing package via `fetchPackages` without creating duplicate packages.
+      - Guarantees `isSubmitting` is reset to `false` in `finally` block so the form is never stuck in "Processing...".
+  * 4. Quality Gates & Verification:
+    - Added `tests/domains/registrationFailureAndRecovery.test.ts` covering all 12 required failure/recovery modes (all 12 PASS).
+    - 313/313 Vitest tests passing across 49 test suites.
+    - Line limit check: all 203 files in `src/` and `public/` strictly <= 149 lines (PASS).
+    - Strict TypeScript check (`tsc --noEmit`): 0 errors (PASS).
+    - Clean Vite production build in 1.22s (PASS).
+- Next Action: Present completion report with root cause, live spreadsheet state, deployment requirements, and registration verification runbook.

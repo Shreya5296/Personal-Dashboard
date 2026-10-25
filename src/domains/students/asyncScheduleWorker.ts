@@ -51,7 +51,7 @@ export async function startAsyncScheduling(job: ScheduleJob): Promise<void> {
   }, 100);
 }
 
-async function runSchedulingJob(job: ScheduleJob): Promise<void> {
+export async function runSchedulingJob(job: ScheduleJob): Promise<void> {
   const existing = await fetchClasses(job.studentId, job.token).catch(() => []);
   const count = Math.max(1, job.classesPurchased || 10);
   const proposed = generateProposedSessions(
