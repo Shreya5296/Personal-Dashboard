@@ -210,6 +210,73 @@ describe('Backend Operation Adapters and Compatibility', () => {
     expect(attRes.data.attendance_status).toBe('ATTENDED');
   });
 
+  it('routes classes.batchSchedule through router, validates package, and creates sessions idempotently', () => {
+    // 1. Verify operation is registered in the router
+    expect(registry['classes.batchSchedule']).toBeDefined();
+    expect(typeof registry['classes.batchSchedule']).toBe('function');
+
+    // 2. Create student and package
+    const stuRes = registry['students.create']({
+      spreadsheet,
+      payload: { full_name: 'Batch Learner', phone: '9876543210', parent_name: 'Batch Parent' },
+      actorId: 'usr_test', verifiedEmail: 'ashreya0502@gmail.com', requestId: 'req_b1',
+    });
+    const studentId = stuRes.data.student_id;
+
+    const pkgRes = registry['packages.create']({
+      spreadsheet,
+      payload: { student_id: studentId, package_name: 'Batch Pack', classes_purchased: 4, start_date: '2026-11-02' },
+      actorId: 'usr_test', verifiedEmail: 'ashreya0502@gmail.com', requestId: 'req_b2',
+    });
+    const packageId = pkgRes.data.package_id;
+
+    // 3. Validation: Fails if student does not exist
+    const nonExistentRes = registry['classes.batchSchedule']({
+      spreadsheet,
+      payload: { student_id: 'NON_EXISTENT_ID', sessions: [{ scheduled_start: '2026-11-02T10:00:00Z' }] },
+      actorId: 'usr_test', verifiedEmail: 'ashreya0502@gmail.com', requestId: 'req_b3',
+    });
+    expect(nonExistentRes.success).toBe(false);
+    expect(nonExistentRes.code).toBe('RECORD_NOT_FOUND');
+
+    // 4. Validation: Fails if package belongs to different student
+    const wrongPkgRes = registry['classes.batchSchedule']({
+      spreadsheet,
+      payload: { student_id: studentId, package_id: 'PKG_OTHER_STUDENT', sessions: [{ scheduled_start: '2026-11-02T10:00:00Z' }] },
+      actorId: 'usr_test', verifiedEmail: 'ashreya0502@gmail.com', requestId: 'req_b4',
+    });
+    expect(wrongPkgRes.success).toBe(false);
+
+    // 5. Success: Batch schedules sessions with class_date
+    const sessions = [
+      { class_date: '2026-11-02', scheduled_start: '2026-11-02T18:00:00Z', scheduled_end: '2026-11-02T18:30:00Z', duration_minutes: 30, package_id: packageId },
+      { class_date: '2026-11-04', scheduled_start: '2026-11-04T18:00:00Z', scheduled_end: '2026-11-04T18:30:00Z', duration_minutes: 30, package_id: packageId },
+    ];
+    const batchRes = registry['classes.batchSchedule']({
+      spreadsheet,
+      payload: { student_id: studentId, package_id: packageId, sessions },
+      actorId: 'usr_test', verifiedEmail: 'ashreya0502@gmail.com', requestId: 'req_b5',
+    });
+    expect(batchRes.success).toBe(true);
+    expect(batchRes.count).toBe(2);
+    expect(batchRes.data[0].class_date).toBe('2026-11-02');
+    expect(batchRes.data[0].session_status).toBe('SCHEDULED');
+
+    // 6. Idempotency: Retrying the identical request creates 0 duplicates
+    const retryRes = registry['classes.batchSchedule']({
+      spreadsheet,
+      payload: { student_id: studentId, package_id: packageId, sessions },
+      actorId: 'usr_test', verifiedEmail: 'ashreya0502@gmail.com', requestId: 'req_b6',
+    });
+    expect(retryRes.success).toBe(true);
+    expect(retryRes.count).toBe(0); // 0 new sessions created
+
+    // 7. Verify classes.list returns both sessions
+    const listRes = registry['classes.list']({ spreadsheet, payload: { studentId } });
+    expect(listRes.success).toBe(true);
+    expect(listRes.data).toHaveLength(2);
+  });
+
   it('returns both camelCase and snake_case metrics for dashboard and financial summary', () => {
     const dash = registry['dashboard.overview']({ spreadsheet });
     expect(dash.success).toBe(true);

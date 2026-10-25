@@ -3,8 +3,8 @@ import { Student } from './studentTypes';
 import { RegistrationFormData, RegistrationErrors } from './registrationTypes';
 import { validateRegistrationForm } from './registrationValidation';
 import { calculateEndTime } from '../classes/scheduleDurationCalculator';
-import { createStudent } from './studentApi';
-import { createPackage } from '../packages/packageApi';
+import { createStudent, fetchStudents, updateStudent } from './studentApi';
+import { createPackage, fetchPackages } from '../packages/packageApi';
 import { saveSchedules } from '../classes/scheduleApi';
 import { calculatePackageDates } from '../packages/packageCalculations';
 import { generateProposedSessions } from '../classes/classGenerator';
@@ -31,38 +31,19 @@ export function useStudentRegistrationForm(
   const handlePackageChange = (field: string, value: string) => {
     setFormData((prev) => {
       const nextPkg = { ...prev.pkg, [field]: value };
-      if (field === 'class_duration') {
-        const d = Number(value);
-        const nextScheds = prev.schedules.map((s) => ({
-          ...s,
-          end_time: d ? calculateEndTime(s.start_time, d) || s.end_time : s.end_time,
-        }));
-        return { ...prev, pkg: nextPkg, schedules: nextScheds };
-      }
-      return { ...prev, pkg: nextPkg };
+      const d = field === 'class_duration' ? Number(value) : 0;
+      const nextScheds = d ? prev.schedules.map((s) => ({ ...s, end_time: calculateEndTime(s.start_time, d) || s.end_time })) : prev.schedules;
+      return { ...prev, pkg: nextPkg, schedules: nextScheds };
     });
   };
 
   const addSchedule = () => {
-    const start = '17:00';
-    const end = calculateEndTime(start, dur) || '18:00';
-    setFormData((prev) => ({
-      ...prev,
-      schedules: [...prev.schedules, { id: String(Date.now()), day_of_week: 'MONDAY', start_time: start, end_time: end }],
-    }));
+    const end = calculateEndTime('17:00', dur) || '18:00';
+    setFormData((p) => ({ ...p, schedules: [...p.schedules, { id: String(Date.now()), day_of_week: 'MONDAY', start_time: '17:00', end_time: end }] }));
   };
-
-  const removeSchedule = (id: string) => {
-    setFormData((prev) => ({ ...prev, schedules: prev.schedules.filter((s) => s.id !== id) }));
-  };
-
+  const removeSchedule = (id: string) => setFormData((p) => ({ ...p, schedules: p.schedules.filter((s) => s.id !== id) }));
   const updateSchedule = (id: string, field: 'day_of_week' | 'start_time' | 'end_time', value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      schedules: prev.schedules.map((s) => (s.id !== id ? s : field === 'start_time'
-        ? { ...s, start_time: value, end_time: calculateEndTime(value, dur) || s.end_time }
-        : { ...s, [field]: value })),
-    }));
+    setFormData((p) => ({ ...p, schedules: p.schedules.map((s) => (s.id !== id ? s : field === 'start_time' ? { ...s, start_time: value, end_time: calculateEndTime(value, dur) || s.end_time } : { ...s, [field]: value })) }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,16 +57,24 @@ export function useStudentRegistrationForm(
 
     try {
       if (!activeStudent) {
-        activeStudent = await createStudent({
-          student_name: formData.student.student_name,
-          subject: formData.student.subject,
-          student_phone: formData.student.student_phone.trim(),
-          student_email: formData.student.student_email.trim(),
-          parent_name: formData.parent.parent_name,
-          parent_phone: formData.parent.parent_phone,
-          parent_email: formData.parent.parent_email,
-          status: 'ACTIVE',
-        }, token);
+        const existing = await fetchStudents({ query: formData.student.student_name }, token).catch(() => []);
+        const match = existing.find((s) => (s.student_name || s.full_name || '').trim().toLowerCase() === formData.student.student_name.trim().toLowerCase());
+        if (match) {
+          activeStudent = match;
+          await updateStudent(match.student_id, {
+            student_name: formData.student.student_name, subject: formData.student.subject,
+            student_phone: formData.student.student_phone.trim(), student_email: formData.student.student_email.trim(),
+            parent_name: formData.parent.parent_name, parent_phone: formData.parent.parent_phone.trim(),
+            parent_email: formData.parent.parent_email.trim(), status: 'ACTIVE',
+          }, token).catch(() => {});
+        } else {
+          activeStudent = await createStudent({
+            student_name: formData.student.student_name, subject: formData.student.subject,
+            student_phone: formData.student.student_phone.trim(), student_email: formData.student.student_email.trim(),
+            parent_name: formData.parent.parent_name, parent_phone: formData.parent.parent_phone,
+            parent_email: formData.parent.parent_email, status: 'ACTIVE',
+          }, token);
+        }
         setPersistedStudent(activeStudent);
       }
 
@@ -95,16 +84,21 @@ export function useStudentRegistrationForm(
 
       let createdPkg = null;
       if (formData.pkg.package_price.trim() || formData.pkg.classes_purchased.trim()) {
-        createdPkg = await createPackage({
-          student_id: activeStudent.student_id, student_name: activeStudent.student_name,
-          package_name: `${activeStudent.student_name} ${formData.pkg.plan_type}`,
-          plan_type: formData.pkg.plan_type, currency: formData.pkg.currency,
-          package_price: Number(formData.pkg.package_price || 0),
-          per_class: Number(formData.pkg.per_class || 0),
-          total_classes: count, classes_purchased: count, class_duration: dur,
-          start_date: pkgDates.startDate || formData.first_class_date || new Date().toISOString().slice(0, 10),
-          end_date: pkgDates.endDate || '', next_due_date: pkgDates.nextDueDate || '',
-        }, token);
+        const existingPkgs = await fetchPackages(activeStudent.student_id, token).catch(() => []);
+        if (existingPkgs.length > 0) {
+          createdPkg = existingPkgs[0];
+        } else {
+          createdPkg = await createPackage({
+            student_id: activeStudent.student_id, student_name: activeStudent.student_name,
+            package_name: `${activeStudent.student_name} ${formData.pkg.plan_type}`,
+            plan_type: formData.pkg.plan_type, currency: formData.pkg.currency,
+            package_price: Number(formData.pkg.package_price || 0),
+            per_class: Number(formData.pkg.per_class || 0),
+            total_classes: count, classes_purchased: count, class_duration: dur,
+            start_date: pkgDates.startDate || formData.first_class_date || new Date().toISOString().slice(0, 10),
+            end_date: pkgDates.endDate || '', next_due_date: pkgDates.nextDueDate || '',
+          }, token);
+        }
       }
 
       if (formData.schedules.length > 0) {

@@ -47,7 +47,8 @@ function registerClassOperations(router) {
   reg('classes.schedule', scheduleHandler);
 
   reg('classes.batchSchedule', function(ctx) {
-    return _clsSvcH.Classes_batchSchedule(ctx.spreadsheet, ctx.payload, {
+    var p = ctx.payload || ctx.data || {};
+    return _clsSvcH.Classes_batchSchedule(ctx.spreadsheet, p, {
       actorId: ctx.actorId, email: ctx.verifiedEmail, requestId: ctx.requestId
     });
   });

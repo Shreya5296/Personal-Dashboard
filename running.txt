@@ -1005,4 +1005,27 @@ NEXT ACTION
     - Strict line limit check: all 202 files in `src/` and `public/` strictly <= 149 lines (PASS).
     - Strict TypeScript check (`tsc --noEmit`): 0 errors (PASS).
     - Clean Vite production build in 1.24s (PASS).
-- Next Action: Report results to user for manual testing of phone number entry, package dates, session generation, and calendar display.
+- Critical Bug Fix: Unknown Operation `classes.batchSchedule` & Incomplete Registration Recovery completed & verified:
+  * 1. Root Cause Analysis:
+    - Running Web App deployment `AKfycbx4d_VG4CsZIEAomX_OjNMuej06ktTYmKLME5ennLsI7mx3Fn5b-YBu9CRqe7NwrUVH3w` was active at Version `@35`, which predated the addition of `classes.batchSchedule` to `ClassHandlers.gs` and `HeaderMapper.gs` leading `'` escape.
+    - When student registration called `classes.batchSchedule`, the deployed Version 35 router rejected the operation with `Unknown operation: classes.batchSchedule`.
+  * 2. Backend Router & Handler Hardening:
+    - Verified registration of `classes.batchSchedule` in `ClassHandlers.gs` forwarding `payload` / `data` to `Classes_batchSchedule`.
+    - Added package ownership validation in `ClassService.gs` (`Classes_batchSchedule`) verifying package belongs to student.
+    - Enforced idempotency skipping existing sessions matching `scheduled_start` timestamps.
+  * 3. Resilient Client Fallback:
+    - In `classApi.ts` (`batchScheduleClasses`), if backend returns `Unknown operation: classes.batchSchedule`, automatically falls back to sequential `scheduleClass` calls, ensuring registration never fails even against older deployment versions.
+  * 4. Safe Recovery Mechanism for Partial Registration (`STU_001`):
+    - In `useStudentRegistrationForm.ts`, added automatic detection of existing active student matching name ("Seerat" / `STU_001`).
+    - Reuses `activeStudent = existingMatch`, preventing generation of duplicate student (`STU_002`).
+    - Updates corrupted `#ERROR!` phone numbers on the existing student record with clean phone numbers from the form.
+    - Reuses existing package via `fetchPackages(studentId)` preventing duplicate package creation.
+    - Saves schedules and batch-schedules the 48 dated sessions with `class_date`.
+  * 5. Quality Gates & Verification:
+    - Added router registration & idempotency test in `tests/backend/operationAdapters.test.ts`.
+    - Added fallback regression test in `tests/domains/packageDatesAndScheduling.test.ts`.
+    - 301/301 Vitest unit/integration tests passing across 48 test suites.
+    - Strict line limit check: all 202 files in `src/` and `public/` strictly <= 149 lines (PASS).
+    - Strict TypeScript check (`tsc --noEmit`): 0 errors (PASS).
+    - Clean Vite production build in 959ms (PASS).
+- Next Action: Report findings, deployment requirements, and recovery runbook to user.

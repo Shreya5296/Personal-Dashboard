@@ -33,12 +33,25 @@ export async function batchScheduleClasses(
   sessions: ClassSessionInput[],
   token?: string | null
 ): Promise<ClassSession[]> {
-  const response = await sendApiRequest<ClassSession[]>(
-    'classes.batchSchedule',
-    { student_id: studentId, sessions } as unknown as Record<string, unknown>,
-    { token }
-  );
-  return response.data || [];
+  try {
+    const response = await sendApiRequest<ClassSession[]>(
+      'classes.batchSchedule',
+      { student_id: studentId, sessions } as unknown as Record<string, unknown>,
+      { token }
+    );
+    return response.data || [];
+  } catch (err: unknown) {
+    const msg = (err as Error)?.message || '';
+    if (msg.includes('Unknown operation') && msg.includes('classes.batchSchedule')) {
+      const scheduled: ClassSession[] = [];
+      for (const s of sessions) {
+        const item = await scheduleClass(s, token);
+        scheduled.push(item);
+      }
+      return scheduled;
+    }
+    throw err;
+  }
 }
 
 export async function recordAttendance(

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { calculatePackageDates, generatePackageOccurrences } from '../../src/domains/packages/packageCalculations';
 import { cleanTime } from '../../src/domains/classes/scheduleApi';
 import { generateCalendarEvents } from '../../src/domains/dashboard/calendarEventGenerator';
@@ -175,6 +175,51 @@ describe('Fix Student Data, Class Generation, Calendar Accuracy, Fee Dates, and 
       expect(cleanTime('12:45 AM')).toBe('00:45');
       expect(cleanTime('18:00')).toBe('18:00');
       expect(cleanTime('09:30')).toBe('09:30');
+    });
+  });
+
+  describe('Bugfix: Unknown Operation classes.batchSchedule & Registration Recovery', () => {
+    it('batchScheduleClasses falls back to sequential scheduleClass if classes.batchSchedule is unknown', async () => {
+      const { batchScheduleClasses } = await import('../../src/domains/classes/classApi');
+      const apiClient = await import('../../src/api/apiClient');
+      const sendSpy = vi.spyOn(apiClient, 'sendApiRequest');
+
+      // Mock first call (classes.batchSchedule) failing with Unknown operation
+      sendSpy.mockImplementationOnce(async () => {
+        throw new Error('Unknown operation: classes.batchSchedule');
+      });
+
+      // Mock subsequent calls (classes.schedule) succeeding
+      sendSpy.mockImplementation(async (op: string, payload: any) => {
+        return {
+          apiVersion: '1',
+          requestId: 'test_req',
+          success: true,
+          ok: true,
+          data: {
+            class_session_id: 'cls_mock_1',
+            student_id: payload.student_id,
+            scheduled_start: payload.scheduled_start,
+            scheduled_end: payload.scheduled_end,
+            duration_minutes: payload.duration_minutes,
+            session_status: 'SCHEDULED',
+          },
+          error: null,
+          meta: null,
+        } as any;
+      });
+
+      const sessions = [
+        { student_id: 'STU_001', scheduled_start: '2026-11-02T18:00:00Z', scheduled_end: '2026-11-02T18:30:00Z', duration_minutes: 30 },
+        { student_id: 'STU_001', scheduled_start: '2026-11-04T18:00:00Z', scheduled_end: '2026-11-04T18:30:00Z', duration_minutes: 30 },
+      ];
+
+      const res = await batchScheduleClasses('STU_001', sessions, 'mock_token');
+      expect(res).toHaveLength(2);
+      expect(sendSpy).toHaveBeenCalledWith('classes.batchSchedule', expect.anything(), expect.anything());
+      expect(sendSpy).toHaveBeenCalledWith('classes.schedule', expect.anything(), expect.anything());
+
+      sendSpy.mockRestore();
     });
   });
 });

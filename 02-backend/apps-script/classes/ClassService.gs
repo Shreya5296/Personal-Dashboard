@@ -6,6 +6,7 @@ var _clsIdGen = typeof generateClassSessionId === 'function' ? { generateClassSe
 var _clsVal = typeof validateClassScheduleInput === 'function' ? { validateClassScheduleInput: validateClassScheduleInput, validateClassCompleteInput: validateClassCompleteInput } : (typeof require !== 'undefined' ? require('./ClassValidation.gs') : null);
 var _clsRepo = typeof Classes_getAll === 'function' ? { Classes_getAll: Classes_getAll, Classes_getById: Classes_getById, Classes_findByRestorationId: Classes_findByRestorationId, Classes_insert: Classes_insert, Classes_update: Classes_update } : (typeof require !== 'undefined' ? require('./ClassRepository.gs') : null);
 var _clsStuRepo = typeof Students_getById === 'function' ? { Students_getById: Students_getById } : (typeof require !== 'undefined' ? require('../students/StudentRepository.gs') : null);
+var _clsPkgRepo = typeof Packages_getById === 'function' ? { Packages_getById: Packages_getById, Packages_getByStudentId: Packages_getByStudentId } : (typeof require !== 'undefined' ? require('../packages/PackageRepository.gs') : null);
 var _clsAudit = typeof recordAuditEvent === 'function' ? { recordAuditEvent: recordAuditEvent } : (typeof require !== 'undefined' ? require('../audit/AuditService.gs') : null);
 var _clsLock = typeof withLock === 'function' ? { withLock: withLock } : (typeof require !== 'undefined' ? require('../sheets/LockManager.gs') : null);
 var _clsReg = {
@@ -149,6 +150,20 @@ function Classes_batchSchedule(spreadsheet, data, actor) {
   var student = _clsStuRepo.Students_getById(spreadsheet, studentId);
   if (!student) {
     return { success: false, code: 'RECORD_NOT_FOUND', message: 'Student not found: ' + studentId };
+  }
+
+  var targetPkgId = data.package_id ? String(data.package_id).trim() : '';
+  if (!targetPkgId && sessions.length > 0 && sessions[0].package_id) {
+    targetPkgId = String(sessions[0].package_id).trim();
+  }
+  if (targetPkgId && _clsPkgRepo && _clsPkgRepo.Packages_getById) {
+    var pkgRec = _clsPkgRepo.Packages_getById(spreadsheet, targetPkgId);
+    if (!pkgRec) {
+      return { success: false, code: 'RECORD_NOT_FOUND', message: 'Package not found: ' + targetPkgId };
+    }
+    if (pkgRec.student_id && pkgRec.student_id !== studentId) {
+      return { success: false, code: 'VALIDATION_ERROR', message: 'Package ' + targetPkgId + ' does not belong to student ' + studentId };
+    }
   }
 
   var lockFn = _clsLock && _clsLock.withLock ? _clsLock.withLock : function(t, fn) { return { success: true, result: fn() }; };
