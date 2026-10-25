@@ -61,6 +61,29 @@ function Classes_insert(spreadsheet, record) {
 function Classes_update(spreadsheet, id, updates) {
   var sheet = spreadsheet.getSheetByName(_clsRegistry.SHEET_NAMES.CLASS_SESSIONS);
   var headers = _clsRegistry.getExpectedHeaders(_clsRegistry.SHEET_NAMES.CLASS_SESSIONS);
+  var rIdx = updates && (updates._rowIndex || updates.rowIndex);
+  if (rIdx) {
+    var rowNum = Number(rIdx);
+    if (rowNum >= 2 && rowNum <= sheet.getLastRow()) {
+      var rawData = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues();
+      var headerRow = rawData[0];
+      var map = _clsMapper.createHeaderMap(headerRow);
+      var rowVals = sheet.getRange(rowNum, 1, 1, sheet.getLastColumn()).getValues()[0];
+      var rec = _clsMapper.rowToRecord(map, rowVals);
+      if (updates.student_id && rec.student_id && rec.student_id !== updates.student_id) {
+        return null;
+      }
+      for (var k in updates) {
+        if (updates.hasOwnProperty(k) && k !== '_rowIndex' && k !== 'rowIndex') {
+          rec[k] = updates[k];
+        }
+      }
+      var updatedRow = _clsMapper.recordToRow(map, headerRow, rec);
+      sheet.getRange(rowNum, 1, 1, updatedRow.length).setValues([updatedRow]);
+      rec._rowIndex = rowNum;
+      return rec;
+    }
+  }
   return _clsRowWriter.updateRecordById(sheet, _clsMapper, headers, 'class_session_id', id, updates);
 }
 

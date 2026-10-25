@@ -75,8 +75,8 @@ function registerClassOperations(router) {
 
   reg('classes.update', function(ctx) {
     var p = ctx.payload || ctx.data || {};
-    var id = p.class_session_id || p.session_id;
-    if (!id) return { success: false, code: 'VALIDATION_ERROR', message: 'Class session ID is required' };
+    var id = p.class_session_id || p.session_id || p._rowIndex || p.rowIndex;
+    if (!id) return { success: false, code: 'VALIDATION_ERROR', message: 'Class session ID or row index is required' };
     var updated = _clsRepoH.Classes_update(ctx.spreadsheet, id, p);
     if (!updated) return { success: false, code: 'RECORD_NOT_FOUND', message: 'Class session not found: ' + id };
     return { success: true, data: updated };
@@ -91,7 +91,7 @@ function registerClassOperations(router) {
     var updated = [];
     for (var i = 0; i < items.length; i++) {
       var item = items[i];
-      var id = item.class_session_id || item.session_id;
+      var id = item.class_session_id || item.session_id || item._rowIndex || item.rowIndex;
       if (id) {
         var res = _clsRepoH.Classes_update(ctx.spreadsheet, id, item);
         if (res) updated.push(res);
