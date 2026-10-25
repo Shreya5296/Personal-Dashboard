@@ -34,7 +34,8 @@ export function useStudentRegistrationForm(
 
   const addSchedule = () => {
     const end = calculateEndTime('17:00', dur) || '18:00';
-    setFormData((p) => ({ ...p, schedules: [...p.schedules, { id: String(Date.now()), day_of_week: 'MONDAY', start_time: '17:00', end_time: end }] }));
+    const id = String(Date.now()) + '_' + Math.random().toString(36).slice(2, 7);
+    setFormData((p) => ({ ...p, schedules: [...p.schedules, { id, day_of_week: 'MONDAY', start_time: '17:00', end_time: end }] }));
   };
   const removeSchedule = (id: string) => setFormData((p) => ({ ...p, schedules: p.schedules.filter((s) => s.id !== id) }));
   const updateSchedule = (id: string, field: 'day_of_week' | 'start_time' | 'end_time', value: string) => {
@@ -45,7 +46,10 @@ export function useStudentRegistrationForm(
     e.preventDefault();
     setServerError(null);
     const { isValid, errors: valErrors } = validateRegistrationForm(formData);
-    if (!isValid) { setErrors(valErrors); return; }
+    if (!isValid) {
+      setErrors(valErrors);
+      return;
+    }
 
     setIsSubmitting(true);
     let currentStudent = persistedStudent;
