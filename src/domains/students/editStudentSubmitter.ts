@@ -34,9 +34,9 @@ export async function submitEditStudent(params: SubmitEditStudentParams): Promis
   const preservedData = {
     ...studentData,
     status: studentData.status ? String(studentData.status).trim().toUpperCase() : 'ACTIVE',
-    student_phone: student.student_phone || student.phone || '',
-    student_email: student.student_email || student.email || '',
-    notes: student.notes || '',
+    student_phone: studentData.student_phone !== undefined ? studentData.student_phone : (student.student_phone || ''),
+    student_email: studentData.student_email !== undefined ? studentData.student_email : (student.student_email || ''),
+    notes: studentData.notes !== undefined ? studentData.notes : (student.notes || ''),
   };
 
   const updatedStu = await updateStudent(student.student_id, preservedData, token);

@@ -45,8 +45,16 @@ export async function batchScheduleClasses(
     if (msg.includes('Unknown operation') && msg.includes('classes.batchSchedule')) {
       const scheduled: ClassSession[] = [];
       for (const s of sessions) {
-        const item = await scheduleClass(s, token);
-        scheduled.push(item);
+        try {
+          const item = await scheduleClass(s, token);
+          scheduled.push(item);
+        } catch (sErr: unknown) {
+          const sMsg = (sErr as Error)?.message || '';
+          if (sMsg.includes('Scheduling conflict') || sMsg.includes('already scheduled')) {
+            continue;
+          }
+          throw sErr;
+        }
       }
       return scheduled;
     }
