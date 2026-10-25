@@ -3,30 +3,9 @@
   transition: background-color 140ms ease;
 }
 
-.rowActive {
-  background-color: #f0fdf4;
-}
-
-.rowActive td {
-  background-color: #f0fdf4;
-}
-
-.rowActive:hover td,
-.rowActive:hover {
-  background-color: #dcfce7 !important;
-}
-
-.rowInactive {
-  background-color: #fef2f2;
-}
-
-.rowInactive td {
-  background-color: #fef2f2;
-}
-
-.rowInactive:hover td,
-.rowInactive:hover {
-  background-color: #fee2e2 !important;
+.row:hover td,
+.row:hover {
+  background-color: #f8fafc;
 }
 
 .rowExpanded,

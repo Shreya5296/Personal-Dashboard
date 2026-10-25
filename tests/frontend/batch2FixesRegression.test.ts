@@ -184,7 +184,7 @@ describe('Fix Batch 2 Comprehensive Verification', () => {
     });
   });
 
-  describe('Fix 6: Students Table Status-Based Row Colors', () => {
+  describe('Fix 6: Students Table Neutral Row Styling & Status Logic', () => {
     it('classifies active and inactive status correctly', () => {
       const activeStudent = { student_id: 'S1', status: 'ACTIVE' } as any;
       const inactiveStudent = { student_id: 'S2', status: 'ARCHIVED' } as any;
@@ -193,6 +193,15 @@ describe('Fix Batch 2 Comprehensive Verification', () => {
       expect(isStudentActive(activeStudent, { balance: { totalPurchased: 48, totalConsumed: 10 } })).toBe(true);
       expect(isStudentActive(inactiveStudent)).toBe(false);
       expect(isStudentActive(exhaustedStudent, { balance: { totalPurchased: 48, totalConsumed: 48 } })).toBe(false);
+    });
+
+    it('confirms student rows use neutral default styling without green or red tint classes', async () => {
+      const fs = await import('fs');
+      const cssContent = fs.readFileSync('src/domains/students/studentRow.module.css', 'utf8');
+      expect(cssContent).not.toContain('rowActive');
+      expect(cssContent).not.toContain('rowInactive');
+      expect(cssContent).not.toContain('#f0fdf4');
+      expect(cssContent).not.toContain('#fef2f2');
     });
   });
 

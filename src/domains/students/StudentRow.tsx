@@ -40,7 +40,7 @@ export const StudentRow: React.FC<StudentRowProps> = ({
   const scheduleText = formatWeeklySchedule(schedule);
   const classBalanceText = formatClassBalance(balance.totalConsumed, balance.totalPurchased);
   const effectiveActive = isActive !== undefined ? isActive : isStudentActive(student, { balance });
-  const rowClass = `${rowStyles.row} ${isExpanded ? rowStyles.rowExpanded : effectiveActive ? rowStyles.rowActive : rowStyles.rowInactive}`;
+  const rowClass = `${rowStyles.row} ${isExpanded ? rowStyles.rowExpanded : ''}`.trim();
 
   return (
     <>
