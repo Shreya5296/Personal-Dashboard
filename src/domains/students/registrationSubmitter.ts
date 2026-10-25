@@ -7,6 +7,7 @@ import { calculatePackageDates } from '../packages/packageCalculations';
 import { generateProposedSessions } from '../classes/classGenerator';
 import { batchScheduleClasses, fetchClasses } from '../classes/classApi';
 import { startAsyncScheduling } from './asyncScheduleWorker';
+import { formatCanonicalScheduleString } from './scheduleFormatter';
 import { ApiClientError } from '../../api/apiErrors';
 
 export interface SubmitRegistrationResult {
@@ -48,20 +49,19 @@ export async function submitRegistration(
   const count = Number(formData.pkg.classes_purchased || 0);
   const days = formData.schedules.map((s) => s.day_of_week);
   const pkgDates = calculatePackageDates(formData.first_class_date, days, count);
+  const schedStr = formatCanonicalScheduleString(formData.schedules);
 
-  let createdPkg = null;
   if (formData.pkg.package_price.trim() || formData.pkg.classes_purchased.trim()) {
     const existingPkgs = await fetchPackages(activeStudent.student_id, token).catch(() => []);
-    if (existingPkgs.length > 0) {
-      createdPkg = existingPkgs[0];
-    } else {
-      createdPkg = await createPackage({
+    if (existingPkgs.length === 0) {
+      await createPackage({
         student_id: activeStudent.student_id, student_name: activeStudent.student_name,
         package_name: `${activeStudent.student_name} ${formData.pkg.plan_type}`,
         plan_type: formData.pkg.plan_type, currency: formData.pkg.currency,
         package_price: Number(formData.pkg.package_price || 0),
         per_class: Number(formData.pkg.per_class || 0),
         total_classes: count, classes_purchased: count, class_duration: dur,
+        class_schedule: schedStr,
         start_date: pkgDates.startDate || formData.first_class_date || new Date().toISOString().slice(0, 10),
         end_date: pkgDates.endDate || '', next_due_date: pkgDates.nextDueDate || '',
       }, token);
@@ -69,7 +69,7 @@ export async function submitRegistration(
   }
 
   if (formData.schedules.length > 0) {
-    await saveSchedules(activeStudent.student_id, formData.schedules, token);
+    await saveSchedules(activeStudent.student_id, formData.schedules, token).catch(() => []);
     if (count > 0 && formData.first_class_date) {
       const existingClasses = await fetchClasses(activeStudent.student_id, token).catch(() => []);
       const proposed = generateProposedSessions(formData.schedules, formData.first_class_date, count, existingClasses, activeStudent.student_id, dur);
@@ -78,10 +78,11 @@ export async function submitRegistration(
       if (needed.length > 0) {
         const sessions = needed.map((p) => ({
           student_id: activeStudent!.student_id, student_name: activeStudent!.student_name,
-          package_id: createdPkg?.package_id, class_date: p.dateStr,
-          start_time: p.scheduledStart, scheduled_start: p.scheduledStart, scheduled_end: p.scheduledEnd,
+          schedule_date: p.dateStr, schedule_time: p.startTime, class_date: p.dateStr,
+          start_time: p.startTime, scheduled_start: p.scheduledStart, scheduled_end: p.scheduledEnd,
           duration_minutes: p.durationMinutes, topic: `${activeStudent!.student_name} - Class Session`,
           class_title: `${activeStudent!.student_name} - Class Session`,
+          attendance_status: 'NOT_MARKED', session_status: 'SCHEDULED', deduct_class: false,
         }));
 
         try {
@@ -93,7 +94,7 @@ export async function submitRegistration(
           if (isUnsupported) {
             await startAsyncScheduling({
               studentId: activeStudent.student_id, studentName: activeStudent.student_name,
-              packageId: createdPkg?.package_id, firstClassDate: formData.first_class_date,
+              packageId: activeStudent.student_id, firstClassDate: formData.first_class_date,
               schedules: formData.schedules, durationMinutes: dur, classesPurchased: count, token,
             });
             return {

@@ -30,7 +30,8 @@ function Reports_getDashboardOverview(spreadsheet) {
   for (var i = 0; i < sessions.length; i++) {
     var sess = sessions[i];
     if (sess.session_status === 'SCHEDULED' && sess.class_credit_effect !== 'CREDIT_BACK') {
-      if (sess.scheduled_start >= nowIso && sess.scheduled_start <= next7DaysIso) {
+      var sessStart = sess.scheduled_start || (sess.schedule_date ? (sess.schedule_date + 'T' + (sess.schedule_time || '00:00') + ':00.000Z') : '');
+      if (sessStart >= nowIso && sessStart <= next7DaysIso) {
         upcomingCount++;
       }
     }
@@ -141,9 +142,21 @@ function Reports_getFinancialSummary(spreadsheet, options) {
   // Prevent counting the same package multiple times due to duplicated or historical rows.
   // Deduplication is scoped per student so identical package IDs (e.g. PKG_001) across different students are not conflated.
   var uniquePackagesMap = {};
+  var memMap = (typeof globalThis !== 'undefined' && globalThis.__pkgMemoryMap) ? globalThis.__pkgMemoryMap : {};
   for (var k = 0; k < pkgs.length; k++) {
     var rawPkg = pkgs[k];
     var pkgId = rawPkg.package_id ? String(rawPkg.package_id).trim() : '';
+    if (!pkgId) {
+      for (var mId in memMap) {
+        var mRec = memMap[mId];
+        if (mRec && mRec.student_id === rawPkg.student_id &&
+            Number(mRec.package_price) === Number(rawPkg.package_price) &&
+            Number(mRec.classes_purchased) === Number(rawPkg.classes_purchased)) {
+          pkgId = mId;
+          break;
+        }
+      }
+    }
     var studentKey = resolveStudentKey(rawPkg);
     var pkgKey = studentKey + '_' + (pkgId || ('_synth_' + (rawPkg.start_date || '') + '_' + (rawPkg.package_price || '')));
     // Latest row overwrites earlier duplicate row for this student

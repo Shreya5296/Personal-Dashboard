@@ -8,26 +8,19 @@ const WEEKDAYS = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDA
 export function getMondayForDateStr(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
-  const day = dt.getUTCDay();
-  const diff = day === 0 ? -6 : 1 - day;
+  const diff = dt.getUTCDay() === 0 ? -6 : 1 - dt.getUTCDay();
   dt.setUTCDate(dt.getUTCDate() + diff);
   return dt.toISOString().slice(0, 10);
 }
 
 export function shiftMondayStr(mondayStr: string, days: number): string {
   const [y, m, d] = mondayStr.split('-').map(Number);
-  const dt = new Date(Date.UTC(y, m - 1, d + days, 12, 0, 0));
-  return dt.toISOString().slice(0, 10);
+  return new Date(Date.UTC(y, m - 1, d + days, 12, 0, 0)).toISOString().slice(0, 10);
 }
 
 export function getWeekDates(mondayStr: string): string[] {
   const [y, m, d] = mondayStr.split('-').map(Number);
-  const dates: string[] = [];
-  for (let i = 0; i < 7; i++) {
-    const dt = new Date(Date.UTC(y, m - 1, d + i, 12, 0, 0));
-    dates.push(dt.toISOString().slice(0, 10));
-  }
-  return dates;
+  return Array.from({ length: 7 }, (_, i) => new Date(Date.UTC(y, m - 1, d + i, 12, 0, 0)).toISOString().slice(0, 10));
 }
 
 export function makeIsoInTz(dateKey: string, timeStr: string, timeZone: string): string {
@@ -85,10 +78,18 @@ export function generateCalendarEvents(params: {
     const dayOfWeek = WEEKDAYS[dt.getUTCDay()];
 
     const dayDated = datedSessions.filter((c) => {
+      const dDate = c.schedule_date || c.class_date;
+      if (dDate && dDate === dateStr) return true;
       const raw = c.start_time || c.scheduled_start;
       if (!raw) return false;
       const parsed = new Date(String(raw).trim().replace(/T\s+(\d:)/, 'T0$1'));
       return !isNaN(parsed.getTime()) && getDateKeyInTz(parsed, activeTz) === dateStr;
+    }).map((c) => {
+      const pkg = pkgMap.get(c.student_id);
+      const dur = c.duration_minutes || pkg?.class_duration || 60;
+      const sTime = cleanTime(c.schedule_time || c.start_time) || '18:00';
+      const startIso = c.scheduled_start || makeIsoInTz(dateStr, sTime, activeTz);
+      return { ...c, duration_minutes: dur, scheduled_start: startIso };
     });
 
     events.push(...dayDated);
@@ -104,8 +105,7 @@ export function generateCalendarEvents(params: {
 
       const pkg = pkgMap.get(sid);
       const stuStart = pkg?.start_date || (stu as unknown as { first_class_date?: string })?.first_class_date || '';
-      if (stuStart && dateStr < stuStart) continue; // Respect First Class Date!
-      if (pkg?.end_date && dateStr > pkg.end_date) continue; // Respect package end date
+      if ((stuStart && dateStr < stuStart) || (pkg?.end_date && dateStr > pkg.end_date)) continue;
 
       const stuDated = datedSessions.filter((ds) => ds.student_id === sid && ds.session_status !== 'CANCELLED');
       if (stuDated.length > 0) {

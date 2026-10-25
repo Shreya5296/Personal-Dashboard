@@ -34,9 +34,9 @@ SHEET_SCHEMAS[SHEET_NAMES.ENROLLMENTS] = [
 
 // Table 2: Packages (12 columns)
 SHEET_SCHEMAS[SHEET_NAMES.PACKAGES] = [
-  'package_id', 'student_id', 'student_name', 'plan_type',
-  'currency', 'package_price', 'per_class', 'classes_purchased',
-  'start_date', 'end_date', 'next_due_date', 'class_duration'
+  'student_id', 'student_name', 'plan_type', 'currency', 'package_price',
+  'per_class', 'classes_purchased', 'start_date', 'end_date', 'next_due_date',
+  'class_duration', 'class_schedule'
 ];
 
 // Preserved for legacy transition fallback; superseded by Payment Details
@@ -52,9 +52,9 @@ SHEET_SCHEMAS[SHEET_NAMES.PAYMENTS] = [
   'student_id', 'student_name', 'payment_date', 'amount', 'currency', 'in_inr'
 ];
 
-// Table 4: Class Sessions (9 columns)
+// Table 4: Class Sessions (8 columns)
 SHEET_SCHEMAS[SHEET_NAMES.CLASS_SESSIONS] = [
-  'class_session_id', 'student_id', 'class_date', 'scheduled_start', 'scheduled_end',
+  'student_id', 'student_name', 'schedule_date', 'schedule_time',
   'attendance_status', 'session_status', 'cancellation_reason', 'deduct_class'
 ];
 

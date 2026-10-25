@@ -6,6 +6,8 @@ export interface ClassSession {
   student_id: string;
   student_name?: string;
   subject?: string;
+  schedule_date?: string;
+  schedule_time?: string;
   class_date?: string;
   package_id?: string;
   meeting_link_id?: string;
@@ -18,7 +20,8 @@ export interface ClassSession {
   status: AttendanceStatus | string;
   session_status?: string;
   attendance_status?: string;
-  class_credit_effect: 'CONSUME' | 'NO_CONSUME' | 'CREDIT_BACK' | 'PENDING';
+  deduct_class?: boolean;
+  class_credit_effect?: 'CONSUME' | 'NO_CONSUME' | 'CREDIT_BACK' | 'PENDING';
   credit_restoration_for_session_id?: string;
   cancellation_reason?: string;
   meeting_url?: string;
@@ -32,6 +35,8 @@ export interface ClassSessionInput {
   student_id: string;
   student_name?: string;
   subject?: string;
+  schedule_date?: string;
+  schedule_time?: string;
   class_date?: string;
   package_id?: string;
   meeting_link_id?: string;
@@ -41,5 +46,6 @@ export interface ClassSessionInput {
   scheduled_start?: string;
   scheduled_end?: string;
   duration_minutes: number;
+  deduct_class?: boolean;
   notes?: string;
 }

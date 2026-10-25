@@ -81,7 +81,47 @@ function _ensureClassSchedulesSheet(spreadsheet) {
 
 function Schedules_list(spreadsheet, studentId) {
   var sid = studentId ? String(studentId).trim() : null;
-  var sheet = _ensureClassSchedulesSheet(spreadsheet);
+
+  // Primary source of truth: Packages.class_schedule
+  var pkgSheet = spreadsheet && spreadsheet.getSheetByName ? spreadsheet.getSheetByName('Packages') : null;
+  if (pkgSheet) {
+    var pData = pkgSheet.getDataRange ? pkgSheet.getDataRange().getValues() : (pkgSheet.getData ? pkgSheet.getData() : []);
+    if (pData.length > 1) {
+      var pHeaders = pData[0].map(function(h) { return String(h || '').trim(); });
+      var pStuCol = pHeaders.indexOf('student_id');
+      var pNameCol = pHeaders.indexOf('student_name');
+      var pSchedCol = pHeaders.indexOf('class_schedule');
+      var pDurCol = pHeaders.indexOf('class_duration');
+
+      if (pStuCol !== -1 && pSchedCol !== -1) {
+        var pkgResults = [];
+        for (var pi = 1; pi < pData.length; pi++) {
+          var pRow = pData[pi];
+          var rowSid = String(pRow[pStuCol] || '').trim();
+          if (!sid || rowSid === sid) {
+            var schedStr = String(pRow[pSchedCol] || '').trim();
+            var dur = Number(pDurCol !== -1 ? pRow[pDurCol] : 60) || 60;
+            var sName = pNameCol !== -1 ? String(pRow[pNameCol] || '').trim() : '';
+            if (schedStr) {
+              var parsed = typeof _parseScheduleString === 'function' ? _parseScheduleString(schedStr, dur) : [];
+              for (var k = 0; k < parsed.length; k++) {
+                parsed[k].student_id = rowSid;
+                parsed[k].student_name = sName;
+                parsed[k].is_active = true;
+                pkgResults.push(parsed[k]);
+              }
+            }
+          }
+        }
+        if (pkgResults.length > 0) {
+          return { success: true, data: pkgResults, meta: { persistentSheet: true, source: 'Packages' } };
+        }
+      }
+    }
+  }
+
+  // Fallback to legacy ClassSchedules sheet if present
+  var sheet = spreadsheet && spreadsheet.getSheetByName ? spreadsheet.getSheetByName('ClassSchedules') : null;
   if (!sheet) {
     if (sid && _memorySchedules[sid]) return { success: true, data: _memorySchedules[sid], meta: { persistentSheet: false } };
     return { success: true, data: [], meta: { persistentSheet: false } };
@@ -161,6 +201,16 @@ function Schedules_save(spreadsheet, studentId, entries, actor) {
   }
 
   var sheet = _ensureClassSchedulesSheet(spreadsheet);
+
+  // Update Packages.class_schedule (single source of truth)
+  var schedStr = typeof _formatScheduleString === 'function' ? _formatScheduleString(validated) : '';
+  var pkgRepo = typeof Packages_update === 'function' ? { Packages_update: Packages_update } : (typeof require !== 'undefined' ? require('../packages/PackageRepository.gs') : null);
+  if (pkgRepo && pkgRepo.Packages_update && schedStr) {
+    try {
+      pkgRepo.Packages_update(spreadsheet, sid, { class_schedule: schedStr });
+    } catch (e) {}
+  }
+
   if (!sheet) {
     _memorySchedules[sid] = validated;
     return {

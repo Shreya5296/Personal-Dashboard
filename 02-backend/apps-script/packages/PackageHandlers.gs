@@ -52,12 +52,17 @@ function registerPackageOperations(router) {
   });
 
   reg('packages.get', function(ctx) {
-    if (!ctx.payload || !ctx.payload.packageId) {
-      return { success: false, code: 'VALIDATION_ERROR', message: 'Missing packageId' };
+    var id = ctx.payload && (ctx.payload.studentId || ctx.payload.student_id || ctx.payload.packageId || ctx.payload.package_id);
+    if (!id) {
+      return { success: false, code: 'VALIDATION_ERROR', message: 'Missing studentId' };
     }
-    var pkg = _pkgRepoH.Packages_getById(ctx.spreadsheet, ctx.payload.packageId);
+    var pkg = _pkgRepoH.Packages_getById(ctx.spreadsheet, id);
+    if (!pkg && _pkgRepoH.Packages_getByStudentId) {
+      var pkgs = _pkgRepoH.Packages_getByStudentId(ctx.spreadsheet, id);
+      if (pkgs && pkgs.length > 0) pkg = pkgs[0];
+    }
     if (!pkg) {
-      return { success: false, code: 'RECORD_NOT_FOUND', message: 'Package not found: ' + ctx.payload.packageId };
+      return { success: false, code: 'RECORD_NOT_FOUND', message: 'Package not found: ' + id };
     }
     return { success: true, data: _pkgSvcH.Packages_enrichWithBalance(ctx.spreadsheet, pkg) };
   });
@@ -71,15 +76,15 @@ function registerPackageOperations(router) {
   });
 
   reg('packages.update', function(ctx) {
-    var packageId = ctx.payload && (ctx.payload.packageId || ctx.payload.package_id);
-    if (!packageId) {
-      return { success: false, code: 'VALIDATION_ERROR', message: 'Missing packageId' };
+    var id = ctx.payload && (ctx.payload.studentId || ctx.payload.student_id || ctx.payload.packageId || ctx.payload.package_id);
+    if (!id) {
+      return { success: false, code: 'VALIDATION_ERROR', message: 'Missing studentId' };
     }
     var updateFn = typeof Packages_update === 'function' ? Packages_update : (_pkgSvcH && _pkgSvcH.Packages_update);
     if (!updateFn) {
       return { success: false, code: 'UNAVAILABLE', message: 'Packages_update function unavailable' };
     }
-    return updateFn(ctx.spreadsheet, packageId, ctx.payload, {
+    return updateFn(ctx.spreadsheet, id, ctx.payload, {
       actorId: ctx.actorId,
       email: ctx.verifiedEmail,
       requestId: ctx.requestId

@@ -31,10 +31,23 @@ function createHeaderMap(headerRow) {
 
 function rowToRecord(headerMap, rowValues) {
   var record = {};
+  if (!rowValues || !Array.isArray(rowValues)) return record;
+
+  var isLegacyPkgShift = false;
+  if (headerMap.hasOwnProperty('student_id') && headerMap['student_id'] === 0 && !headerMap.hasOwnProperty('package_id')) {
+    var firstVal = String(rowValues[0] || '').trim();
+    var secondVal = String(rowValues[1] || '').trim();
+    if (/^pkg_/i.test(firstVal) && /^stu_/i.test(secondVal)) {
+      isLegacyPkgShift = true;
+      record['package_id'] = firstVal;
+    }
+  }
+
   for (var headerName in headerMap) {
     if (headerMap.hasOwnProperty(headerName)) {
       var colIdx = headerMap[headerName];
-      var val = rowValues[colIdx];
+      var actualIdx = isLegacyPkgShift ? (colIdx + 1) : colIdx;
+      var val = rowValues[actualIdx];
       if (typeof val === 'string' && val.charAt(0) === "'") {
         val = val.substring(1);
       }

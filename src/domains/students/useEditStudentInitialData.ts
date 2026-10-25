@@ -6,6 +6,7 @@ import { ScheduleItem } from './registrationTypes';
 import { fetchMeetingLinks } from '../meeting-links/meetingLinkApi';
 import { fetchPackages } from '../packages/packageApi';
 import { fetchSchedules } from '../classes/scheduleApi';
+import { parseCanonicalScheduleString } from './scheduleFormatter';
 
 export function useEditStudentInitialData(student: Student, token?: string | null) {
   const [loadingInitial, setLoadingInitial] = useState(true);
@@ -49,7 +50,11 @@ export function useEditStudentInitialData(student: Student, token?: string | nul
           end_date: p.end_date || p.expiry_date || '',
         });
       }
-      setSchedules(scheds.map((s, idx) => ({
+      let activeScheds = scheds;
+      if (activeScheds.length === 0 && pkgs.length > 0 && pkgs[0].class_schedule) {
+        activeScheds = parseCanonicalScheduleString(pkgs[0].class_schedule, Number(pkgs[0].class_duration) || 60);
+      }
+      setSchedules(activeScheds.map((s, idx) => ({
         id: s.schedule_id || String(idx),
         day_of_week: s.day_of_week,
         start_time: s.start_time,

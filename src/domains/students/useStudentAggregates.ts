@@ -6,6 +6,7 @@ import { fetchMeetingLinks } from '../meeting-links/meetingLinkApi';
 import { Payment } from '../payments/paymentTypes';
 import { fetchPayments } from '../payments/paymentApi';
 import { fetchSchedules, WeeklyScheduleEntry } from '../classes/scheduleApi';
+import { parseCanonicalScheduleString } from './scheduleFormatter';
 
 export interface StudentFinancialInfo {
   totalInvoiced: number;
@@ -42,7 +43,16 @@ export function useStudentAggregates(studentIds: string[], token?: string | null
       const schedResults = await Promise.all(schedPromises);
       const newMap: Record<string, WeeklyScheduleEntry[]> = {};
       schedResults.forEach(({ sid, sched }) => {
-        newMap[sid] = sched;
+        if (sched.length > 0) {
+          newMap[sid] = sched;
+        } else {
+          const pkg = pkgs.find((p) => p.student_id === sid);
+          if (pkg && pkg.class_schedule) {
+            newMap[sid] = parseCanonicalScheduleString(pkg.class_schedule, Number(pkg.class_duration) || 60);
+          } else {
+            newMap[sid] = [];
+          }
+        }
       });
       setSchedulesMap(newMap);
     } finally {

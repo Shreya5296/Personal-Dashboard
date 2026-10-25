@@ -143,6 +143,13 @@ function registerSystemOperations(router) {
     if (!fn) return { success: false, code: 'NOT_FOUND', message: 'Migration function not found' };
     return fn(ss);
   });
+
+  reg('system.migrateCanonicalSchemas', function(ctx) {
+    var ss = ctx.spreadsheet;
+    var fn = typeof runFinalCanonicalSchemaMigration === 'function' ? runFinalCanonicalSchemaMigration : (typeof require !== 'undefined' ? require('./FinalCanonicalSchemaMigration.gs').runFinalCanonicalSchemaMigration : null);
+    if (!fn) return { success: false, code: 'NOT_FOUND', message: 'runFinalCanonicalSchemaMigration function not found' };
+    return fn(ss);
+  });
 }
 
 if (typeof registerOperation === 'function') {

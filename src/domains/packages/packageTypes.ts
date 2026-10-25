@@ -1,5 +1,5 @@
 export interface Package {
-  package_id: string;
+  package_id?: string;
   student_id: string;
   student_name?: string;
   plan_name?: string;
@@ -21,6 +21,8 @@ export interface Package {
   end_date?: string;
   expiry_date?: string;
   next_due_date?: string;
+  class_schedule?: string;
+  schedules?: Array<{ day_of_week: string; start_time: string; end_time: string }>;
   status: 'ACTIVE' | 'EXHAUSTED' | 'EXPIRED' | string;
   package_status?: string;
   notes?: string;
@@ -46,6 +48,7 @@ export interface PackageInput {
   end_date?: string;
   expiry_date?: string;
   next_due_date?: string;
+  class_schedule?: string;
   notes?: string;
 }
 

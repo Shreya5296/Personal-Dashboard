@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { fetchDashboardOverview } from './dashboardApi';
 import { fetchClasses } from '../classes/classApi';
 import { fetchSchedules, WeeklyScheduleEntry } from '../classes/scheduleApi';
+import { parseCanonicalScheduleString } from '../students/scheduleFormatter';
 import { fetchStudents } from '../students/studentApi';
 import { fetchFeeObligations } from '../fees/feeApi';
 import { fetchPackages } from '../packages/packageApi';
@@ -37,9 +38,24 @@ export function useDashboardData(token?: string | null) {
         fetchPackages(undefined, token).catch(() => []),
         fetchMeetingLinks(undefined, token).catch(() => []),
       ]);
+      let finalScheds = schedList;
+      if (finalScheds.length === 0 && pkgList.length > 0) {
+        const extracted: WeeklyScheduleEntry[] = [];
+        for (const p of pkgList) {
+          if (p.class_schedule) {
+            const parsed = parseCanonicalScheduleString(p.class_schedule, Number(p.class_duration) || 60);
+            for (const entry of parsed) {
+              entry.student_id = p.student_id;
+              entry.student_name = p.student_name;
+              extracted.push(entry);
+            }
+          }
+        }
+        if (extracted.length > 0) finalScheds = extracted;
+      }
       setOverview(ov);
       setClasses(cls);
-      setSchedules(schedList);
+      setSchedules(finalScheds);
       setStudents(stuList);
       setFees(feeList);
       setPackages(pkgList);

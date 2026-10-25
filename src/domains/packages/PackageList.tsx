@@ -81,7 +81,7 @@ export const PackageList: React.FC<{ studentId: string }> = ({ studentId }) => {
 
       {loading && <LoadingState message="Loading packages…" />}
       {!loading && packages.length === 0 && <EmptyState title="No packages allocated" description="Create a package to assign classes to this student." />}
-      {!loading && packages.length > 0 && <DataTable columns={columns} data={packages} keyExtractor={(p) => p.package_id} />}
+      {!loading && packages.length > 0 && <DataTable columns={columns} data={packages} keyExtractor={(p) => p.package_id || `${p.student_id}_${p.start_date}`} />}
     </div>
   );
 };

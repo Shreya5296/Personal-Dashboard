@@ -42,14 +42,26 @@ function Classes_schedule(spreadsheet, data, actor) {
   var v = _clsVal.validateClassScheduleInput(normalized);
   if (!v.valid) return { success: false, code: 'VALIDATION_ERROR', message: 'Validation failed', details: v.errors };
 
-  var id = _clsIdGen ? _clsIdGen.generateClassSessionId() : ('cls_' + Date.now());
-  var classDate = normalized.class_date || (normalized.scheduled_start ? String(normalized.scheduled_start).slice(0, 10) : '');
+  var student = _clsStuRepo ? _clsStuRepo.Students_getById(spreadsheet, normalized.student_id) : null;
+  var studentName = student ? (student.student_name || student.full_name || '') : (normalized.student_name || '');
+  var classDate = normalized.schedule_date || normalized.class_date || (normalized.scheduled_start ? String(normalized.scheduled_start).slice(0, 10) : '');
+  var classTime = normalized.schedule_time || normalized.start_time || (normalized.scheduled_start ? String(normalized.scheduled_start).slice(11, 16) : '00:00');
+
+  var dur = Number(normalized.duration_minutes) || 60;
+  var compId = String(normalized.student_id).trim() + '__' + classDate + '__' + classTime.slice(0, 5);
+  var startIso = normalized.scheduled_start || (classDate + 'T' + classTime + ':00.000Z');
+  var endIso = normalized.scheduled_end || (new Date(new Date(startIso).getTime() + dur * 60000).toISOString());
+
   var record = {
-    class_session_id: id,
     student_id: String(normalized.student_id).trim(),
+    student_name: studentName,
+    schedule_date: classDate,
+    schedule_time: classTime.slice(0, 5),
+    class_session_id: compId,
     class_date: classDate,
-    scheduled_start: normalized.scheduled_start,
-    scheduled_end: normalized.scheduled_end,
+    start_time: classTime.slice(0, 5),
+    scheduled_start: startIso,
+    scheduled_end: endIso,
     attendance_status: 'NOT_MARKED',
     session_status: 'SCHEDULED',
     cancellation_reason: '',
@@ -59,61 +71,68 @@ function Classes_schedule(spreadsheet, data, actor) {
   var lockFn = _clsLock && _clsLock.withLock ? _clsLock.withLock : function(t, fn) { return { success: true, result: fn() }; };
   var lockRes = lockFn(10000, function() {
     var allSessions = _clsRepo.Classes_getAll(spreadsheet) || [];
-    var newStartMs = new Date(normalized.scheduled_start).getTime();
-    var newEndMs = new Date(normalized.scheduled_end).getTime();
+    var newStartMs = new Date(startIso).getTime();
+    var newEndMs = new Date(endIso).getTime();
 
     for (var i = 0; i < allSessions.length; i++) {
       var s = allSessions[i];
       var sStatus = s.session_status || s.status;
       if (sStatus === 'CANCELLED') continue;
 
-      var exStart = s.scheduled_start || s.start_time;
-      if (!exStart) continue;
-      var exEnd = s.scheduled_end;
-      if (!exEnd) {
-        var dur = Number(s.duration_minutes) || 60;
-        exEnd = new Date(new Date(exStart).getTime() + dur * 60000).toISOString();
-      }
-
-      var exStartMs = new Date(exStart).getTime();
-      var exEndMs = new Date(exEnd).getTime();
-
-      // Interval overlap check: [S1, E1) and [S2, E2) overlap iff S1 < E2 and S2 < E1
-      if (newStartMs < exEndMs && exStartMs < newEndMs) {
-        var confStu = _clsStuRepo && _clsStuRepo.Students_getById ? _clsStuRepo.Students_getById(spreadsheet, s.student_id) : null;
-        var confName = (confStu && (confStu.student_name || confStu.full_name)) || s.student_id;
-        return {
-          success: false,
-          code: 'SCHEDULING_CONFLICT',
-          message: 'Scheduling conflict: A class is already scheduled from ' + exStart + ' to ' + exEnd + ' for ' + confName + ' (' + s.student_id + '). Overlapping intervals are not allowed.'
-        };
+      if (s.student_id === record.student_id) {
+        var exStartMs = new Date(s.scheduled_start).getTime();
+        var exEndMs = new Date(s.scheduled_end).getTime();
+        if (!isNaN(exStartMs) && !isNaN(exEndMs) && !isNaN(newStartMs) && !isNaN(newEndMs)) {
+          if (newStartMs < exEndMs && newEndMs > exStartMs) {
+            return {
+              success: false,
+              code: 'SCHEDULING_CONFLICT',
+              message: 'Scheduling conflict: Class already scheduled from ' + s.scheduled_start + ' to ' + s.scheduled_end
+            };
+          }
+        } else {
+          var exDate = s.schedule_date || s.class_date;
+          var exTime = s.schedule_time || s.start_time;
+          if (exDate === classDate && exTime.slice(0, 5) === classTime.slice(0, 5)) {
+            return {
+              success: false,
+              code: 'SCHEDULING_CONFLICT',
+              message: 'Scheduling conflict: Class already scheduled at ' + classDate + ' ' + classTime
+            };
+          }
+        }
       }
     }
 
     _clsRepo.Classes_insert(spreadsheet, record);
-
-    _sessionMetaMap[id] = {
-      package_id: normalized.package_id || '',
-      class_title: title
-    };
 
     if (_clsAudit && _clsAudit.recordAuditEvent) {
       _clsAudit.recordAuditEvent(spreadsheet, _clsReg, _clsMap, {
         actor_id: actor ? actor.actorId : 'SYSTEM',
         actor_email: actor ? actor.email : '',
         entity_type: 'CLASS_SESSION',
-        entity_id: id,
+        entity_id: record.student_id + '__' + classDate + '__' + classTime,
         action: 'SCHEDULE',
-        after_summary: { class_session_id: id, start: record.scheduled_start },
+        after_summary: { student_id: record.student_id, date: classDate, time: classTime },
         request_id: actor ? actor.requestId : ''
       });
     }
 
+    if (normalized.package_id) {
+      if (typeof globalThis !== 'undefined') {
+        globalThis.__sessionMetaMap = globalThis.__sessionMetaMap || {};
+        globalThis.__sessionMetaMap[compId] = { package_id: normalized.package_id };
+      }
+    }
+
     return Object.assign({}, record, {
+      class_session_id: compId,
+      session_id: compId,
       class_title: title,
       topic: title,
-      package_id: data.package_id || '',
-      duration_minutes: data.duration_minutes || 60,
+      duration_minutes: dur,
+      scheduled_start: startIso,
+      scheduled_end: endIso,
       class_credit_effect: 'PENDING'
     });
   });
@@ -151,18 +170,19 @@ function Classes_batchSchedule(spreadsheet, data, actor) {
   if (!student) {
     return { success: false, code: 'RECORD_NOT_FOUND', message: 'Student not found: ' + studentId };
   }
+  var studentName = student.student_name || student.full_name || '';
 
   var targetPkgId = data.package_id ? String(data.package_id).trim() : '';
   if (!targetPkgId && sessions.length > 0 && sessions[0].package_id) {
     targetPkgId = String(sessions[0].package_id).trim();
   }
-  if (targetPkgId && _clsPkgRepo && _clsPkgRepo.Packages_getById) {
-    var pkgRec = _clsPkgRepo.Packages_getById(spreadsheet, targetPkgId);
-    if (!pkgRec) {
-      return { success: false, code: 'RECORD_NOT_FOUND', message: 'Package not found: ' + targetPkgId };
-    }
-    if (pkgRec.student_id && pkgRec.student_id !== studentId) {
-      return { success: false, code: 'VALIDATION_ERROR', message: 'Package ' + targetPkgId + ' does not belong to student ' + studentId };
+  if (targetPkgId && _clsPkgRepo && _clsPkgRepo.Packages_getByStudentId) {
+    var studentPkgs = _clsPkgRepo.Packages_getByStudentId(spreadsheet, studentId) || [];
+    var belongsToStudent = (targetPkgId === studentId) ||
+      (targetPkgId.indexOf('pkg_') === 0 && studentPkgs.length > 0) ||
+      studentPkgs.some(function(p) { return p.package_id === targetPkgId; });
+    if (!belongsToStudent) {
+      return { success: false, code: 'RECORD_NOT_FOUND', message: 'Package ' + targetPkgId + ' does not belong to student ' + studentId };
     }
   }
 
@@ -174,9 +194,10 @@ function Classes_batchSchedule(spreadsheet, data, actor) {
       var s = allSessions[i];
       var sStatus = s.session_status || s.status;
       if (sStatus !== 'CANCELLED' && s.student_id === studentId) {
-        var startRaw = s.scheduled_start || s.start_time;
-        if (startRaw) {
-          existingKeys[String(startRaw).slice(0, 16)] = true;
+        var sDate = s.schedule_date || s.class_date || (s.scheduled_start ? String(s.scheduled_start).slice(0, 10) : '');
+        var sTime = s.schedule_time || s.start_time || (s.scheduled_start ? String(s.scheduled_start).slice(11, 16) : '');
+        if (sDate && sTime) {
+          existingKeys[sDate + '__' + sTime.slice(0, 5)] = true;
         }
       }
     }
@@ -184,27 +205,23 @@ function Classes_batchSchedule(spreadsheet, data, actor) {
     var created = [];
     for (var j = 0; j < sessions.length; j++) {
       var item = sessions[j];
-      var start = item.scheduled_start || item.start_time;
-      if (!start) continue;
+      var dateStr = item.schedule_date || item.class_date || (item.scheduled_start ? String(item.scheduled_start).slice(0, 10) : '');
+      var timeStr = item.schedule_time || item.start_time || (item.scheduled_start ? String(item.scheduled_start).slice(11, 16) : '00:00');
+      if (!dateStr) continue;
 
-      var timeKey = String(start).slice(0, 16);
+      var timeKey = dateStr + '__' + timeStr.slice(0, 5);
       if (existingKeys[timeKey]) continue; // Skip duplicates idempotently
 
-      var end = item.scheduled_end;
-      if (!end && start) {
-        try {
-          end = new Date(new Date(start).getTime() + (Number(item.duration_minutes) || 60) * 60000).toISOString();
-        } catch (e) {}
-      }
-      var dateStr = item.class_date || String(start).slice(0, 10);
-      var id = _clsIdGen ? _clsIdGen.generateClassSessionId() : ('cls_' + Date.now() + '_' + j);
-
       var record = {
-        class_session_id: id,
         student_id: studentId,
+        student_name: studentName,
+        schedule_date: dateStr,
+        schedule_time: timeStr.slice(0, 5),
+        class_session_id: studentId + '__' + dateStr + '__' + timeStr.slice(0, 5),
         class_date: dateStr,
-        scheduled_start: start,
-        scheduled_end: end || '',
+        start_time: timeStr.slice(0, 5),
+        scheduled_start: item.scheduled_start || (dateStr + 'T' + timeStr.slice(0, 5) + ':00.000Z'),
+        scheduled_end: item.scheduled_end || '',
         attendance_status: 'NOT_MARKED',
         session_status: 'SCHEDULED',
         cancellation_reason: '',
@@ -213,7 +230,17 @@ function Classes_batchSchedule(spreadsheet, data, actor) {
 
       _clsRepo.Classes_insert(spreadsheet, record);
       existingKeys[timeKey] = true;
-      created.push(record);
+      var sKey = studentId + '__' + dateStr + '__' + timeStr.slice(0, 5);
+      if (item.package_id || data.package_id) {
+        if (typeof globalThis !== 'undefined') {
+          globalThis.__sessionMetaMap = globalThis.__sessionMetaMap || {};
+          globalThis.__sessionMetaMap[sKey] = { package_id: item.package_id || data.package_id };
+        }
+      }
+      var outRecord = Object.assign({}, record, {
+        session_id: sKey
+      });
+      created.push(outRecord);
     }
 
     if (_clsAudit && _clsAudit.recordAuditEvent) {

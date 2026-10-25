@@ -18,20 +18,12 @@ function registerClassOperations(router) {
       return true;
     }).map(function(c) {
       var copy = Object.assign({}, c);
-      copy.session_id = c.class_session_id;
-      copy.topic = c.class_title || 'Class Session';
-      copy.start_time = c.scheduled_start;
-      copy.status = c.session_status;
-      if (c.scheduled_start && c.scheduled_end) {
-        try {
-          var diffMs = new Date(c.scheduled_end).getTime() - new Date(c.scheduled_start).getTime();
-          copy.duration_minutes = Math.max(15, Math.round(diffMs / 60000));
-        } catch (e) {
-          copy.duration_minutes = 60;
-        }
-      } else {
-        copy.duration_minutes = 60;
-      }
+      copy.session_id = c.session_id || (c.student_id + '__' + c.schedule_date + '__' + c.schedule_time);
+      copy.topic = (c.student_name || 'Class') + ' - Session';
+      copy.class_title = copy.topic;
+      copy.start_time = c.schedule_time || c.start_time;
+      copy.status = c.session_status || 'SCHEDULED';
+      copy.duration_minutes = Number(c.duration_minutes) || 60;
       return copy;
     });
 

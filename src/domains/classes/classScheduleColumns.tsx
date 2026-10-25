@@ -109,7 +109,7 @@ export function buildClassScheduleColumns(params: {
       render: (c) => (
         <AttendanceControl
           status={c.status}
-          creditEffect={c.class_credit_effect}
+          creditEffect={c.class_credit_effect || 'PENDING'}
           onUpdateStatus={(outcome) => handleUpdateStatus(c.session_id, outcome)}
           onRestoreCredit={() => handleRestore(c.session_id)}
         />

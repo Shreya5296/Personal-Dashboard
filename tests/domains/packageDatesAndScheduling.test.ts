@@ -81,13 +81,19 @@ describe('Fix Student Data, Class Generation, Calendar Accuracy, Fee Dates, and 
     });
   });
 
-  describe('Change 5: ClassSessions Schema Contains class_date', () => {
-    it('includes class_date in ClassSessions schema', () => {
+  describe('Change 5: Canonical ClassSessions Schema', () => {
+    it('matches canonical 8-column schema (schedule_date, schedule_time, etc.)', () => {
       const headers = SHEET_SCHEMAS[SHEET_NAMES.CLASS_SESSIONS];
-      expect(headers).toContain('class_date');
-      expect(headers).toContain('class_session_id');
-      expect(headers).toContain('student_id');
-      expect(headers).toContain('scheduled_start');
+      expect(headers).toEqual([
+        'student_id',
+        'student_name',
+        'schedule_date',
+        'schedule_time',
+        'attendance_status',
+        'session_status',
+        'cancellation_reason',
+        'deduct_class',
+      ]);
     });
   });
 
