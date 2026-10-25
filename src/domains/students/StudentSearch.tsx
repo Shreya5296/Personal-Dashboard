@@ -71,7 +71,7 @@ export const StudentSearch: React.FC<StudentSearchProps> = ({
       >
         <option value="">All Statuses</option>
         <option value="ACTIVE">Active Only</option>
-        <option value="ARCHIVED">Archived Only</option>
+        <option value="INACTIVE">Inactive Only</option>
       </select>
     </div>
   );

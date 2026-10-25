@@ -50,12 +50,20 @@ function rowToRecord(headerMap, rowValues) {
       var val = rowValues[actualIdx];
       if (typeof val === 'string' && val.charAt(0) === "'") {
         val = val.substring(1);
+      }
+      if (typeof val === 'string' && (headerName.indexOf('_date') !== -1 || headerName === 'class_date' || headerName === 'expiry_date')) {
+        var ddmmyyyyMatch = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(val.trim());
+        if (ddmmyyyyMatch) {
+          var dayPart = ddmmyyyyMatch[1].length < 2 ? '0' + ddmmyyyyMatch[1] : ddmmyyyyMatch[1];
+          var monPart = ddmmyyyyMatch[2].length < 2 ? '0' + ddmmyyyyMatch[2] : ddmmyyyyMatch[2];
+          val = ddmmyyyyMatch[3] + '-' + monPart + '-' + dayPart;
+        }
       } else if (val instanceof Date) {
         if (headerName === 'schedule_time' || headerName === 'start_time') {
           var hh = val.getHours();
           var mm = val.getMinutes();
           val = (hh < 10 ? '0' + hh : '' + hh) + ':' + (mm < 10 ? '0' + mm : '' + mm);
-        } else if (headerName === 'start_date' || headerName === 'end_date' || headerName === 'next_due_date' || headerName === 'schedule_date' || headerName === 'class_date' || headerName === 'expiry_date') {
+        } else if (headerName.indexOf('_date') !== -1 || headerName === 'class_date' || headerName === 'expiry_date') {
           var y = val.getFullYear();
           var m = val.getMonth() + 1;
           var d = val.getDate();

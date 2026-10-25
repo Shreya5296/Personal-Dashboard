@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AttendanceStatus } from './classTypes';
 import { Button } from '../../components/buttons/Button';
 import { ConfirmDialog } from '../../components/overlays/ConfirmDialog';
+import { getSessionStatusStyle } from './sessionStatusStyles';
 
 export interface AttendanceControlProps {
   status: string;
@@ -38,7 +39,7 @@ export const AttendanceControl: React.FC<AttendanceControlProps> = ({
     }
   };
 
-  if (status === 'SCHEDULED') {
+  if (status === 'SCHEDULED' || status === 'NOT_MARKED') {
     return (
       <div style={{ display: 'flex', gap: 'var(--space-1)', alignItems: 'center' }}>
         <Button variant="primary" size="sm" onClick={() => handleAction('ATTENDED')} disabled={loading}>
@@ -54,22 +55,11 @@ export const AttendanceControl: React.FC<AttendanceControlProps> = ({
     );
   }
 
-  const isAttended = status === 'ATTENDED' || status === 'PRESENT';
-  const isNoShow = status === 'NO_SHOW' || status === 'ABSENT';
+  const statusStyle = getSessionStatusStyle(status, status);
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-      <span
-        style={{
-          fontSize: 'var(--font-size-xs)',
-          fontWeight: 600,
-          padding: '2px 8px',
-          borderRadius: 'var(--radius-full)',
-          backgroundColor: isAttended ? 'var(--color-success-bg)' : isNoShow ? 'var(--color-warning-bg)' : 'var(--color-bg-subtle)',
-          color: isAttended ? 'var(--color-success-text)' : isNoShow ? 'var(--color-warning-text)' : 'var(--color-text-muted)',
-          border: `1px solid ${isAttended ? 'var(--color-success-border)' : isNoShow ? 'var(--color-warning-border)' : 'var(--color-border)'}`,
-        }}
-      >
+      <span style={statusStyle.badgeStyle}>
         {status}
       </span>
       {creditEffect === 'CONSUME' && (

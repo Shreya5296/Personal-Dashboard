@@ -13,11 +13,11 @@ import { LoadingState } from '../../components/feedback/LoadingState';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { Button } from '../../components/buttons/Button';
 import { PageHeader } from '../../layout/PageHeader';
+import { StudentStatusTab } from './studentStatusClassifier';
 
 export const StudentsPage: React.FC = () => {
   usePageTitle('Students Directory');
   const { token } = useAuth();
-
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +25,8 @@ export const StudentsPage: React.FC = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedQuery = useDebouncedValue(searchQuery, 300);
-  const [statusFilter, setStatusFilter] = useState('');
+  const [activeTab, setActiveTab] = useState<StudentStatusTab>('ACTIVE');
+  const [displayedCount, setDisplayedCount] = useState<number | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -34,8 +35,7 @@ export const StudentsPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchStudents({ query: debouncedQuery, status: statusFilter }, token);
-      setStudents(data);
+      setStudents(await fetchStudents({ query: debouncedQuery }, token));
     } catch (err: unknown) {
       setError((err as Error).message || 'Failed to load students');
     } finally {
@@ -43,7 +43,11 @@ export const StudentsPage: React.FC = () => {
     }
   };
 
-  useEffect(() => { loadStudents(); }, [debouncedQuery, statusFilter, token]);
+  useEffect(() => { loadStudents(); }, [debouncedQuery, token]);
+
+  const handleStatusFilterChange = (val: string) => {
+    setActiveTab(val === 'ACTIVE' ? 'ACTIVE' : val === 'INACTIVE' ? 'INACTIVE' : 'ALL');
+  };
 
   const handleEditSuccess = async (updated: Student, msg: string) => {
     if (selectedStudent) setSelectedStudent(updated);
@@ -62,66 +66,38 @@ export const StudentsPage: React.FC = () => {
     await loadStudents();
   };
 
+  const banner = feedback && (
+    <div style={{ padding: '10px 14px', backgroundColor: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)', fontSize: 'var(--font-size-sm)' }}>
+      ✓ {feedback}
+    </div>
+  );
+
   if (selectedStudent) {
     return (
       <div>
-        {feedback && (
-          <div style={{ padding: '10px 14px', backgroundColor: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)', fontSize: 'var(--font-size-sm)' }}>
-            ✓ {feedback}
-          </div>
-        )}
-        <StudentProfilePage
-          student={selectedStudent}
-          onBack={() => { setSelectedStudent(null); loadStudents(); }}
-          onEdit={() => setEditingStudent(selectedStudent)}
-          onUpdate={(updated) => setSelectedStudent(updated)}
-        />
-        {editingStudent && (
-          <EditStudentModal
-            student={editingStudent}
-            onSuccess={handleEditSuccess}
-            onClose={() => setEditingStudent(null)}
-          />
-        )}
+        {banner}
+        <StudentProfilePage student={selectedStudent} onBack={() => { setSelectedStudent(null); loadStudents(); }} onEdit={() => setEditingStudent(selectedStudent)} onUpdate={(u) => setSelectedStudent(u)} />
+        {editingStudent && <EditStudentModal student={editingStudent} onSuccess={handleEditSuccess} onClose={() => setEditingStudent(null)} />}
       </div>
     );
   }
 
+  const resultCount = displayedCount !== null ? displayedCount : students.length;
+  const statusDropdownVal = activeTab === 'ACTIVE' ? 'ACTIVE' : activeTab === 'INACTIVE' ? 'INACTIVE' : '';
+
   return (
     <div>
-      <PageHeader
-        title="Students Directory"
-        subtitle="Manage registered learners, curriculum details, parent contacts, and fee profiles."
-        actions={<Button variant="primary" onClick={() => setIsCreating(true)}>+ Add Student</Button>}
-      />
-
-      {feedback && (
-        <div style={{ padding: '10px 14px', backgroundColor: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)', fontSize: 'var(--font-size-sm)' }}>
-          ✓ {feedback}
-        </div>
-      )}
-
+      <PageHeader title="Students Directory" subtitle="Manage registered learners, curriculum details, parent contacts, and fee profiles." actions={<Button variant="primary" onClick={() => setIsCreating(true)}>+ Add Student</Button>} />
+      {banner}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
-        <StudentSearch query={searchQuery} statusFilter={statusFilter} onQueryChange={setSearchQuery} onStatusFilterChange={setStatusFilter} />
+        <StudentSearch query={searchQuery} statusFilter={statusDropdownVal} onQueryChange={setSearchQuery} onStatusFilterChange={handleStatusFilterChange} />
         <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)', fontWeight: 500 }}>
-          {students.length} student{students.length === 1 ? '' : 's'} found
+          {resultCount} student{resultCount === 1 ? '' : 's'} found
         </span>
       </div>
 
-      {isCreating && (
-        <AddStudentModal
-          onSuccess={handleRegistrationSuccess}
-          onClose={() => setIsCreating(false)}
-        />
-      )}
-
-      {editingStudent && (
-        <EditStudentModal
-          student={editingStudent}
-          onSuccess={handleEditSuccess}
-          onClose={() => setEditingStudent(null)}
-        />
-      )}
+      {isCreating && <AddStudentModal onSuccess={handleRegistrationSuccess} onClose={() => setIsCreating(false)} />}
+      {editingStudent && <EditStudentModal student={editingStudent} onSuccess={handleEditSuccess} onClose={() => setEditingStudent(null)} />}
 
       {loading && <LoadingState message="Loading students…" />}
       {error && !loading && <ErrorState message={error} onRetry={loadStudents} />}
@@ -129,6 +105,9 @@ export const StudentsPage: React.FC = () => {
         <StudentList
           key={refreshKey}
           students={students}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          onDisplayedCountChange={setDisplayedCount}
           onSelectStudent={setSelectedStudent}
           onEditStudent={setEditingStudent}
         />

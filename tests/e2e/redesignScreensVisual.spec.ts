@@ -55,7 +55,7 @@ test.describe('Frontend UI/UX Redesign — Screen & Viewport Coverage', () => {
     await expect(page.locator('text=Total Invoice')).toBeVisible();
     await expect(page.locator('text=Collected Earnings')).toBeVisible();
     await expect(page.locator('text=Total Outstanding')).toBeVisible();
-    await expect(page.locator('text=Collection Performance')).toBeVisible();
+    await expect(page.locator('text=Collection Performance')).toHaveCount(0);
 
     // 4. Class Schedule
     await navigate(page, 'Class Schedule');

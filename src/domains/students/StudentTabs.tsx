@@ -25,11 +25,12 @@ const getTabStyle = (isSelected: boolean): React.CSSProperties => ({
   fontWeight: isSelected ? 600 : 500,
   fontSize: 'var(--font-size-sm)',
   cursor: 'pointer',
-  transition: 'color 120ms ease, border-color 120ms ease',
+  transition: 'color 140ms ease, border-color 140ms ease, background-color 140ms ease',
   outline: 'none',
   display: 'inline-flex',
   alignItems: 'center',
   gap: '6px',
+  borderRadius: 'var(--radius-sm) var(--radius-sm) 0 0',
 });
 
 const countBadgeStyle: React.CSSProperties = {
@@ -50,19 +51,6 @@ export const StudentTabs: React.FC<StudentTabsProps> = ({
 }) => {
   return (
     <div role="tablist" aria-label="Student directory tabs" style={tabContainerStyle}>
-      <button
-        type="button"
-        role="tab"
-        id="student-tab-all"
-        aria-selected={activeTab === 'ALL'}
-        aria-controls="student-panel-all"
-        tabIndex={activeTab === 'ALL' ? 0 : -1}
-        onClick={() => onTabChange('ALL')}
-        style={getTabStyle(activeTab === 'ALL')}
-      >
-        All Students <span style={countBadgeStyle}>{allCount}</span>
-      </button>
-
       <button
         type="button"
         role="tab"
@@ -87,6 +75,19 @@ export const StudentTabs: React.FC<StudentTabsProps> = ({
         style={getTabStyle(activeTab === 'INACTIVE')}
       >
         Inactive <span style={countBadgeStyle}>{inactiveCount}</span>
+      </button>
+
+      <button
+        type="button"
+        role="tab"
+        id="student-tab-all"
+        aria-selected={activeTab === 'ALL'}
+        aria-controls="student-panel-all"
+        tabIndex={activeTab === 'ALL' ? 0 : -1}
+        onClick={() => onTabChange('ALL')}
+        style={getTabStyle(activeTab === 'ALL')}
+      >
+        All Students <span style={countBadgeStyle}>{allCount}</span>
       </button>
     </div>
   );

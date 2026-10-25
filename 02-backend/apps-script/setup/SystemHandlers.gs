@@ -157,6 +157,14 @@ function registerSystemOperations(router) {
     if (!fn) return { success: false, code: 'NOT_FOUND', message: 'runBackdateStudentSessions function not found' };
     return fn(ss, ctx.payload);
   });
+
+  reg('system.standardizeDateFormats', function(ctx) {
+    var ss = ctx.spreadsheet;
+    if (!ss) return { success: false, code: 'UNAVAILABLE', message: 'Spreadsheet unavailable' };
+    var fn = typeof standardizeAllDateFormats === 'function' ? standardizeAllDateFormats : (typeof require !== 'undefined' ? require('../sheets/DateFormatService.gs').standardizeAllDateFormats : null);
+    if (!fn) return { success: false, code: 'NOT_FOUND', message: 'standardizeAllDateFormats function not found' };
+    return fn(ss);
+  });
 }
 
 if (typeof registerOperation === 'function') {

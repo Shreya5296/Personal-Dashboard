@@ -8,10 +8,14 @@ import { formatWeeklySchedule } from './scheduleFormatter';
 import { StudentCell } from './StudentCell';
 import { StudentExpandedDetails } from './StudentExpandedDetails';
 import { Button } from '../../components/buttons/Button';
+import { STUDENT_TABLE_COLUMNS } from './studentTableLayout';
+import { isStudentActive } from './studentStatusClassifier';
+import rowStyles from './studentRow.module.css';
 
 export interface StudentRowProps {
   student: Student;
   isExpanded: boolean;
+  isActive?: boolean;
   onToggleExpand: (studentId: string) => void;
   onSelectStudent: (student: Student) => void;
   onEditStudent: (student: Student) => void;
@@ -24,6 +28,7 @@ export interface StudentRowProps {
 export const StudentRow: React.FC<StudentRowProps> = ({
   student,
   isExpanded,
+  isActive,
   onToggleExpand,
   onSelectStudent,
   onEditStudent,
@@ -34,23 +39,22 @@ export const StudentRow: React.FC<StudentRowProps> = ({
 }) => {
   const scheduleText = formatWeeklySchedule(schedule);
   const classBalanceText = formatClassBalance(balance.totalConsumed, balance.totalPurchased);
+  const effectiveActive = isActive !== undefined ? isActive : isStudentActive(student, { balance });
+  const rowClass = `${rowStyles.row} ${isExpanded ? rowStyles.rowExpanded : effectiveActive ? rowStyles.rowActive : rowStyles.rowInactive}`;
 
   return (
     <>
       <tr
         onClick={() => onToggleExpand(student.student_id)}
-        style={{
-          cursor: 'pointer',
-          backgroundColor: isExpanded ? 'var(--color-bg-subtle)' : undefined,
-          transition: 'background-color 100ms ease',
-        }}
+        className={rowClass}
+        data-status={effectiveActive ? 'active' : 'inactive'}
         aria-expanded={isExpanded}
       >
-        <td style={{ width: '27%' }}>
+        <td style={{ width: STUDENT_TABLE_COLUMNS.student }}>
           <StudentCell student={student} onSelect={onSelectStudent} />
         </td>
 
-        <td style={{ width: '19%' }}>
+        <td style={{ width: STUDENT_TABLE_COLUMNS.subject }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxWidth: '100%' }}>
             {(student.subject ? student.subject.split(',') : ['General']).map((subj, i) => (
               <span
@@ -73,7 +77,7 @@ export const StudentRow: React.FC<StudentRowProps> = ({
           </div>
         </td>
 
-        <td style={{ width: '29%' }}>
+        <td style={{ width: STUDENT_TABLE_COLUMNS.schedule }}>
           <span
             title={scheduleText}
             style={{
@@ -91,13 +95,13 @@ export const StudentRow: React.FC<StudentRowProps> = ({
           </span>
         </td>
 
-        <td style={{ width: '13%' }}>
+        <td style={{ width: STUDENT_TABLE_COLUMNS.classes }}>
           <span style={{ fontFamily: 'monospace', fontSize: 'var(--font-size-xs)', fontWeight: 600, color: 'var(--color-text-main)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
             {classBalanceText}
           </span>
         </td>
 
-        <td style={{ width: '12%', textAlign: 'right' }}>
+        <td style={{ width: STUDENT_TABLE_COLUMNS.actions, textAlign: 'right' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', minWidth: '48px' }}>
             <Button
               variant="ghost"

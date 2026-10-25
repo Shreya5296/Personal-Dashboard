@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
-import { AttendanceStatus } from './classTypes';
+import { AttendanceStatus, ClassSession } from './classTypes';
 import { recordAttendance, restoreCredit } from './classApi';
 import { DataTable } from '../../components/tables/DataTable';
 import { LoadingState } from '../../components/feedback/LoadingState';
@@ -8,15 +8,23 @@ import { EmptyState } from '../../components/feedback/EmptyState';
 import { useClassScheduleData } from './useClassScheduleData';
 import { toInputDateFormat } from '../../lib/dateFormat';
 import { buildClassScheduleColumns } from './classScheduleColumns';
+import { buildSessionProgressMap } from './sessionProgressCalculator';
+import { getSessionStatusStyle } from './sessionStatusStyles';
 
 export const ClassSchedule: React.FC<{ studentId?: string; onRefreshTrigger?: number }> = ({ studentId }) => {
   const { token } = useAuth();
   const {
-    sessions, loading, refetch, getStudentConsumedClasses, getStudentMeetingLink,
+    sessions, packages, loading, refetch, getStudentConsumedClasses, getStudentMeetingLink,
   } = useClassScheduleData(studentId, token);
 
   const todayKey = toInputDateFormat(new Date(), 'Asia/Kolkata');
   const nowMs = Date.now();
+
+  const progressMap = useMemo(() => buildSessionProgressMap(sessions, packages), [sessions, packages]);
+
+  const getProgress = (s: ClassSession) => {
+    return progressMap.get(s.session_id) || progressMap.get(`${s.student_id}__${s.schedule_date}__${s.schedule_time}`);
+  };
 
   const handleUpdateStatus = async (sessionId: string, outcome: string) => {
     await recordAttendance(sessionId, outcome as AttendanceStatus, token);
@@ -29,7 +37,7 @@ export const ClassSchedule: React.FC<{ studentId?: string; onRefreshTrigger?: nu
   };
 
   const columns = buildClassScheduleColumns({
-    todayKey, nowMs, getStudentConsumedClasses, getStudentMeetingLink,
+    todayKey, nowMs, getStudentConsumedClasses, getStudentMeetingLink, getProgress,
     handleUpdateStatus, handleRestore,
   });
 
@@ -43,5 +51,10 @@ export const ClassSchedule: React.FC<{ studentId?: string; onRefreshTrigger?: nu
     );
   }
 
-  return <DataTable columns={columns} data={sessions} keyExtractor={(c) => c.session_id} />;
+  const rowStyle = (session: ClassSession) => {
+    const statusCfg = getSessionStatusStyle(session.session_status || session.status, session.attendance_status);
+    return statusCfg.rowBg !== 'transparent' ? { backgroundColor: statusCfg.rowBg } : undefined;
+  };
+
+  return <DataTable columns={columns} data={sessions} keyExtractor={(c) => c.session_id} rowStyle={rowStyle} />;
 };

@@ -1,0 +1,40 @@
+.row {
+  cursor: pointer;
+  transition: background-color 140ms ease;
+}
+
+.rowActive {
+  background-color: #f0fdf4;
+}
+
+.rowActive td {
+  background-color: #f0fdf4;
+}
+
+.rowActive:hover td,
+.rowActive:hover {
+  background-color: #dcfce7 !important;
+}
+
+.rowInactive {
+  background-color: #fef2f2;
+}
+
+.rowInactive td {
+  background-color: #fef2f2;
+}
+
+.rowInactive:hover td,
+.rowInactive:hover {
+  background-color: #fee2e2 !important;
+}
+
+.rowExpanded,
+.rowExpanded td {
+  background-color: var(--color-bg-subtle) !important;
+}
+
+.rowExpanded:hover td,
+.rowExpanded:hover {
+  background-color: #e2e8f0 !important;
+}

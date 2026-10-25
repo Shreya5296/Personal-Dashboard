@@ -62,6 +62,7 @@ export function useClassScheduleData(studentId?: string, token?: string | null) 
 
   return {
     sessions,
+    packages,
     students,
     loading,
     refetch: loadData,

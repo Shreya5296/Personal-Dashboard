@@ -13,9 +13,11 @@ export interface DataTableProps<T> {
   data: T[];
   keyExtractor: (row: T) => string;
   fixedLayout?: boolean;
+  rowStyle?: (row: T) => React.CSSProperties | undefined;
+  rowClassName?: (row: T) => string | undefined;
 }
 
-export function DataTable<T>({ columns, data, keyExtractor, fixedLayout }: DataTableProps<T>) {
+export function DataTable<T>({ columns, data, keyExtractor, fixedLayout, rowStyle, rowClassName }: DataTableProps<T>) {
   return (
     <div className={styles.tableWrapper}>
       <table className={`${styles.table} ${fixedLayout ? styles.tableFixed : ''}`}>
@@ -30,7 +32,11 @@ export function DataTable<T>({ columns, data, keyExtractor, fixedLayout }: DataT
         </thead>
         <tbody>
           {data.map((row) => (
-            <tr key={keyExtractor(row)}>
+            <tr
+              key={keyExtractor(row)}
+              style={rowStyle ? rowStyle(row) : undefined}
+              className={rowClassName ? rowClassName(row) : undefined}
+            >
               {columns.map((col) => (
                 <td key={col.key} style={col.width ? { width: col.width } : undefined}>
                   {col.render ? col.render(row) : (row as Record<string, unknown>)[col.key] as React.ReactNode}
