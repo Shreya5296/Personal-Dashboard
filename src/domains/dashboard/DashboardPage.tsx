@@ -51,6 +51,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
     schedules,
     meetingLinks,
     packages,
+    sessions: classes,
   });
 
   return (

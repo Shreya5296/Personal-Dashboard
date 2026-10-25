@@ -2,7 +2,11 @@
  * MeetingLinkHandlers: Adapts API requests to MeetingLinkService calls and registers operations.
  */
 
-var _mlSvcH = typeof MeetingLinks_create === 'function' ? { MeetingLinks_create: MeetingLinks_create, MeetingLinks_deactivate: MeetingLinks_deactivate } : (typeof require !== 'undefined' ? require('./MeetingLinkService.gs') : null);
+var _mlSvcH = typeof MeetingLinks_create === 'function' ? {
+  MeetingLinks_create: MeetingLinks_create,
+  MeetingLinks_deactivate: MeetingLinks_deactivate,
+  MeetingLinks_cleanupInactiveStudents: MeetingLinks_cleanupInactiveStudents
+} : (typeof require !== 'undefined' ? require('./MeetingLinkService.gs') : null);
 var _mlRepoH = typeof MeetingLinks_getAll === 'function' ? { MeetingLinks_getAll: MeetingLinks_getAll, MeetingLinks_getByStudentId: MeetingLinks_getByStudentId } : (typeof require !== 'undefined' ? require('./MeetingLinkRepository.gs') : null);
 
 function registerMeetingLinkOperations(router) {
@@ -45,6 +49,12 @@ function registerMeetingLinkOperations(router) {
   reg('meetingLinks.deactivate', function(ctx) {
     var id = ctx.payload && (ctx.payload.meetingLinkId || ctx.payload.meeting_link_id || ctx.payload.id || ctx.payload.student_id);
     return _mlSvcH.MeetingLinks_deactivate(ctx.spreadsheet, id, {
+      actorId: ctx.actorId, email: ctx.verifiedEmail, requestId: ctx.requestId
+    });
+  });
+
+  reg('meetingLinks.cleanupInactive', function(ctx) {
+    return _mlSvcH.MeetingLinks_cleanupInactiveStudents(ctx.spreadsheet, {
       actorId: ctx.actorId, email: ctx.verifiedEmail, requestId: ctx.requestId
     });
   });

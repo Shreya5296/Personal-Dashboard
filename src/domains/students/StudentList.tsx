@@ -26,15 +26,26 @@ export const StudentList: React.FC<StudentListProps> = ({
   const studentIds = students.map((s) => s.student_id);
   const {
     getStudentBalance,
+    getStudentLastCompletedDate,
     getStudentSchedule,
     getStudentMeetingLink,
     getStudentFinancials,
   } = useStudentAggregates(studentIds, token);
 
-  const activeCount = students.filter((s) => isStudentActive(s, getStudentBalance(s.student_id))).length;
+  const activeCount = students.filter((s) =>
+    isStudentActive(s, {
+      balance: getStudentBalance(s.student_id),
+      lastCompletedDate: getStudentLastCompletedDate(s.student_id),
+    })
+  ).length;
   const inactiveCount = students.length - activeCount;
 
-  const displayedStudents = filterStudentsByTab(students, activeTab, getStudentBalance);
+  const displayedStudents = filterStudentsByTab(
+    students,
+    activeTab,
+    getStudentBalance,
+    getStudentLastCompletedDate
+  );
 
   const handleToggleExpand = (sid: string) => {
     setExpandedStudentId((prev) => (prev === sid ? null : sid));
@@ -63,14 +74,14 @@ export const StudentList: React.FC<StudentListProps> = ({
         />
       ) : (
         <div className={styles.tableWrapper}>
-          <table className={styles.table}>
+          <table className={`${styles.table} ${styles.tableFixed}`}>
             <thead>
               <tr>
-                <th style={{ width: '28%' }}>Student</th>
-                <th style={{ width: '22%' }}>Subject</th>
-                <th style={{ width: '26%' }}>Class Schedule</th>
-                <th style={{ width: '14%' }}>Classes</th>
-                <th style={{ width: '10%', textAlign: 'right' }}>Actions</th>
+                <th style={{ width: '27%' }}>Student</th>
+                <th style={{ width: '19%' }}>Subject</th>
+                <th style={{ width: '29%' }}>Class Schedule</th>
+                <th style={{ width: '13%' }}>Classes</th>
+                <th style={{ width: '12%', textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>

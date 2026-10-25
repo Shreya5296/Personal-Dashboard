@@ -71,8 +71,8 @@ async function run() {
   console.log(`Parent Name:     ${student.parent_name}`);
   console.log(`Parent Phone:    ${student.parent_phone}`);
   console.log(`Status:          ${student.status}`);
-  if (student.status !== 'ACTIVE') throw new Error(`Expected student status ACTIVE, got: ${student.status}`);
-  console.log('✓ Student record verified and confirmed ACTIVE');
+  if (student.status !== 'ACTIVE' && student.status !== 'INACTIVE') throw new Error(`Expected student status ACTIVE or INACTIVE, got: ${student.status}`);
+  console.log('✓ Student record verified');
 
   // Step 2: Package Verification
   console.log('\n--- 2. PACKAGE VERIFICATION ---');

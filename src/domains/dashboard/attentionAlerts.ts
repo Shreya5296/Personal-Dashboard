@@ -2,7 +2,9 @@ import { Student } from '../students/studentTypes';
 import { Package } from '../packages/packageTypes';
 import { MeetingLink } from '../meeting-links/meetingLinkTypes';
 import { WeeklyScheduleEntry } from '../classes/scheduleApi';
+import { ClassSession } from '../classes/classTypes';
 import { NavSection } from '../../layout/Sidebar';
+import { getLatestCompletedClassDate, isStudentActive } from '../students/studentStatusClassifier';
 
 export interface AttentionAlert {
   id: string;
@@ -15,18 +17,33 @@ export interface AttentionAlert {
   student: Student;
 }
 
-export function generateAttentionAlerts(params: {
+export interface AttentionAlertParams {
   students: Student[];
   schedules: WeeklyScheduleEntry[];
   meetingLinks: MeetingLink[];
   packages: Package[];
-}): AttentionAlert[] {
-  const { students = [], schedules = [], meetingLinks = [], packages = [] } = params;
+  sessions?: ClassSession[];
+  activeTz?: string;
+  referenceDateStr?: string;
+}
 
-  // Filter only strictly ACTIVE students
-  const activeStudents = students.filter((s) => {
-    const st = (s.status || '').trim().toUpperCase();
-    return st === 'ACTIVE' || (!st && (s as unknown as { is_active?: boolean }).is_active !== false);
+export function generateAttentionAlerts(params: AttentionAlertParams): AttentionAlert[] {
+  const { students = [], schedules = [], meetingLinks = [], packages = [], sessions = [], activeTz = 'Asia/Kolkata', referenceDateStr } = params;
+
+  // Filter strictly ACTIVE students:
+  // Inactive students (by status or last completed class >= 1 calendar month ago) are excluded
+  // Students with 0 completed classes remain active.
+  const activeStudents = students.filter((stu) => {
+    const st = (stu.status || '').trim().toUpperCase();
+    if (st === 'ARCHIVED' || st === 'INACTIVE') return false;
+
+    if (sessions.length > 0) {
+      const lastCompleted = getLatestCompletedClassDate(sessions, stu.student_id, activeTz);
+      if (!isStudentActive(stu, { lastCompletedDate: lastCompleted, referenceDateStr })) {
+        return false;
+      }
+    }
+    return true;
   });
 
   const alerts: AttentionAlert[] = [];
@@ -35,7 +52,7 @@ export function generateAttentionAlerts(params: {
     const sid = stu.student_id;
     const sName = stu.student_name || stu.full_name || sid;
 
-    // 1. Missing Meeting Link
+    // 1. Missing Meeting Link (only for active students)
     const link = meetingLinks.find((l) => l.student_id === sid);
     const hasValidLink = Boolean(
       (link?.meeting_link_1 && link.meeting_link_1.trim()) ||
@@ -56,7 +73,7 @@ export function generateAttentionAlerts(params: {
       });
     }
 
-    // 2. Missing Class Schedule
+    // 2. Missing Class Schedule (only for active students)
     const studentSchedules = schedules.filter((sch) => sch.student_id === sid && sch.is_active !== false);
     if (studentSchedules.length === 0) {
       alerts.push({
@@ -71,7 +88,7 @@ export function generateAttentionAlerts(params: {
       });
     }
 
-    // 3. Four or fewer classes remaining
+    // 3. Four or fewer classes remaining / Package Renewal (only for active students)
     const stuPkgs = packages.filter((p) => p.student_id === sid && p.status !== 'VOID' && p.status !== 'CANCELLED');
     if (stuPkgs.length > 0) {
       let totalPurchased = 0;

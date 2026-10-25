@@ -5,8 +5,11 @@ import { MeetingLink } from '../meeting-links/meetingLinkTypes';
 import { fetchMeetingLinks } from '../meeting-links/meetingLinkApi';
 import { Payment } from '../payments/paymentTypes';
 import { fetchPayments } from '../payments/paymentApi';
+import { fetchClasses } from '../classes/classApi';
+import { ClassSession } from '../classes/classTypes';
 import { fetchSchedules, WeeklyScheduleEntry } from '../classes/scheduleApi';
 import { parseCanonicalScheduleString } from './scheduleFormatter';
+import { getLatestCompletedClassDate } from './studentStatusClassifier';
 
 export interface StudentFinancialInfo {
   totalInvoiced: number;
@@ -19,6 +22,7 @@ export function useStudentAggregates(studentIds: string[], token?: string | null
   const [packages, setPackages] = useState<Package[]>([]);
   const [meetingLinks, setMeetingLinks] = useState<MeetingLink[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [classes, setClasses] = useState<ClassSession[]>([]);
   const [schedulesMap, setSchedulesMap] = useState<Record<string, WeeklyScheduleEntry[]>>({});
   const [loading, setLoading] = useState(false);
 
@@ -26,15 +30,17 @@ export function useStudentAggregates(studentIds: string[], token?: string | null
     if (!studentIds || studentIds.length === 0) return;
     setLoading(true);
     try {
-      const [pkgs, links, pays] = await Promise.all([
+      const [pkgs, links, pays, cls] = await Promise.all([
         fetchPackages(undefined, token).catch(() => []),
         fetchMeetingLinks(undefined, token).catch(() => []),
         fetchPayments(undefined, undefined, token).catch(() => []),
+        fetchClasses(undefined, token).catch(() => []),
       ]);
 
       setPackages(pkgs);
       setMeetingLinks(links);
       setPayments(pays);
+      setClasses(cls);
 
       const schedPromises = studentIds.map(async (sid) => {
         const sched = await fetchSchedules(sid, token).catch(() => []);
@@ -77,13 +83,12 @@ export function useStudentAggregates(studentIds: string[], token?: string | null
     return { totalPurchased, totalConsumed, packages: studentPkgs };
   };
 
-  const getStudentSchedule = (sid: string): WeeklyScheduleEntry[] => {
-    return schedulesMap[sid] || [];
+  const getStudentLastCompletedDate = (sid: string): string | null => {
+    return getLatestCompletedClassDate(classes, sid);
   };
 
-  const getStudentMeetingLink = (sid: string): MeetingLink | undefined => {
-    return meetingLinks.find((l) => l.student_id === sid);
-  };
+  const getStudentSchedule = (sid: string): WeeklyScheduleEntry[] => schedulesMap[sid] || [];
+  const getStudentMeetingLink = (sid: string): MeetingLink | undefined => meetingLinks.find((l) => l.student_id === sid);
 
   const getStudentFinancials = (sid: string): StudentFinancialInfo => {
     const studentPkgs = packages.filter((p) => p.student_id === sid && p.status !== 'CANCELLED' && p.status !== 'VOID');
@@ -108,6 +113,7 @@ export function useStudentAggregates(studentIds: string[], token?: string | null
   return {
     loading,
     getStudentBalance,
+    getStudentLastCompletedDate,
     getStudentSchedule,
     getStudentMeetingLink,
     getStudentFinancials,

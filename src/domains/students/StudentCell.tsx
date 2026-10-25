@@ -30,7 +30,7 @@ export const StudentCell: React.FC<StudentCellProps> = ({ student, onSelect }) =
       >
         {initial}
       </div>
-      <div>
+      <div style={{ minWidth: 0, overflow: 'hidden' }}>
         <span
           onClick={(e) => {
             if (onSelect) {
@@ -38,12 +38,16 @@ export const StudentCell: React.FC<StudentCellProps> = ({ student, onSelect }) =
               onSelect(student);
             }
           }}
+          title={name}
           style={{
             fontWeight: 600,
             color: 'var(--color-text-main)',
             fontSize: 'var(--font-size-sm)',
             display: 'block',
             cursor: onSelect ? 'pointer' : undefined,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
           }}
         >
           {name}

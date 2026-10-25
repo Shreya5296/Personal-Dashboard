@@ -5,7 +5,7 @@
 var _mlIdGen = typeof generateMeetingLinkId === 'function' ? { generateMeetingLinkId: generateMeetingLinkId } : (typeof require !== 'undefined' ? require('../shared/IdGenerator.gs') : null);
 var _mlVal = typeof validateMeetingLinkInput === 'function' ? { validateMeetingLinkInput: validateMeetingLinkInput } : (typeof require !== 'undefined' ? require('./MeetingLinkValidation.gs') : null);
 var _mlRepo = typeof MeetingLinks_getAll === 'function' ? { MeetingLinks_getAll: MeetingLinks_getAll, MeetingLinks_getById: MeetingLinks_getById, MeetingLinks_getByStudentId: MeetingLinks_getByStudentId, MeetingLinks_insert: MeetingLinks_insert, MeetingLinks_update: MeetingLinks_update } : (typeof require !== 'undefined' ? require('./MeetingLinkRepository.gs') : null);
-var _mlStuRepo = typeof Students_getById === 'function' ? { Students_getById: Students_getById } : (typeof require !== 'undefined' ? require('../students/StudentRepository.gs') : null);
+var _mlStuRepo = typeof Students_getById === 'function' ? { Students_getById: Students_getById, Students_getAll: typeof Students_getAll === 'function' ? Students_getAll : null } : (typeof require !== 'undefined' ? require('../students/StudentRepository.gs') : null);
 var _mlAudit = typeof recordAuditEvent === 'function' ? { recordAuditEvent: recordAuditEvent } : (typeof require !== 'undefined' ? require('../audit/AuditService.gs') : null);
 var _mlReg = {
   get SHEET_NAMES() {
@@ -87,9 +87,72 @@ function MeetingLinks_deactivate(spreadsheet, linkId, actor) {
   return { success: true, data: updated };
 }
 
+function _calcOneMonthAgoInIst(refDateStr) {
+  var d = refDateStr ? new Date(refDateStr) : new Date();
+  var parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+  var p = parts.split('-').map(Number);
+  var targetY = p[1] === 1 ? p[0] - 1 : p[0];
+  var targetM = p[1] === 1 ? 12 : p[1] - 1;
+  var maxDays = new Date(Date.UTC(targetY, targetM, 0)).getUTCDate();
+  var targetD = Math.min(p[2], maxDays);
+  return targetY + '-' + (targetM < 10 ? '0' + targetM : String(targetM)) + '-' + (targetD < 10 ? '0' + targetD : String(targetD));
+}
+
+function MeetingLinks_cleanupInactiveStudents(spreadsheet, actor) {
+  var stuSheet = spreadsheet.getSheetByName(_mlReg.SHEET_NAMES.STUDENTS);
+  var students = stuSheet ? (typeof readAllRecords === 'function' ? readAllRecords(stuSheet, _mlMap) : (_mlStuRepo && _mlStuRepo.Students_getAll ? _mlStuRepo.Students_getAll(spreadsheet) : [])) : [];
+  var clsSheet = spreadsheet.getSheetByName(_mlReg.SHEET_NAMES.CLASS_SESSIONS);
+  var sessions = clsSheet ? (typeof readAllRecords === 'function' ? readAllRecords(clsSheet, _mlMap) : []) : [];
+
+  var thresholdDate = _calcOneMonthAgoInIst();
+  var cleanedStudentIds = [];
+
+  for (var i = 0; i < students.length; i++) {
+    var stu = students[i];
+    var sid = stu.student_id;
+    var statusUpper = String(stu.status || stu.student_status || '').toUpperCase();
+    var isInactive = false;
+
+    if (statusUpper === 'ARCHIVED' || statusUpper === 'INACTIVE') {
+      isInactive = true;
+    } else {
+      var stuCompleted = sessions.filter(function(s) {
+        return s.student_id === sid && String(s.session_status || s.status || '').toUpperCase() === 'COMPLETED';
+      });
+
+      if (stuCompleted.length > 0) {
+        var latestDate = '';
+        for (var c = 0; c < stuCompleted.length; c++) {
+          var cd = stuCompleted[c].schedule_date || stuCompleted[c].class_date || '';
+          if (!cd && stuCompleted[c].scheduled_start) cd = String(stuCompleted[c].scheduled_start).slice(0, 10);
+          if (cd && (!latestDate || cd > latestDate)) latestDate = cd;
+        }
+        if (latestDate && latestDate < thresholdDate) {
+          isInactive = true;
+        }
+      }
+    }
+
+    if (isInactive) {
+      var existingLink = _mlRepo.MeetingLinks_getByStudentId(spreadsheet, sid);
+      if (existingLink && (existingLink.meeting_link_1 || existingLink.meeting_link_2)) {
+        _mlRepo.MeetingLinks_update(spreadsheet, sid, {
+          meeting_link_1: '',
+          meeting_link_2: ''
+        });
+        cleanedStudentIds.push(sid);
+      }
+    }
+  }
+
+  return { success: true, data: { cleanedStudentIds: cleanedStudentIds, count: cleanedStudentIds.length } };
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     MeetingLinks_create: MeetingLinks_create,
-    MeetingLinks_deactivate: MeetingLinks_deactivate
+    MeetingLinks_deactivate: MeetingLinks_deactivate,
+    MeetingLinks_cleanupInactiveStudents: MeetingLinks_cleanupInactiveStudents,
+    _calcOneMonthAgoInIst: _calcOneMonthAgoInIst
   };
 }

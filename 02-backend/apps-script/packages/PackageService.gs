@@ -134,6 +134,33 @@ function _calcPkgDates(startDateStr, recurringDays, totalClasses) {
   };
 }
 
+function _calcYearlyOccurrences(startDateStr, endDateStr, schedEntries) {
+  if (!startDateStr || !endDateStr || !schedEntries || !schedEntries.length) return 0;
+  var DAY_MAP = { SUNDAY: 0, MONDAY: 1, TUESDAY: 2, WEDNESDAY: 3, THURSDAY: 4, FRIDAY: 5, SATURDAY: 6 };
+  var startParts = startDateStr.split('-').map(Number);
+  var endParts = endDateStr.split('-').map(Number);
+  if (!startParts[0] || !startParts[1] || !startParts[2]) return 0;
+  if (!endParts[0] || !endParts[1] || !endParts[2]) return 0;
+  var curr = new Date(Date.UTC(startParts[0], startParts[1] - 1, startParts[2], 12, 0, 0));
+  var endDt = new Date(Date.UTC(endParts[0], endParts[1] - 1, endParts[2], 12, 0, 0));
+  if (curr > endDt) return 0;
+
+  var count = 0;
+  var safety = 0;
+  while (curr <= endDt && safety < 800) {
+    var dayOfWeek = curr.getUTCDay();
+    for (var i = 0; i < schedEntries.length; i++) {
+      var dStr = String(schedEntries[i].day_of_week || '').trim().toUpperCase();
+      if (DAY_MAP[dStr] === dayOfWeek) {
+        count++;
+      }
+    }
+    curr.setUTCDate(curr.getUTCDate() + 1);
+    safety++;
+  }
+  return count;
+}
+
 function Packages_create(spreadsheet, data, actor) {
   var v = _pkgVal.validatePackageInput(data, false);
   if (!v.valid) {
@@ -177,6 +204,25 @@ function Packages_create(spreadsheet, data, actor) {
     class_duration: rawDuration !== undefined && rawDuration !== '' ? Number(rawDuration) : 60,
     class_schedule: schedStr
   };
+
+  var isYearly = String(record.plan_type || '').toUpperCase().indexOf('YEARLY') !== -1;
+  if (isYearly && record.start_date) {
+    if (!record.end_date) {
+      var sp = record.start_date.split('-').map(Number);
+      var endDefault = new Date(Date.UTC(sp[0] + 1, sp[1] - 1, sp[2] - 1, 12, 0, 0));
+      var ey = endDefault.getUTCFullYear();
+      var em = String(endDefault.getUTCMonth() + 1); if (em.length < 2) em = '0' + em;
+      var ed = String(endDefault.getUTCDate()); if (ed.length < 2) ed = '0' + ed;
+      record.end_date = ey + '-' + em + '-' + ed;
+    }
+    var schedList = (data.schedules && data.schedules.length > 0) ? data.schedules : _parseScheduleString(record.class_schedule, record.class_duration);
+    if (schedList && schedList.length > 0) {
+      var yearlyCount = _calcYearlyOccurrences(record.start_date, record.end_date, schedList);
+      if (yearlyCount > 0 && (!rawQty || rawQty === 0 || rawQty === '0')) {
+        record.classes_purchased = yearlyCount;
+      }
+    }
+  }
 
   if ((!record.end_date || !record.next_due_date) && record.start_date && record.classes_purchased > 0) {
     var schedDays = data.recurring_days || (data.schedules ? data.schedules.map(function(s) { return s.day_of_week; }) : null);
@@ -382,6 +428,20 @@ function Packages_update(spreadsheet, targetId, data, actor) {
   } else if (data.schedules && Array.isArray(data.schedules)) {
     updates.class_schedule = _formatScheduleString(data.schedules);
   }
+
+  var isYearlyPlan = updates.plan_type ? updates.plan_type.toUpperCase().indexOf('YEARLY') !== -1 : (existing.plan_type && existing.plan_type.toUpperCase().indexOf('YEARLY') !== -1);
+  if (isYearlyPlan) {
+    var sDate = updates.start_date || existing.start_date;
+    var eDate = updates.end_date || existing.end_date;
+    var sStr = updates.class_schedule !== undefined ? updates.class_schedule : (existing.class_schedule || '');
+    var dur = updates.class_duration || existing.class_duration || 60;
+    var parsedSched = _parseScheduleString(sStr, dur);
+    if (sDate && eDate && parsedSched.length > 0 && updates.classes_purchased === undefined) {
+      var yCount = _calcYearlyOccurrences(sDate, eDate, parsedSched);
+      if (yCount > 0) updates.classes_purchased = yCount;
+    }
+  }
+
   updates.updated_at = new Date().toISOString();
 
   var updated = _pkgRepo.Packages_update(spreadsheet, existing.student_id, updates);
@@ -407,6 +467,7 @@ if (typeof module !== 'undefined' && module.exports) {
     Packages_update: Packages_update,
     Packages_enrichWithBalance: Packages_enrichWithBalance,
     _calcPkgDates: _calcPkgDates,
+    _calcYearlyOccurrences: _calcYearlyOccurrences,
     _formatScheduleString: _formatScheduleString,
     _parseScheduleString: _parseScheduleString
   };

@@ -1,3 +1,5 @@
+export type CalendarViewMode = 'day' | 'week' | 'month';
+
 export interface CalendarEventItem {
   id: string;
   studentId: string;
