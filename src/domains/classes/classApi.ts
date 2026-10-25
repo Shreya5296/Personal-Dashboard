@@ -1,4 +1,5 @@
 import { sendApiRequest } from '../../api/apiClient';
+import { ApiClientError } from '../../api/apiErrors';
 import { ClassSession, ClassSessionInput, AttendanceStatus } from './classTypes';
 
 export async function fetchClasses(
@@ -31,7 +32,8 @@ export async function scheduleClass(
 export async function batchScheduleClasses(
   studentId: string,
   sessions: ClassSessionInput[],
-  token?: string | null
+  token?: string | null,
+  options?: { fallback?: boolean }
 ): Promise<ClassSession[]> {
   try {
     const response = await sendApiRequest<ClassSession[]>(
@@ -41,8 +43,11 @@ export async function batchScheduleClasses(
     );
     return response.data || [];
   } catch (err: unknown) {
-    const msg = (err as Error)?.message || '';
-    if (msg.includes('Unknown operation') && msg.includes('classes.batchSchedule')) {
+    const isUnsupported =
+      (err instanceof ApiClientError && err.code === 'UNKNOWN_OPERATION') ||
+      ((err as Error)?.message || '').includes('Unknown operation: classes.batchSchedule');
+
+    if (isUnsupported && options?.fallback !== false) {
       const scheduled: ClassSession[] = [];
       for (const s of sessions) {
         try {

@@ -345,4 +345,47 @@ describe('Registration Failure and Recovery Suite (12 Scenarios)', () => {
     expect(pkgDates.endDate).toBe(session48.dateStr);
     expect(pkgDates.nextDueDate).toBe(session44.dateStr);
   });
+
+  // Scenario 13: Network error on batch scheduling is not mistaken for unsupported operation
+  it('13. Network failure on batchScheduleClasses immediately rethrows without attempting sequential requests', async () => {
+    const apiClient = await import('../../src/api/apiClient');
+    const { ApiNetworkError } = await import('../../src/api/apiErrors');
+    const sendSpy = vi.spyOn(apiClient, 'sendApiRequest');
+
+    sendSpy.mockRejectedValue(new ApiNetworkError('Network request failed: Failed to fetch'));
+
+    await expect(
+      classApi.batchScheduleClasses('STU_001', [
+        { student_id: 'STU_001', scheduled_start: '2026-10-26T12:30:00.000Z', duration_minutes: 30 },
+      ], 'mock_token')
+    ).rejects.toThrow('Network request failed: Failed to fetch');
+
+    // Verify it called classes.batchSchedule exactly ONCE and did NOT attempt classes.schedule
+    expect(sendSpy).toHaveBeenCalledTimes(1);
+    expect(sendSpy).toHaveBeenCalledWith('classes.batchSchedule', expect.anything(), expect.anything());
+
+    sendSpy.mockRestore();
+  });
+
+  // Scenario 14: submitRegistration handles native batch success cleanly
+  it('14. submitRegistration completes immediately when native classes.batchSchedule succeeds', async () => {
+    vi.spyOn(studentApi, 'fetchStudents').mockResolvedValue([]);
+    vi.spyOn(studentApi, 'createStudent').mockResolvedValue({
+      student_id: 'STU_001',
+      student_name: 'Seerat Kaur',
+      status: 'ACTIVE',
+      created_at: '2026-10-25T11:00:00Z',
+    });
+    vi.spyOn(packageApi, 'fetchPackages').mockResolvedValue([]);
+    vi.spyOn(packageApi, 'createPackage').mockResolvedValue({ package_id: 'PKG_001' } as any);
+    vi.spyOn(scheduleApi, 'saveSchedules').mockResolvedValue([]);
+    vi.spyOn(classApi, 'fetchClasses').mockResolvedValue([]);
+    vi.spyOn(classApi, 'batchScheduleClasses').mockResolvedValue([
+      { class_session_id: 'cls_1' } as any,
+    ]);
+
+    const result = await submitRegistration(baseFormData, null, 'mock_token');
+    expect(result.student.student_id).toBe('STU_001');
+    expect(result.message).toBe('Student Seerat Kaur (STU_001) registered successfully.');
+  });
 });

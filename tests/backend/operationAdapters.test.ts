@@ -375,4 +375,94 @@ describe('Backend Operation Adapters and Compatibility', () => {
     expect(schedList.data).toHaveLength(2);
     expect(schedList.data[0].day_of_week).toBe('MONDAY');
   });
+
+  it('supports native classes.batchSchedule for 48 sessions and handles duplicate avoidance', () => {
+    // 1. Create student and package
+    const stu = registry['students.create']({
+      spreadsheet,
+      payload: { full_name: 'Batch Student', phone: '9876543210', parent_name: 'Batch Parent' },
+      actorId: 'usr_test',
+    });
+    const sid = stu.data.student_id;
+
+    const pkg = registry['packages.create']({
+      spreadsheet,
+      payload: {
+        student_id: sid,
+        package_name: '48 Class Package',
+        total_classes: 48,
+        price: 16800,
+        class_duration: 30,
+      },
+      actorId: 'usr_test',
+    });
+    const pkgId = pkg.data.package_id;
+
+    // 2. Generate 48 sessions payload
+    const sessions = [];
+    for (let i = 0; i < 48; i++) {
+      const d = String(i + 1).padStart(2, '0');
+      sessions.push({
+        student_id: sid,
+        package_id: pkgId,
+        scheduled_start: `2026-11-${d}T12:30:00.000Z`,
+        scheduled_end: `2026-11-${d}T13:00:00.000Z`,
+        class_date: `2026-11-${d}`,
+        duration_minutes: 30,
+      });
+    }
+
+    // 3. Execute classes.batchSchedule
+    const batchRes = registry['classes.batchSchedule']({
+      spreadsheet,
+      payload: { student_id: sid, package_id: pkgId, sessions },
+      actorId: 'usr_test',
+    });
+
+    expect(batchRes.success).toBe(true);
+    expect(batchRes.count).toBe(48);
+    expect(batchRes.data).toHaveLength(48);
+
+    // 4. Repeat exact batchSchedule request (idempotency check: 0 new sessions created)
+    const duplicateRes = registry['classes.batchSchedule']({
+      spreadsheet,
+      payload: { student_id: sid, package_id: pkgId, sessions },
+      actorId: 'usr_test',
+    });
+    expect(duplicateRes.success).toBe(true);
+    expect(duplicateRes.count).toBe(0); // All 48 skipped as existing
+
+    // 5. Total classes in sheet remains exactly 48
+    const listRes = registry['classes.list']({
+      spreadsheet,
+      payload: { student_id: sid },
+    });
+    expect(listRes.success).toBe(true);
+    expect(listRes.data).toHaveLength(48);
+
+    // 6. Test classes.update and classes.batchUpdate
+    const firstSession = listRes.data[0];
+    const updateRes = registry['classes.update']({
+      spreadsheet,
+      payload: {
+        class_session_id: firstSession.session_id,
+        scheduled_start: '2026-11-01T12:30:00.000Z',
+        scheduled_end: '2026-11-01T13:00:00.000Z',
+      },
+      actorId: 'usr_test',
+    });
+    expect(updateRes.success).toBe(true);
+
+    const batchUpdateRes = registry['classes.batchUpdate']({
+      spreadsheet,
+      payload: {
+        updates: [
+          { class_session_id: firstSession.session_id, notes: 'Updated note' },
+        ],
+      },
+      actorId: 'usr_test',
+    });
+    expect(batchUpdateRes.success).toBe(true);
+    expect(batchUpdateRes.count).toBe(1);
+  });
 });

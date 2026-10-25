@@ -7,6 +7,7 @@ import { calculatePackageDates } from '../packages/packageCalculations';
 import { generateProposedSessions } from '../classes/classGenerator';
 import { batchScheduleClasses, fetchClasses } from '../classes/classApi';
 import { startAsyncScheduling } from './asyncScheduleWorker';
+import { ApiClientError } from '../../api/apiErrors';
 
 export interface SubmitRegistrationResult {
   student: Student;
@@ -84,10 +85,12 @@ export async function submitRegistration(
         }));
 
         try {
-          await batchScheduleClasses(activeStudent.student_id, sessions, token);
+          await batchScheduleClasses(activeStudent.student_id, sessions, token, { fallback: false });
         } catch (batchErr: unknown) {
-          const bMsg = (batchErr as Error)?.message || '';
-          if (bMsg.includes('Unknown operation') && bMsg.includes('classes.batchSchedule')) {
+          const isUnsupported =
+            (batchErr instanceof ApiClientError && batchErr.code === 'UNKNOWN_OPERATION') ||
+            ((batchErr as Error)?.message || '').includes('classes.batchSchedule');
+          if (isUnsupported) {
             await startAsyncScheduling({
               studentId: activeStudent.student_id, studentName: activeStudent.student_name,
               packageId: createdPkg?.package_id, firstClassDate: formData.first_class_date,

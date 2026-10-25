@@ -72,6 +72,33 @@ function registerClassOperations(router) {
       actorId: ctx.actorId, email: ctx.verifiedEmail, requestId: ctx.requestId
     });
   });
+
+  reg('classes.update', function(ctx) {
+    var p = ctx.payload || ctx.data || {};
+    var id = p.class_session_id || p.session_id;
+    if (!id) return { success: false, code: 'VALIDATION_ERROR', message: 'Class session ID is required' };
+    var updated = _clsRepoH.Classes_update(ctx.spreadsheet, id, p);
+    if (!updated) return { success: false, code: 'RECORD_NOT_FOUND', message: 'Class session not found: ' + id };
+    return { success: true, data: updated };
+  });
+
+  reg('classes.batchUpdate', function(ctx) {
+    var p = ctx.payload || ctx.data || {};
+    var items = p.updates || p.sessions || [];
+    if (!Array.isArray(items) || items.length === 0) {
+      return { success: false, code: 'VALIDATION_ERROR', message: 'No updates provided' };
+    }
+    var updated = [];
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      var id = item.class_session_id || item.session_id;
+      if (id) {
+        var res = _clsRepoH.Classes_update(ctx.spreadsheet, id, item);
+        if (res) updated.push(res);
+      }
+    }
+    return { success: true, count: updated.length, data: updated };
+  });
 }
 
 if (typeof registerOperation === 'function') {
