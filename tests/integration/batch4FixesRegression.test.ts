@@ -14,19 +14,19 @@ describe('Fix Batch 4 — Calendar, Tables, Finance Currency & Navigation', () =
       attendance_status: 'PRESENT',
     };
     const pastStyle = getMonthSessionStyle(completedSession, true);
-    expect(pastStyle.bg).toBe('#f4fdf8');
-    expect(pastStyle.border).toContain('#bbf7d0');
-    expect(pastStyle.color).toBe('#166534');
-    expect(pastStyle.opacity).toBeLessThanOrEqual(0.75);
+    expect(pastStyle.bg).toBe('#e5f4ea');
+    expect(pastStyle.border).toContain('#b7dfc4');
+    expect(pastStyle.color).toBe('#276749');
+    expect(pastStyle.opacity).toBeLessThanOrEqual(0.85);
 
     const cancelledSession: ClassSession = {
       session_id: 'SESS_002', student_id: 'STU_002', status: 'CANCELLED', session_status: 'CANCELLED',
       attendance_status: 'CANCELLED',
     };
     const cancelStyle = getMonthSessionStyle(cancelledSession, false);
-    expect(cancelStyle.bg).toBe('#fdf2f2');
-    expect(cancelStyle.color).toBe('#a65a5a');
-    expect(cancelStyle.border).toContain('#f3caca');
+    expect(cancelStyle.bg).toBe('#fbe7e7');
+    expect(cancelStyle.color).toBe('#a63f3f');
+    expect(cancelStyle.border).toContain('#eab4b4');
   });
 
   it('Fix 2: formatWeekRangeTitle formats human-friendly week titles with month names', () => {

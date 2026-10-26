@@ -42,7 +42,7 @@
 .dayBodyToday { background-color: rgba(37, 99, 235, 0.02); }
 
 .eventCard {
-  margin: 2px 4px; padding: 5px 7px; border-radius: var(--radius-md); font-size: 11px;
+  margin: 0; padding: 3px 5px; border-radius: var(--radius-md); font-size: 11px;
   display: flex; flex-direction: column; gap: 2px; cursor: pointer;
   transition: transform 120ms ease, box-shadow 120ms ease; position: relative; box-sizing: border-box;
 }
@@ -60,33 +60,31 @@
 .recurringCard .eventTime { color: #92400e; }
 
 /* Past classes attendance colors */
-.cardAttended { background-color: #f1f8f4; border: 1px solid #d1fae5; border-left: 3px solid #86efac; color: #166534; opacity: 0.68; filter: saturate(0.75); }
-.cardAttended .eventStudent { color: #166534; font-weight: 500; }
-.cardAttended .eventSubject { color: #15803d; }
-.cardAttended .eventTime { color: #166534; }
+.cardAttended { background-color: #e5f4ea; border: 1px solid #b7dfc4; border-left: 3px solid #b7dfc4; color: #276749; opacity: 0.82; }
+.cardAttended .eventStudent { color: #276749; font-weight: 600; }
+.cardAttended .eventSubject { color: #276749; opacity: 0.9; }
+.cardAttended .eventTime { color: #276749; font-weight: 600; }
 
-.cardAbsent { background-color: #fdf2f2; border: 1px solid #f3caca; border-left: 3px solid #f3caca; color: #a65a5a; opacity: 0.68; }
-.cardAbsent .eventStudent { color: #a65a5a; }
+.cardAbsent { background-color: #fbe7e7; border: 1px solid #eab4b4; border-left: 3px solid #eab4b4; color: #a63f3f; opacity: 0.82; }
+.cardAbsent .eventStudent { color: #a63f3f; font-weight: 600; }
+.cardAbsent .eventSubject { color: #a63f3f; opacity: 0.9; }
+.cardAbsent .eventTime { color: #a63f3f; font-weight: 600; }
 
 .cardUnmarked { background-color: #fffbeb; border: 1px solid #fbbf24; border-left: 3px solid #d97706; color: #92400e; opacity: 0.85; }
 
-.cardCancelled { background-color: #fdf2f2; border: 1px solid #f3caca; border-left: 3px solid #f3caca; color: #a65a5a; opacity: 0.68; filter: saturate(0.75); }
-.cardCancelled .eventStudent { color: #a65a5a; font-weight: 500; }
-.cardCancelled .eventSubject { color: #a65a5a; }
-.cardCancelled .eventTime { color: #a65a5a; }
+.cardCancelled { background-color: #fbe7e7; border: 1px solid #eab4b4; border-left: 3px solid #eab4b4; color: #a63f3f; opacity: 0.82; }
+.cardCancelled .eventStudent { color: #a63f3f; font-weight: 600; }
+.cardCancelled .eventSubject { color: #a63f3f; opacity: 0.9; }
+.cardCancelled .eventTime { color: #a63f3f; font-weight: 600; }
 
-.eventHeader { display: flex; justify-content: space-between; align-items: flex-start; gap: 2px; }
-.eventStudent { font-weight: 700; font-size: 11.5px; color: var(--color-text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
-.eventSubject { font-size: 10px; font-weight: 500; opacity: 0.9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.eventTime { font-weight: 600; font-size: 10px; opacity: 0.95; }
+.eventHeader { display: flex; justify-content: space-between; align-items: center; gap: 2px; line-height: 1.2; min-height: 14px; }
+.eventStudent { font-weight: 700; font-size: 11px; color: var(--color-text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
+.eventSubject { font-size: 10px; font-weight: 500; opacity: 0.9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
+.eventTime { font-weight: 600; font-size: 9.5px; opacity: 0.95; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
 
 .badgeSubtle {
   font-size: 9px; font-weight: 600; text-transform: uppercase; padding: 1px 3px;
   border-radius: var(--radius-sm); background-color: rgba(0,0,0,0.06); color: inherit;
-}
-.badgeCancelled {
-  font-size: 9px; font-weight: 700; text-transform: uppercase; padding: 1px 3px;
-  border-radius: var(--radius-sm); background-color: #fdf2f2; color: #a65a5a; border: 1px solid #f3caca;
 }
 
 .joinBtn {

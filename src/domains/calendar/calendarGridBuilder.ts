@@ -1,10 +1,9 @@
 import { ClassSession } from '../classes/classTypes';
-import { WeeklyScheduleEntry } from '../classes/scheduleApi';
+import { WeeklyScheduleEntry, cleanTime } from '../classes/scheduleApi';
 import { Student } from '../students/studentTypes';
 import { Package } from '../packages/packageTypes';
 import { CalendarEventItem, DayColumnData } from './calendarTypes';
-import { generateCalendarEvents, getDateKeyInTz, makeIsoInTz } from '../dashboard/calendarEventGenerator';
-import { cleanTime } from '../classes/scheduleApi';
+import { generateCalendarEvents, makeIsoInTz, getLocalTime, parseTimeToMin, WEEKDAYS } from '../dashboard/calendarEventGenerator';
 import { formatIsoTo12Hour } from '../../lib/time12Format';
 import { toInputDateFormat } from '../../lib/dateFormat';
 import { classifyCalendarEvent, isEventPast } from './calendarClassification';
@@ -35,6 +34,7 @@ export function buildDayColumns(params: {
     const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'UTC' }).format(dayDate);
     const dayNumber = String(d);
     const isToday = dayKey === todayKey;
+    const dayOfWeek = WEEKDAYS[dayDate.getUTCDay()];
 
     const dayRawEvents = allEvents.filter((c) => {
       const dDate = c.schedule_date || c.class_date;
@@ -42,41 +42,42 @@ export function buildDayColumns(params: {
       const raw = c.scheduled_start || c.start_time;
       if (!raw) return false;
       const parsed = new Date(String(raw).trim().replace(/T\s+(\d:)/, 'T0$1'));
-      return !isNaN(parsed.getTime()) && getDateKeyInTz(parsed, activeTz) === dayKey;
+      return !isNaN(parsed.getTime()) && raw.slice(0, 10) === dayKey;
     });
 
     const events: CalendarEventItem[] = dayRawEvents.map((c, idx) => {
-      const sTime = cleanTime(c.schedule_time || c.start_time);
+      let sTime = cleanTime(c.schedule_time) || getLocalTime(c.start_time || c.scheduled_start, activeTz);
+      const sched = recurringSchedules.find((s) => s.student_id === c.student_id && s.day_of_week?.toUpperCase() === dayOfWeek);
+      if (!sTime && sched?.start_time) sTime = cleanTime(sched.start_time);
+
+      const dur = c.duration_minutes || (sched ? Math.max(15, parseTimeToMin(sched.end_time) - parseTimeToMin(sched.start_time)) : 60);
       let rawStart = c.scheduled_start || '';
+      let rawEnd = c.scheduled_end || '';
+      let startHour = 17;
+      let startMinute = 0;
+
       if (sTime) {
         rawStart = makeIsoInTz(dayKey, sTime, activeTz);
-      } else if (!rawStart) {
-        rawStart = makeIsoInTz(dayKey, '17:00', activeTz);
-      }
-      const parsedStart = new Date(String(rawStart).trim().replace(/T\s+(\d:)/, 'T0$1'));
-
-      const dur = c.duration_minutes || 60;
-      let rawEnd = c.scheduled_end || '';
-      if (sTime) {
         const [sh, sm] = sTime.split(':').map(Number);
-        const endMins = (sh || 0) * 60 + (sm || 0) + dur;
+        startHour = sh || 0;
+        startMinute = sm || 0;
+        const endMins = startHour * 60 + startMinute + dur;
         const eHH = String(Math.floor(endMins / 60)).padStart(2, '0');
         const eMM = String(endMins % 60).padStart(2, '0');
         rawEnd = makeIsoInTz(dayKey, `${eHH}:${eMM}`, activeTz);
-      }
-
-      let startHour = 17;
-      let startMinute = 0;
-      if (!isNaN(parsedStart.getTime())) {
-        try {
-          const parts = new Intl.DateTimeFormat('en-GB', {
-            timeZone: activeTz, hour: '2-digit', minute: '2-digit', hour12: false,
-          }).formatToParts(parsedStart);
-          startHour = parseInt(parts.find((p) => p.type === 'hour')?.value || '17', 10);
-          startMinute = parseInt(parts.find((p) => p.type === 'minute')?.value || '0', 10);
-        } catch {
-          startHour = parsedStart.getHours();
-          startMinute = parsedStart.getMinutes();
+      } else if (rawStart) {
+        const parsedStart = new Date(String(rawStart).trim().replace(/T\s+(\d:)/, 'T0$1'));
+        if (!isNaN(parsedStart.getTime())) {
+          try {
+            const parts = new Intl.DateTimeFormat('en-GB', {
+              timeZone: activeTz, hour: '2-digit', minute: '2-digit', hour12: false,
+            }).formatToParts(parsedStart);
+            startHour = parseInt(parts.find((p) => p.type === 'hour')?.value || '17', 10);
+            startMinute = parseInt(parts.find((p) => p.type === 'minute')?.value || '0', 10);
+          } catch {
+            startHour = parsedStart.getHours();
+            startMinute = parsedStart.getMinutes();
+          }
         }
       }
 
@@ -100,7 +101,7 @@ export function buildDayColumns(params: {
       return {
         id: c.session_id || `evt_${idx}_${dayKey}`,
         studentId: c.student_id || '',
-        studentName: c.student_name || c.student_id || 'Student',
+        studentName: c.student_name || stu?.student_name || stu?.full_name || c.student_id || 'Student',
         topic: c.topic || c.class_title || 'Class Session',
         subject: stu?.subject || c.topic || 'General',
         startIso: rawStart,

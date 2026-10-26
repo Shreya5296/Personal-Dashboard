@@ -149,9 +149,9 @@ describe('Fix Batch 3 — Attendance, Rescheduling, Student Details & Global Tab
       { session_id: 's1', student_id: 'st1', session_status: 'COMPLETED', attendance_status: 'PRESENT', start_time: '10:00', duration_minutes: 30, status: 'COMPLETED' },
       true // isPast
     );
-    expect(pastCompletedStyle.bg).toBe('#f4fdf8');
-    expect(pastCompletedStyle.border).toContain('#bbf7d0');
-    expect(pastCompletedStyle.color).toBe('#166534');
+    expect(pastCompletedStyle.bg).toBe('#e5f4ea');
+    expect(pastCompletedStyle.border).toContain('#b7dfc4');
+    expect(pastCompletedStyle.color).toBe('#276749');
     expect(pastCompletedStyle.opacity).toBeLessThan(1);
 
     const upcomingStyle = getMonthSessionStyle(

@@ -55,8 +55,9 @@ export const WeeklyTimeGrid: React.FC<WeeklyTimeGridProps> = ({ dayColumns }) =>
                     const diffMin = Math.max(0, evtMin - baseMin);
                     const topPx = Math.round((diffMin / 60) * 56);
                     const duration = evt.durationMinutes || 60;
-                    const heightPx = Math.max(22, Math.round((duration / 60) * 56) - 2);
                     const isCompact = duration <= 30;
+                    const slotHeight = Math.round((duration / 60) * 56);
+                    const heightPx = Math.max(isCompact ? 24 : 52, slotHeight - 2);
 
                     return (
                       <div
@@ -70,7 +71,7 @@ export const WeeklyTimeGrid: React.FC<WeeklyTimeGridProps> = ({ dayColumns }) =>
                           height: `${heightPx}px`,
                           overflow: 'hidden',
                           margin: 0,
-                          padding: isCompact ? '2px 4px' : '4px 6px',
+                          padding: isCompact ? '2px 4px' : '3px 5px',
                           zIndex: evt.isRecurring ? 5 : 6,
                         }}
                         title={`${evt.studentName} — ${evt.subject} (${evt.timeRange12})`}
@@ -84,8 +85,9 @@ export const WeeklyTimeGrid: React.FC<WeeklyTimeGridProps> = ({ dayColumns }) =>
                           <>
                             <div className={styles.eventHeader}>
                               <span className={styles.eventStudent}>{evt.studentName}</span>
-                              {evt.isRecurring && <span className={styles.badgeSubtle}>Recurring</span>}
-                              {evt.isCancelled && <span className={styles.badgeCancelled}>Cancelled</span>}
+                              {evt.isRecurring && !evt.isCancelled && evt.category !== 'CANCELLED' && (
+                                <span className={styles.badgeSubtle}>Recurring</span>
+                              )}
                             </div>
                             <span className={styles.eventSubject}>{evt.subject}</span>
                             <span className={styles.eventTime}>{evt.timeRange12}</span>

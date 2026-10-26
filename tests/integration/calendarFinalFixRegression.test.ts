@@ -1,8 +1,12 @@
 import { describe, it, expect } from 'vitest';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { buildDayColumns } from '../../src/domains/calendar/calendarGridBuilder';
 import { generateCalendarEvents, makeIsoInTz } from '../../src/domains/dashboard/calendarEventGenerator';
 import { classifyCalendarEvent, isEventPast } from '../../src/domains/calendar/calendarClassification';
 import { getMonthSessionStyle } from '../../src/domains/calendar/monthEventStyle';
+import { WeeklyTimeGrid } from '../../src/domains/calendar/WeeklyTimeGrid';
+import { DayCalendarView } from '../../src/domains/calendar/DayCalendarView';
 import { ClassSession } from '../../src/domains/classes/classTypes';
 import { WeeklyScheduleEntry } from '../../src/domains/classes/scheduleApi';
 import { Student } from '../../src/domains/students/studentTypes';
@@ -162,9 +166,10 @@ describe('Calendar Final Fix — Correct Time Slots and Consistent Event Colors'
       expect(cat).toBe('PAST_COMPLETED');
 
       const style = getMonthSessionStyle({ session_status: 'COMPLETED', attendance_status: 'PRESENT' } as ClassSession, true);
-      expect(style.bg).toBe('#f4fdf8');
-      expect(style.color).toBe('#166534');
-      expect(style.opacity).toBe(0.7);
+      expect(style.bg).toBe('#e5f4ea');
+      expect(style.border).toContain('#b7dfc4');
+      expect(style.color).toBe('#276749');
+      expect(style.opacity).toBe(0.82);
     });
 
     it('Past CANCELLED event is classified as CANCELLED (muted red)', () => {
@@ -178,10 +183,10 @@ describe('Calendar Final Fix — Correct Time Slots and Consistent Event Colors'
       expect(cat).toBe('CANCELLED');
 
       const style = getMonthSessionStyle({ session_status: 'CANCELLED' } as ClassSession, true);
-      expect(style.bg).toBe('#fdf2f2');
-      expect(style.border).toContain('#f3caca');
-      expect(style.color).toBe('#a65a5a');
-      expect(style.opacity).toBe(0.68);
+      expect(style.bg).toBe('#fbe7e7');
+      expect(style.border).toContain('#eab4b4');
+      expect(style.color).toBe('#a63f3f');
+      expect(style.opacity).toBe(0.82);
     });
 
     it('Upcoming valid class is classified as UPCOMING (yellow/amber)', () => {
@@ -224,8 +229,8 @@ describe('Calendar Final Fix — Correct Time Slots and Consistent Event Colors'
       const cancSess: ClassSession = { session_id: 'c2', session_status: 'CANCELLED' };
       const upcomingSess: ClassSession = { session_id: 'c3', session_status: 'SCHEDULED', attendance_status: 'NOT_MARKED' };
 
-      expect(getMonthSessionStyle(pastCompSess, true).color).toBe('#166534');
-      expect(getMonthSessionStyle(cancSess, true).color).toBe('#a65a5a');
+      expect(getMonthSessionStyle(pastCompSess, true).color).toBe('#276749');
+      expect(getMonthSessionStyle(cancSess, true).color).toBe('#a63f3f');
       expect(getMonthSessionStyle(upcomingSess, false).color).toBe('#92400e');
 
       const catComp = classifyCalendarEvent({ sessionStatus: 'COMPLETED', attendanceStatus: 'PRESENT', isPast: true });
@@ -235,6 +240,135 @@ describe('Calendar Final Fix — Correct Time Slots and Consistent Event Colors'
       expect(catComp).toBe('PAST_COMPLETED');
       expect(catCanc).toBe('CANCELLED');
       expect(catUpc).toBe('UPCOMING');
+    });
+
+    it('Cancelled event preserves authoritative scheduled time, duration, and grid position (no "— – 1:00 am")', () => {
+      const aksharaSched: WeeklyScheduleEntry = {
+        schedule_id: 'rec_akshara_mon',
+        student_id: 'STU_003',
+        student_name: 'Akshara',
+        day_of_week: 'MONDAY',
+        start_time: '14:00',
+        end_time: '15:00',
+        is_active: true,
+      };
+
+      const aksharaStudent: Student = {
+        student_id: 'STU_003',
+        student_name: 'Akshara',
+        subject: 'Math',
+        status: 'ACTIVE',
+      };
+
+      const aksharaCancelledDated: ClassSession = {
+        session_id: 'STU_003__2026-10-26__14:00',
+        student_id: 'STU_003',
+        schedule_date: '2026-10-26',
+        session_status: 'CANCELLED',
+        status: 'CANCELLED',
+        attendance_status: 'CANCELLED',
+        deduct_class: false,
+      };
+
+      const cols = buildDayColumns({
+        datedSessions: [aksharaCancelledDated],
+        recurringSchedules: [aksharaSched],
+        students: [aksharaStudent],
+        weekDates: ['2026-10-26'],
+        activeTz,
+      });
+
+      expect(cols[0].events).toHaveLength(1);
+      const evt = cols[0].events[0];
+      expect(evt.isCancelled).toBe(true);
+      expect(evt.category).toBe('CANCELLED');
+      expect(evt.startHour).toBe(14);
+      expect(evt.startMinute).toBe(0);
+      expect(evt.durationMinutes).toBe(60);
+      expect(evt.startTime12.toLowerCase()).toContain('2:00');
+      expect(evt.startTime12.toLowerCase()).toContain('pm');
+      expect(evt.endTime12.toLowerCase()).toContain('3:00');
+      expect(evt.endTime12.toLowerCase()).toContain('pm');
+      expect(evt.timeRange12).not.toContain('—');
+      expect(evt.timeRange12).not.toContain('1:00 am');
+      expect(evt.timeRange12).toBe('2:00 pm – 3:00 pm');
+    });
+
+    it('WeeklyTimeGrid renders cancelled event without CANCELLED badge and with proper height (no clipping)', () => {
+      const aksharaStudent: Student = {
+        student_id: 'STU_003',
+        student_name: 'Akshara',
+        subject: 'Math',
+        status: 'ACTIVE',
+      };
+      const aksharaCancelledDated: ClassSession = {
+        session_id: 'STU_003__2026-10-26__14:00',
+        student_id: 'STU_003',
+        schedule_date: '2026-10-26',
+        schedule_time: '14:00',
+        duration_minutes: 60,
+        session_status: 'CANCELLED',
+        status: 'CANCELLED',
+        attendance_status: 'CANCELLED',
+      };
+
+      const cols = buildDayColumns({
+        datedSessions: [aksharaCancelledDated],
+        recurringSchedules: [],
+        students: [aksharaStudent],
+        weekDates: ['2026-10-26'],
+        activeTz,
+      });
+
+      const markup = renderToStaticMarkup(React.createElement(WeeklyTimeGrid, { dayColumns: cols }));
+      // Renders student, subject, and time range
+      expect(markup).toContain('Akshara');
+      expect(markup).toContain('Math');
+      expect(markup).toContain('2:00 pm – 3:00 pm');
+      // No redundant CANCELLED badge inside the card
+      expect(markup).not.toContain('>Cancelled<');
+      expect(markup).not.toContain('badgeCancelled');
+      // Proper height for 60 min session without clipping
+      expect(markup).toContain('height:54px');
+    });
+
+    it('DayCalendarView renders cancelled event without redundant CANCELLED badge', () => {
+      const aksharaStudent: Student = {
+        student_id: 'STU_003',
+        student_name: 'Akshara',
+        subject: 'Math',
+        status: 'ACTIVE',
+      };
+      const cols = buildDayColumns({
+        datedSessions: [{
+          session_id: 'STU_003__2026-10-26__14:00',
+          student_id: 'STU_003',
+          schedule_date: '2026-10-26',
+          schedule_time: '14:00',
+          duration_minutes: 60,
+          session_status: 'CANCELLED',
+          status: 'CANCELLED',
+          attendance_status: 'CANCELLED',
+        }],
+        recurringSchedules: [],
+        students: [aksharaStudent],
+        weekDates: ['2026-10-26'],
+        activeTz,
+      });
+
+      const markup = renderToStaticMarkup(
+        React.createElement(DayCalendarView, {
+          selectedDateStr: '2026-10-26',
+          events: cols[0].events,
+          isToday: false,
+        })
+      );
+      expect(markup).toContain('Akshara');
+      expect(markup).toContain('Math');
+      expect(markup).toContain('2:00 pm');
+      // No redundant CANCELLED badge inside the card
+      expect(markup).not.toContain('>Cancelled<');
+      expect(markup).not.toContain('badgeCancelled');
     });
   });
 });

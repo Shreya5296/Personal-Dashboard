@@ -28,9 +28,9 @@ describe('Fix Batch 5 — Calendar Status, Student Classification, Session Integ
   it('Fix 1: monthEventStyle applies muted faded green to past completed sessions', () => {
     const sess: ClassSession = { session_id: 'S1', student_id: 'STU_004', session_status: 'COMPLETED', attendance_status: 'PRESENT' };
     const style = getMonthSessionStyle(sess, true);
-    expect(style.bg).toBe('#f4fdf8');
-    expect(style.opacity).toBe(0.7);
-    expect(style.color).toBe('#166534');
+    expect(style.bg).toBe('#e5f4ea');
+    expect(style.opacity).toBe(0.82);
+    expect(style.color).toBe('#276749');
   });
 
   it('Fix 2: student classification keeps canonical ACTIVE students active regardless of last class date', () => {

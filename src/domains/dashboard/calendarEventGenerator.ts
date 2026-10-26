@@ -3,7 +3,7 @@ import { WeeklyScheduleEntry, cleanTime } from '../classes/scheduleApi';
 import { Student } from '../students/studentTypes';
 import { Package } from '../packages/packageTypes';
 
-const WEEKDAYS = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+export const WEEKDAYS = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 
 export function getMondayForDateStr(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number);
@@ -33,20 +33,20 @@ export function makeIsoInTz(dateKey: string, timeStr: string, timeZone: string):
       hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
     }).formatToParts(tempDate);
     const tzPart = parts.find((p) => p.type === 'timeZoneName');
-    if (tzPart && tzPart.value.startsWith('GMT')) {
+    if (tzPart?.value.startsWith('GMT')) {
       offset = tzPart.value.replace('GMT', '');
       if (!offset.includes(':')) offset = `${offset}:00`;
     }
-  } catch { /* fallback to +05:30 */ }
+  } catch { /* fallback */ }
   return `${dateKey}T${cleanT}:00${offset}`;
 }
 
-function parseTimeToMin(t?: string): number {
+export function parseTimeToMin(t?: string): number {
   const [h, m] = (cleanTime(t) || '00:00').split(':').map(Number);
   return (h || 0) * 60 + (m || 0);
 }
 
-function getLocalTime(t?: string | null, tz = 'Asia/Kolkata'): string {
+export function getLocalTime(t?: string | null, tz = 'Asia/Kolkata'): string {
   if (!t) return '';
   const s = String(t).trim();
   if (!s.includes('T')) return cleanTime(s);
@@ -87,14 +87,16 @@ export function generateCalendarEvents(params: {
       return !isNaN(parsed.getTime()) && getDateKeyInTz(parsed, activeTz) === dateStr;
     }).map((c) => {
       const pkg = pkgMap.get(c.student_id);
-      const dur = c.duration_minutes || pkg?.class_duration || 60;
-      const sTime = getLocalTime(c.schedule_time || c.start_time || c.scheduled_start, activeTz);
+      const matchSched = (recurringSchedules || []).find((s) => s.student_id === c.student_id && s.day_of_week?.toUpperCase() === dayOfWeek);
+      let sTime = getLocalTime(c.schedule_time || c.start_time || c.scheduled_start, activeTz);
+      if (!sTime && matchSched?.start_time) sTime = cleanTime(matchSched.start_time);
+      const dur = c.duration_minutes || pkg?.class_duration || (matchSched ? Math.max(15, parseTimeToMin(matchSched.end_time) - parseTimeToMin(matchSched.start_time)) : 60);
       const startIso = sTime ? makeIsoInTz(dateStr, sTime, activeTz) : (c.scheduled_start || makeIsoInTz(dateStr, '18:00', activeTz));
-      const endMins = (sTime ? parseTimeToMin(sTime) : 0) + dur;
+      const endMins = sTime ? parseTimeToMin(sTime) + dur : 0;
       const endHH = String(Math.floor(endMins / 60)).padStart(2, '0');
       const endMM = String(endMins % 60).padStart(2, '0');
       const endIso = sTime ? makeIsoInTz(dateStr, `${endHH}:${endMM}`, activeTz) : c.scheduled_end;
-      return { ...c, duration_minutes: dur, scheduled_start: startIso, scheduled_end: endIso };
+      return { ...c, schedule_time: sTime || cleanTime(c.schedule_time), start_time: sTime || cleanTime(c.start_time), duration_minutes: dur, scheduled_start: startIso, scheduled_end: endIso };
     });
 
     events.push(...dayDated);
@@ -124,8 +126,7 @@ export function generateCalendarEvents(params: {
 
       const hasDatedDuplicate = dayDated.some((ds) => {
         if (ds.student_id !== sid) return false;
-        const dsLocal = getLocalTime(ds.schedule_time || ds.start_time || ds.scheduled_start, activeTz);
-        return dsLocal === startTime;
+        return getLocalTime(ds.schedule_time || ds.start_time || ds.scheduled_start, activeTz) === startTime;
       });
 
       if (!hasDatedDuplicate) {

@@ -18,10 +18,10 @@ export function getMonthSessionStyle(sess: ClassSession, isPast: boolean): Month
   });
 
   if (cat === 'CANCELLED') {
-    return { bg: '#fdf2f2', border: '1px solid #f3caca', color: '#a65a5a', opacity: 0.68 };
+    return { bg: '#fbe7e7', border: '1px solid #eab4b4', color: '#a63f3f', opacity: 0.82 };
   }
   if (cat === 'PAST_COMPLETED') {
-    return { bg: '#f4fdf8', border: '1px solid #bbf7d0', color: '#166534', opacity: 0.7 };
+    return { bg: '#e5f4ea', border: '1px solid #b7dfc4', color: '#276749', opacity: 0.82 };
   }
   return { bg: '#fffbeb', border: '1px solid #fde68a', color: '#92400e', opacity: 1 };
 }
