@@ -178,9 +178,10 @@ describe('Calendar Final Fix — Correct Time Slots and Consistent Event Colors'
       expect(cat).toBe('CANCELLED');
 
       const style = getMonthSessionStyle({ session_status: 'CANCELLED' } as ClassSession, true);
-      expect(style.bg).toBe('#fef2f2');
-      expect(style.color).toBe('#991b1b');
-      expect(style.opacity).toBe(0.82);
+      expect(style.bg).toBe('#fdf2f2');
+      expect(style.border).toContain('#f3caca');
+      expect(style.color).toBe('#a65a5a');
+      expect(style.opacity).toBe(0.68);
     });
 
     it('Upcoming valid class is classified as UPCOMING (yellow/amber)', () => {
@@ -224,7 +225,7 @@ describe('Calendar Final Fix — Correct Time Slots and Consistent Event Colors'
       const upcomingSess: ClassSession = { session_id: 'c3', session_status: 'SCHEDULED', attendance_status: 'NOT_MARKED' };
 
       expect(getMonthSessionStyle(pastCompSess, true).color).toBe('#166534');
-      expect(getMonthSessionStyle(cancSess, true).color).toBe('#991b1b');
+      expect(getMonthSessionStyle(cancSess, true).color).toBe('#a65a5a');
       expect(getMonthSessionStyle(upcomingSess, false).color).toBe('#92400e');
 
       const catComp = classifyCalendarEvent({ sessionStatus: 'COMPLETED', attendanceStatus: 'PRESENT', isPast: true });

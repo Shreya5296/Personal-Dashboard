@@ -45,35 +45,35 @@ export const DayCalendarView: React.FC<DayCalendarViewProps> = ({
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '1rem 1.25rem',
-                backgroundColor: isCancelled ? '#fef2f2' : isPastCompleted ? '#f1f8f4' : '#fffbeb',
-                border: isCancelled ? '1px solid #fecaca' : isPastCompleted ? '1px solid #d1fae5' : isToday ? '1px solid #f59e0b' : '1px solid #fde68a',
+                backgroundColor: isCancelled ? '#fdf2f2' : isPastCompleted ? '#f1f8f4' : '#fffbeb',
+                border: isCancelled ? '1px solid #f3caca' : isPastCompleted ? '1px solid #d1fae5' : isToday ? '1px solid #f59e0b' : '1px solid #fde68a',
                 borderRadius: 'var(--radius-lg)',
-                boxShadow: isPastCompleted ? 'none' : 'var(--shadow-xs)',
-                opacity: isCancelled ? 0.82 : isPastCompleted ? 0.68 : 1,
-                filter: isPastCompleted ? 'saturate(0.75)' : undefined,
+                boxShadow: isPastCompleted || isCancelled ? 'none' : 'var(--shadow-xs)',
+                opacity: isCancelled || isPastCompleted ? 0.68 : 1,
+                filter: isPastCompleted || isCancelled ? 'saturate(0.75)' : undefined,
                 gap: 'var(--space-4)',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
                 <div style={{ minWidth: '120px', display: 'flex', flexDirection: 'column' }}>
-                  <span style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, color: isPastCompleted ? '#166534' : isCancelled ? '#991b1b' : '#92400e', fontFamily: 'monospace' }}>
+                  <span style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, color: isPastCompleted ? '#166534' : isCancelled ? '#a65a5a' : '#92400e', fontFamily: 'monospace' }}>
                     {evt.startTime12}
                   </span>
-                  <span style={{ fontSize: '11px', color: isPastCompleted ? '#15803d' : isCancelled ? '#b91c1c' : '#b45309' }}>
+                  <span style={{ fontSize: '11px', color: isPastCompleted ? '#15803d' : isCancelled ? '#a65a5a' : '#b45309' }}>
                     until {evt.endTime12} ({evt.durationMinutes} min)
                   </span>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                    <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, color: isPastCompleted ? '#166534' : isCancelled ? '#991b1b' : '#92400e' }}>
+                    <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, color: isPastCompleted ? '#166534' : isCancelled ? '#a65a5a' : '#92400e' }}>
                       {evt.studentName}
                     </span>
                     {evt.isRecurring && (
                       <span className={styles.badgeSubtle}>Recurring</span>
                     )}
                   </div>
-                  <span style={{ fontSize: 'var(--font-size-xs)', color: isPastCompleted ? '#15803d' : isCancelled ? '#b91c1c' : '#b45309' }}>
+                  <span style={{ fontSize: 'var(--font-size-xs)', color: isPastCompleted ? '#15803d' : isCancelled ? '#a65a5a' : '#b45309' }}>
                     {evt.subject}
                   </span>
                 </div>
@@ -88,9 +88,9 @@ export const DayCalendarView: React.FC<DayCalendarViewProps> = ({
                     borderRadius: 'var(--radius-sm)',
                     textTransform: 'uppercase',
                     letterSpacing: '0.04em',
-                    backgroundColor: isCancelled ? '#fee2e2' : isPastCompleted ? '#dcfce7' : '#fef3c7',
-                    color: isCancelled ? '#991b1b' : isPastCompleted ? '#166534' : '#92400e',
-                    border: isCancelled ? '1px solid #fecaca' : isPastCompleted ? '1px solid #bbf7d0' : '1px solid #fde68a',
+                    backgroundColor: isCancelled ? '#fdf2f2' : isPastCompleted ? '#dcfce7' : '#fef3c7',
+                    color: isCancelled ? '#a65a5a' : isPastCompleted ? '#166534' : '#92400e',
+                    border: isCancelled ? '1px solid #f3caca' : isPastCompleted ? '1px solid #bbf7d0' : '1px solid #fde68a',
                   }}
                 >
                   {isCancelled ? 'Cancelled' : isPastCompleted ? 'Completed' : (evt.isRecurring ? 'Recurring' : 'Upcoming')}

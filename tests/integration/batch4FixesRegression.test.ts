@@ -24,9 +24,9 @@ describe('Fix Batch 4 — Calendar, Tables, Finance Currency & Navigation', () =
       attendance_status: 'CANCELLED',
     };
     const cancelStyle = getMonthSessionStyle(cancelledSession, false);
-    expect(cancelStyle.bg).toBe('#fef2f2');
-    expect(cancelStyle.color).toBe('#991b1b');
-    expect(cancelStyle.border).toContain('#fecaca');
+    expect(cancelStyle.bg).toBe('#fdf2f2');
+    expect(cancelStyle.color).toBe('#a65a5a');
+    expect(cancelStyle.border).toContain('#f3caca');
   });
 
   it('Fix 2: formatWeekRangeTitle formats human-friendly week titles with month names', () => {

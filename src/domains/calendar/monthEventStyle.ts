@@ -18,7 +18,7 @@ export function getMonthSessionStyle(sess: ClassSession, isPast: boolean): Month
   });
 
   if (cat === 'CANCELLED') {
-    return { bg: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', opacity: 0.82 };
+    return { bg: '#fdf2f2', border: '1px solid #f3caca', color: '#a65a5a', opacity: 0.68 };
   }
   if (cat === 'PAST_COMPLETED') {
     return { bg: '#f4fdf8', border: '1px solid #bbf7d0', color: '#166534', opacity: 0.7 };
