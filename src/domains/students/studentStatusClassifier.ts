@@ -99,14 +99,14 @@ export function isStudentActive(
 export function filterStudentsByTab(
   students: Student[],
   tab: StudentStatusTab,
-  getBalance: (studentId: string) => StudentBalanceClassification,
-  getLastCompleted?: (studentId: string) => string | null
+  getBalance?: (studentId: string) => StudentBalanceClassification,
+  _getLastCompleted?: (studentId: string) => string | null
 ): Student[] {
   if (tab === 'ALL') return students;
   return students.filter((s) => {
-    const bal = getBalance(s.student_id);
-    const lastComp = getLastCompleted ? getLastCompleted(s.student_id) : undefined;
-    const active = isStudentActive(s, { balance: bal, lastCompletedDate: lastComp });
+    const bal = getBalance ? getBalance(s.student_id) : undefined;
+    // Canonical ACTIVE students remain in Active; never moved to Inactive due to last-class age
+    const active = isStudentActive(s, bal ? { balance: bal } : undefined);
     return tab === 'ACTIVE' ? active : !active;
   });
 }

@@ -9,7 +9,6 @@ import { StudentCell } from './StudentCell';
 import { StudentExpandedDetails } from './StudentExpandedDetails';
 import { Button } from '../../components/buttons/Button';
 import { STUDENT_TABLE_COLUMNS } from './studentTableLayout';
-import { isStudentActive } from './studentStatusClassifier';
 import rowStyles from './studentRow.module.css';
 
 export interface StudentRowProps {
@@ -39,7 +38,7 @@ export const StudentRow: React.FC<StudentRowProps> = ({
 }) => {
   const scheduleText = formatWeeklySchedule(schedule);
   const classBalanceText = formatClassBalance(balance.totalConsumed, balance.totalPurchased);
-  const effectiveActive = isActive !== undefined ? isActive : isStudentActive(student, { balance });
+  const effectiveActive = isActive !== undefined ? isActive : (student.status || '').trim().toUpperCase() === 'ACTIVE';
   const rowClass = `${rowStyles.row} ${isExpanded ? rowStyles.rowExpanded : ''}`.trim();
 
   return (

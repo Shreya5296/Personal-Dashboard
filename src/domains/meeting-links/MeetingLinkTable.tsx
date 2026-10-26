@@ -53,7 +53,7 @@ export const MeetingLinkTable: React.FC<MeetingLinkTableProps> = ({
     {
       key: 'student',
       header: 'Student',
-      width: '22%',
+      width: '15%',
       render: (l) => (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
           <span style={{ fontWeight: 600, color: 'var(--color-text-main)', fontSize: 'var(--font-size-sm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -70,19 +70,19 @@ export const MeetingLinkTable: React.FC<MeetingLinkTableProps> = ({
     {
       key: 'primary_link',
       header: 'Primary Meeting Link',
-      width: '31%',
+      width: '37.5%',
       render: (l) => renderLinkCell(l, l.meeting_link_1 || l.meeting_url, '1'),
     },
     {
       key: 'secondary_link',
       header: 'Secondary Meeting Link',
-      width: '31%',
+      width: '37.5%',
       render: (l) => renderLinkCell(l, l.meeting_link_2, '2'),
     },
     {
       key: 'actions',
       header: 'Actions',
-      width: '16%',
+      width: '10%',
       render: (l) => {
         const hasAny = Boolean(
           (l.meeting_link_1 && l.meeting_link_1.trim()) ||
@@ -100,7 +100,7 @@ export const MeetingLinkTable: React.FC<MeetingLinkTableProps> = ({
 
   return (
     <div style={{ backgroundColor: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', overflow: 'hidden', width: '100%', maxWidth: '100%' }}>
-      <DataTable fixedLayout columns={columns} data={links} keyExtractor={(l) => l.meeting_link_id || l.student_id || ''} />
+      <DataTable fixedLayout minWidth="760px" columns={columns} data={links} keyExtractor={(l) => l.meeting_link_id || l.student_id || ''} />
     </div>
   );
 };

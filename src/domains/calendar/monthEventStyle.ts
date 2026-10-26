@@ -16,7 +16,7 @@ export function getMonthSessionStyle(sess: ClassSession, isPast: boolean): Month
     return { bg: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', opacity: 0.82 };
   }
   if ((isPast && isCompleted) || isCompleted) {
-    return { bg: '#f4fdf8', border: '1px solid #bbf7d0', color: '#166534', opacity: 0.74 };
+    return { bg: '#f4fdf8', border: '1px solid #bbf7d0', color: '#166534', opacity: 0.7 };
   }
   return { bg: '#ecfdf5', border: '1px solid #10b981', color: '#065f46', opacity: 1 };
 }

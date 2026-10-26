@@ -19,7 +19,13 @@ export function isSessionDeductible(session: ClassSession): boolean {
   if (sStatus === 'CANCELLED' || aStatus === 'CANCELLED') {
     return false;
   }
-  return true;
+  if (sStatus === 'SCHEDULED' || aStatus === 'NOT_MARKED') {
+    return false;
+  }
+  if (sStatus === 'COMPLETED' || aStatus === 'PRESENT' || aStatus === 'ATTENDED') {
+    return session.deduct_class !== false;
+  }
+  return !sStatus;
 }
 
 export function buildSessionProgressMap(
@@ -84,13 +90,17 @@ export function buildSessionProgressMap(
         remaining = pkgTotal > 0 ? Math.max(0, pkgTotal - runningPosition) : 0;
       }
 
+      const sStatus = (s.session_status || s.status || '').toUpperCase();
+      const aStatus = (s.attendance_status || '').toUpperCase();
+      const isCancelledNonDeduct = (sStatus === 'CANCELLED' || aStatus === 'CANCELLED') && !counts;
+
       const padNum = String(sessionNumber).padStart(2, '0');
       const display = pkgTotal > 0
         ? (counts ? `${padNum} / ${pkgTotal}` : `— / ${pkgTotal}`)
         : (counts ? `${padNum} / —` : `— / —`);
 
       const remainingDisplay = pkgTotal > 0
-        ? `${remaining} remaining${!counts ? ' (not deducted)' : ''}`
+        ? `${remaining} remaining${isCancelledNonDeduct ? ' (not deducted)' : ''}`
         : 'No package';
 
       const key = s.session_id || `${s.student_id}__${s.schedule_date}__${s.schedule_time}`;

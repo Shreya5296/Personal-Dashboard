@@ -37,10 +37,12 @@ export function buildDayColumns(params: {
     const isToday = dayKey === todayKey;
 
     const dayRawEvents = allEvents.filter((c) => {
-      const raw = c.start_time || c.scheduled_start;
+      const dDate = c.schedule_date || c.class_date;
+      if (dDate && dDate === dayKey) return true;
+      const raw = c.scheduled_start || c.start_time;
       if (!raw) return false;
       const parsed = new Date(String(raw).trim().replace(/T\s+(\d:)/, 'T0$1'));
-      return getDateKeyInTz(parsed, activeTz) === dayKey;
+      return !isNaN(parsed.getTime()) && getDateKeyInTz(parsed, activeTz) === dayKey;
     });
 
     const events: CalendarEventItem[] = dayRawEvents.map((c, idx) => {

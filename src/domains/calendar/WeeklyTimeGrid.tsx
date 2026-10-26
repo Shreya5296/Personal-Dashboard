@@ -19,7 +19,7 @@ function getEventCardClass(evt: CalendarEventItem): string {
   if (evt.isCancelled) return styles.cardCancelled;
   const att = (evt.attendanceStatus || evt.status).toUpperCase();
   if (att === 'ABSENT' || att === 'NO_SHOW') return styles.cardAbsent;
-  if (att === 'PRESENT' || att === 'ATTENDED' || att === 'COMPLETED' || (evt.isPast && !evt.isRecurring)) {
+  if (att === 'PRESENT' || att === 'ATTENDED' || att === 'COMPLETED' || evt.isPast) {
     if (att === 'PRESENT' || att === 'ATTENDED' || att === 'COMPLETED') return styles.cardAttended;
     return styles.cardUnmarked;
   }

@@ -4,7 +4,7 @@ import { useAuth } from '../../auth/AuthProvider';
 import { useStudentAggregates } from './useStudentAggregates';
 import { StudentRow } from './StudentRow';
 import { StudentTabs } from './StudentTabs';
-import { StudentStatusTab, isStudentActive, filterStudentsByTab } from './studentStatusClassifier';
+import { StudentStatusTab, filterStudentsByTab } from './studentStatusClassifier';
 import { EmptyState } from '../../components/feedback/EmptyState';
 import { STUDENT_TABLE_COLUMNS } from './studentTableLayout';
 import styles from '../../components/tables/tables.module.css';
@@ -40,12 +40,7 @@ export const StudentList: React.FC<StudentListProps> = ({
     getStudentFinancials,
   } = useStudentAggregates(studentIds, token);
 
-  const activeCount = students.filter((s) =>
-    isStudentActive(s, {
-      balance: getStudentBalance(s.student_id),
-      lastCompletedDate: getStudentLastCompletedDate(s.student_id),
-    })
-  ).length;
+  const activeCount = filterStudentsByTab(students, 'ACTIVE', getStudentBalance).length;
   const inactiveCount = students.length - activeCount;
 
   const displayedStudents = filterStudentsByTab(
@@ -111,8 +106,7 @@ export const StudentList: React.FC<StudentListProps> = ({
             <tbody>
               {displayedStudents.map((student) => {
                 const bal = getStudentBalance(student.student_id);
-                const lastCompleted = getStudentLastCompletedDate(student.student_id);
-                const isAct = isStudentActive(student, { balance: bal, lastCompletedDate: lastCompleted });
+                const isAct = (student.status || '').trim().toUpperCase() === 'ACTIVE';
                 return (
                   <StudentRow
                     key={student.student_id}

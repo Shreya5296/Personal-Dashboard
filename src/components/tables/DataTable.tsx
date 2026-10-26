@@ -25,6 +25,11 @@ export function DataTable<T>({ columns, data, keyExtractor, fixedLayout, minWidt
         className={`${styles.table} ${fixedLayout ? styles.tableFixed : ''}`}
         style={minWidth ? { minWidth: typeof minWidth === 'number' ? `${minWidth}px` : minWidth } : undefined}
       >
+        <colgroup>
+          {columns.map((col) => (
+            <col key={col.key} style={col.width ? { width: col.width } : undefined} />
+          ))}
+        </colgroup>
         <thead>
           <tr>
             {columns.map((col) => (

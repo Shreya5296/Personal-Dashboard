@@ -110,7 +110,8 @@ export const MonthCalendarView: React.FC<MonthCalendarViewProps> = ({
                 {visibleSessions.map((sess, idx) => {
                   const studentName = studentMap.get(sess.student_id) || sess.student_id;
                   const time12 = sess.scheduled_start ? formatIsoTo12Hour(sess.scheduled_start, activeTz) : '';
-                  const st = getMonthSessionStyle(sess, dateStr < todayStr);
+                  const isPast = dateStr < todayStr || (dateStr === todayStr && Boolean(sess.scheduled_end && new Date(sess.scheduled_end).getTime() < Date.now()));
+                  const st = getMonthSessionStyle(sess, isPast);
 
                   return (
                     <div
@@ -119,13 +120,8 @@ export const MonthCalendarView: React.FC<MonthCalendarViewProps> = ({
                         fontSize: '10px',
                         padding: '1px 3px',
                         borderRadius: '3px',
-                        background: st.bg,
-                        border: st.border,
-                        color: st.color,
-                        opacity: st.opacity,
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
+                        background: st.bg, border: st.border, color: st.color, opacity: st.opacity,
+                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                       }}
                     >
                       {time12 ? `${time12} ` : ''}{studentName}

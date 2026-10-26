@@ -53,8 +53,8 @@
 .recurringCard { background-color: #f0fdf4; border: 1px dashed #34d399; border-left: 3px solid #10b981; color: #047857; }
 
 /* Past classes attendance colors */
-.cardAttended { background-color: #f0fdf4; border: 1px solid #d1fae5; border-left: 3px solid #86efac; color: #166534; opacity: 0.74; }
-.cardAttended .eventStudent { color: #166534; font-weight: 600; }
+.cardAttended { background-color: #f1f8f4; border: 1px solid #d1fae5; border-left: 3px solid #86efac; color: #166534; opacity: 0.68; filter: saturate(0.75); }
+.cardAttended .eventStudent { color: #166534; font-weight: 500; }
 .cardAttended .eventSubject { color: #15803d; }
 .cardAttended .eventTime { color: #166534; }
 

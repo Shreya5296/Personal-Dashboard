@@ -47,11 +47,12 @@ export const DayCalendarView: React.FC<DayCalendarViewProps> = ({
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '1rem 1.25rem',
-                backgroundColor: isCancelled || isAbsent ? '#fef2f2' : isPastCompleted ? '#f0fdf4' : 'var(--color-bg-surface)',
+                backgroundColor: isCancelled || isAbsent ? '#fef2f2' : isPastCompleted ? '#f1f8f4' : 'var(--color-bg-surface)',
                 border: isCancelled || isAbsent ? '1px solid #fecaca' : isPastCompleted ? '1px solid #d1fae5' : isToday ? '1px solid #bfdbfe' : '1px solid var(--color-border-subtle)',
                 borderRadius: 'var(--radius-lg)',
                 boxShadow: isPastCompleted ? 'none' : 'var(--shadow-xs)',
-                opacity: isCancelled || isAbsent ? 0.82 : isPastCompleted ? 0.74 : 1,
+                opacity: isCancelled || isAbsent ? 0.82 : isPastCompleted ? 0.68 : 1,
+                filter: isPastCompleted ? 'saturate(0.75)' : undefined,
                 gap: 'var(--space-4)',
               }}
             >
