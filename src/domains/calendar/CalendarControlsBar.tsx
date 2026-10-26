@@ -63,15 +63,33 @@ export const CalendarControlsBar: React.FC<CalendarControlsBarProps> = ({
           <Button variant="secondary" size="sm" onClick={onRefresh} aria-label="Refresh calendar">
             ↻ Refresh
           </Button>
-          <Button variant="secondary" size="sm" onClick={onPrev} aria-label={prevLabel}>
-            {prevLabel}
-          </Button>
-          <Button variant="secondary" size="sm" onClick={onToday}>
-            {todayLabel}
-          </Button>
-          <Button variant="secondary" size="sm" onClick={onNext} aria-label={nextLabel}>
-            {nextLabel}
-          </Button>
+          <div
+            style={{
+              display: 'inline-flex', alignItems: 'center', border: '1px solid var(--color-border-subtle, #cbd5e1)',
+              borderRadius: 'var(--radius-md, 6px)', overflow: 'hidden', background: '#ffffff', boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+            }}
+            role="group"
+            aria-label="Date navigation controls"
+          >
+            <button
+              type="button" onClick={onPrev} aria-label={prevLabel} title={prevLabel}
+              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: '32px', padding: '0 10px', border: 'none', background: 'transparent', color: 'var(--color-text-main, #0f172a)', cursor: 'pointer', fontSize: '14px', fontWeight: 600, borderRight: '1px solid var(--color-border-subtle, #cbd5e1)' }}
+            >
+              ‹
+            </button>
+            <button
+              type="button" onClick={onToday} aria-label={todayLabel}
+              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: '32px', padding: '0 12px', border: 'none', background: 'transparent', color: 'var(--color-text-main, #0f172a)', cursor: 'pointer', fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap' }}
+            >
+              {todayLabel}
+            </button>
+            <button
+              type="button" onClick={onNext} aria-label={nextLabel} title={nextLabel}
+              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: '32px', padding: '0 10px', border: 'none', background: 'transparent', color: 'var(--color-text-main, #0f172a)', cursor: 'pointer', fontSize: '14px', fontWeight: 600, borderLeft: '1px solid var(--color-border-subtle, #cbd5e1)' }}
+            >
+              ›
+            </button>
+          </div>
         </div>
       </div>
 

@@ -56,5 +56,5 @@ export const ClassSchedule: React.FC<{ studentId?: string; onRefreshTrigger?: nu
     return statusCfg.rowBg !== 'transparent' ? { backgroundColor: statusCfg.rowBg } : undefined;
   };
 
-  return <DataTable fixedLayout columns={columns} data={sessions} keyExtractor={(c) => c.session_id} rowStyle={rowStyle} />;
+  return <DataTable fixedLayout minWidth="920px" columns={columns} data={sessions} keyExtractor={(c) => c.session_id} rowStyle={rowStyle} />;
 };

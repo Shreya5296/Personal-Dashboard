@@ -1,6 +1,7 @@
 import React from 'react';
 import { CalendarEventItem } from './calendarTypes';
 import { EmptyState } from '../../components/feedback/EmptyState';
+import { formatDateDdMmYyyy } from '../../lib/dateFormat';
 import styles from './weeklyTimeGrid.module.css';
 
 export interface DayCalendarViewProps {
@@ -18,7 +19,7 @@ export const DayCalendarView: React.FC<DayCalendarViewProps> = ({
     return (
       <EmptyState
         title="No classes scheduled"
-        description={`There are no classes scheduled for ${selectedDateStr}.`}
+        description={`There are no classes scheduled for ${formatDateDdMmYyyy(selectedDateStr)}.`}
       />
     );
   }
@@ -34,8 +35,9 @@ export const DayCalendarView: React.FC<DayCalendarViewProps> = ({
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
         {events.map((evt) => {
           const isCancelled = evt.isCancelled;
-          const isCompleted = evt.status === 'COMPLETED' || evt.attendanceStatus === 'PRESENT';
-          const isPastCompleted = evt.isPast && isCompleted;
+          const isAbsent = evt.attendanceStatus === 'ABSENT' || evt.attendanceStatus === 'NO_SHOW';
+          const isCompleted = evt.status === 'COMPLETED' || evt.attendanceStatus === 'PRESENT' || evt.attendanceStatus === 'ATTENDED';
+          const isPastCompleted = (evt.isPast && isCompleted) || (isCompleted && !isCancelled);
 
           return (
             <div
@@ -45,34 +47,34 @@ export const DayCalendarView: React.FC<DayCalendarViewProps> = ({
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '1rem 1.25rem',
-                backgroundColor: isPastCompleted ? '#f4fdf8' : 'var(--color-bg-surface)',
-                border: isToday ? '1px solid #bfdbfe' : isPastCompleted ? '1px solid #bbf7d0' : '1px solid var(--color-border-subtle)',
+                backgroundColor: isCancelled || isAbsent ? '#fef2f2' : isPastCompleted ? '#f0fdf4' : 'var(--color-bg-surface)',
+                border: isCancelled || isAbsent ? '1px solid #fecaca' : isPastCompleted ? '1px solid #d1fae5' : isToday ? '1px solid #bfdbfe' : '1px solid var(--color-border-subtle)',
                 borderRadius: 'var(--radius-lg)',
                 boxShadow: isPastCompleted ? 'none' : 'var(--shadow-xs)',
-                opacity: isPastCompleted ? 0.85 : 1,
+                opacity: isCancelled || isAbsent ? 0.82 : isPastCompleted ? 0.74 : 1,
                 gap: 'var(--space-4)',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
                 <div style={{ minWidth: '120px', display: 'flex', flexDirection: 'column' }}>
-                  <span style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, color: 'var(--color-text-main)', fontFamily: 'monospace' }}>
+                  <span style={{ fontSize: 'var(--font-size-md)', fontWeight: 700, color: isPastCompleted ? '#166534' : isCancelled || isAbsent ? '#991b1b' : 'var(--color-text-main)', fontFamily: 'monospace' }}>
                     {evt.startTime12}
                   </span>
-                  <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                  <span style={{ fontSize: '11px', color: isPastCompleted ? '#15803d' : isCancelled || isAbsent ? '#b91c1c' : 'var(--color-text-muted)' }}>
                     until {evt.endTime12} ({evt.durationMinutes} min)
                   </span>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                    <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, color: 'var(--color-text-main)' }}>
+                    <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, color: isPastCompleted ? '#166534' : isCancelled || isAbsent ? '#991b1b' : 'var(--color-text-main)' }}>
                       {evt.studentName}
                     </span>
                     {evt.isRecurring && (
                       <span className={styles.badgeSubtle}>Recurring</span>
                     )}
                   </div>
-                  <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
+                  <span style={{ fontSize: 'var(--font-size-xs)', color: isPastCompleted ? '#15803d' : isCancelled || isAbsent ? '#b91c1c' : 'var(--color-text-muted)' }}>
                     {evt.subject}
                   </span>
                 </div>

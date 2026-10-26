@@ -13,14 +13,18 @@ export interface DataTableProps<T> {
   data: T[];
   keyExtractor: (row: T) => string;
   fixedLayout?: boolean;
+  minWidth?: string | number;
   rowStyle?: (row: T) => React.CSSProperties | undefined;
   rowClassName?: (row: T) => string | undefined;
 }
 
-export function DataTable<T>({ columns, data, keyExtractor, fixedLayout, rowStyle, rowClassName }: DataTableProps<T>) {
+export function DataTable<T>({ columns, data, keyExtractor, fixedLayout, minWidth, rowStyle, rowClassName }: DataTableProps<T>) {
   return (
     <div className={styles.tableWrapper}>
-      <table className={`${styles.table} ${fixedLayout ? styles.tableFixed : ''}`}>
+      <table
+        className={`${styles.table} ${fixedLayout ? styles.tableFixed : ''}`}
+        style={minWidth ? { minWidth: typeof minWidth === 'number' ? `${minWidth}px` : minWidth } : undefined}
+      >
         <thead>
           <tr>
             {columns.map((col) => (

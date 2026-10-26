@@ -3,7 +3,8 @@ import { WeeklyScheduleEntry } from '../classes/scheduleApi';
 import { Student } from '../students/studentTypes';
 import { Package } from '../packages/packageTypes';
 import { CalendarEventItem, DayColumnData } from './calendarTypes';
-import { generateCalendarEvents, getDateKeyInTz } from '../dashboard/calendarEventGenerator';
+import { generateCalendarEvents, getDateKeyInTz, makeIsoInTz } from '../dashboard/calendarEventGenerator';
+import { cleanTime } from '../classes/scheduleApi';
 import { formatIsoTo12Hour } from '../../lib/time12Format';
 import { toInputDateFormat } from '../../lib/dateFormat';
 
@@ -43,9 +44,14 @@ export function buildDayColumns(params: {
     });
 
     const events: CalendarEventItem[] = dayRawEvents.map((c, idx) => {
-      const rawStart = c.start_time || c.scheduled_start || '';
+      let rawStart = c.scheduled_start || c.start_time || '';
+      let parsedStart = new Date(String(rawStart).trim().replace(/T\s+(\d:)/, 'T0$1'));
+      if (isNaN(parsedStart.getTime())) {
+        const sTime = cleanTime(c.schedule_time || c.start_time) || '17:00';
+        rawStart = makeIsoInTz(dayKey, sTime, activeTz);
+        parsedStart = new Date(rawStart);
+      }
       const rawEnd = c.scheduled_end || '';
-      const parsedStart = new Date(String(rawStart).trim().replace(/T\s+(\d:)/, 'T0$1'));
       const parsedEnd = rawEnd ? new Date(String(rawEnd).trim().replace(/T\s+(\d:)/, 'T0$1')) : null;
 
       let startHour = 17;
@@ -67,12 +73,14 @@ export function buildDayColumns(params: {
       const end12 = rawEnd ? formatIsoTo12Hour(rawEnd, activeTz) : '';
       const isRecurring = Boolean((c as unknown as { is_recurring?: boolean }).is_recurring);
       const stu = students.find((s) => s.student_id === c.student_id);
-      const isCancelled = c.status === 'CANCELLED' || (c as unknown as { session_status?: string }).session_status === 'CANCELLED';
+      const sessStatus = (c as unknown as { session_status?: string }).session_status;
+      const isCancelled = c.status === 'CANCELLED' || sessStatus === 'CANCELLED';
       const endMs = parsedEnd && !isNaN(parsedEnd.getTime())
         ? parsedEnd.getTime()
         : parsedStart.getTime() + (c.duration_minutes || 60) * 60000;
       const isPast = dayKey < todayKey || (dayKey === todayKey && endMs < nowMs);
-      const canJoin = isToday && !isCancelled && c.status !== 'COMPLETED' && Boolean(c.meeting_url);
+      const isCompleted = c.status === 'COMPLETED' || sessStatus === 'COMPLETED' || (c as unknown as { attendance_status?: string }).attendance_status === 'PRESENT';
+      const canJoin = isToday && !isCancelled && !isCompleted && Boolean(c.meeting_url);
 
       return {
         id: c.session_id || `evt_${idx}_${dayKey}`,
@@ -90,7 +98,7 @@ export function buildDayColumns(params: {
         startMinute,
         dateKey: dayKey,
         isRecurring,
-        status: isRecurring ? 'RECURRING' : (c.status || 'SCHEDULED'),
+        status: sessStatus || c.status || (isRecurring ? 'RECURRING' : 'SCHEDULED'),
         attendanceStatus: (c as unknown as { attendance_status?: string }).attendance_status,
         isPast,
         isCancelled,

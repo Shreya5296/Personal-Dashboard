@@ -179,16 +179,28 @@ function Reports_getFinancialSummary(spreadsheet, options) {
       if (endDate && pkgDate && pkgDate > endDate) continue;
 
       var pkgCurrency = pkg.currency ? String(pkg.currency).trim().toUpperCase() : 'INR';
+      var rawPkgInInr = pkg.in_inr !== undefined && pkg.in_inr !== null ? String(pkg.in_inr).trim() : '';
+      var numPkgInInr = Number(rawPkgInInr);
+      var hasValidPkgInInr = rawPkgInInr !== '' && rawPkgInInr !== '-' && !isNaN(numPkgInInr) && numPkgInInr > 0;
+      var pkgStudentKey = resolveStudentKey(pkg);
       var pkgPrice = 0;
+
       if (pkgCurrency === 'INR' || !pkg.currency) {
         pkgPrice = Number(pkg.package_price) || 0;
+      } else if (hasValidPkgInInr) {
+        pkgPrice = numPkgInInr;
       } else {
-        // Non-INR package: without explicit in_inr in package schema, preserve original value if INR default
-        pkgPrice = Number(pkg.package_price) || 0;
+        // Non-INR package: check if student has matching payments evaluated in INR
+        var matchingStudentPaidInr = paymentsByStudent[pkgStudentKey] || 0;
+        if (matchingStudentPaidInr > 0) {
+          pkgPrice = matchingStudentPaidInr;
+        } else {
+          // Foreign currency package with no known INR conversion: do not mix native amounts into INR total
+          pkgPrice = 0;
+        }
       }
 
       totalBilled += pkgPrice;
-      var pkgStudentKey = resolveStudentKey(pkg);
       billedByStudent[pkgStudentKey] = (billedByStudent[pkgStudentKey] || 0) + pkgPrice;
     }
   } else if (_repReg.SHEET_NAMES.FEE_OBLIGATIONS) {

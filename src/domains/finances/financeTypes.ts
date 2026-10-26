@@ -21,6 +21,8 @@ export interface StudentBalanceRecord {
   outstandingBalance: number;
   paymentCount: number;
   lastPaymentDate?: string;
+  currency?: string;
+  inInr?: number;
 }
 
 export type FinanceTab = 'history' | 'balances';

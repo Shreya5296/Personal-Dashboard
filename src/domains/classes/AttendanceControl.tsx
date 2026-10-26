@@ -41,7 +41,7 @@ export const AttendanceControl: React.FC<AttendanceControlProps> = ({
 
   if (status === 'SCHEDULED' || status === 'NOT_MARKED') {
     return (
-      <div style={{ display: 'flex', gap: 'var(--space-1)', alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 'var(--space-1)', alignItems: 'center', whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
         <Button variant="primary" size="sm" onClick={() => handleAction('PRESENT')} disabled={loading}>
           Attended
         </Button>

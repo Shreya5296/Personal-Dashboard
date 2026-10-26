@@ -53,7 +53,7 @@ export const MeetingLinkTable: React.FC<MeetingLinkTableProps> = ({
     {
       key: 'student',
       header: 'Student',
-      width: '28%',
+      width: '22%',
       render: (l) => (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
           <span style={{ fontWeight: 600, color: 'var(--color-text-main)', fontSize: 'var(--font-size-sm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -70,19 +70,19 @@ export const MeetingLinkTable: React.FC<MeetingLinkTableProps> = ({
     {
       key: 'primary_link',
       header: 'Primary Meeting Link',
-      width: '30%',
+      width: '31%',
       render: (l) => renderLinkCell(l, l.meeting_link_1 || l.meeting_url, '1'),
     },
     {
       key: 'secondary_link',
       header: 'Secondary Meeting Link',
-      width: '30%',
+      width: '31%',
       render: (l) => renderLinkCell(l, l.meeting_link_2, '2'),
     },
     {
       key: 'actions',
       header: 'Actions',
-      width: '12%',
+      width: '16%',
       render: (l) => {
         const hasAny = Boolean(
           (l.meeting_link_1 && l.meeting_link_1.trim()) ||

@@ -110,10 +110,6 @@ export const StudentExpandedDetails: React.FC<StudentExpandedDetailsProps> = ({
           <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
             Classes: <strong style={{ color: 'var(--color-text-main)' }}>{balance.totalPurchased}</strong> purchased · <strong>{balance.totalConsumed}</strong> consumed · <strong style={{ color: remaining > 0 ? 'var(--color-success-text)' : 'var(--color-danger-text)' }}>{remaining} remaining</strong>
           </div>
-          <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-            Price: <strong style={{ color: 'var(--color-text-main)' }}>{primaryPkg?.package_price ? formatCurrency(Number(primaryPkg.package_price), true, primaryPkg.currency || 'INR') : '—'}</strong>
-            {inrEquiv && <span> (INR equiv: {inrEquiv})</span>}
-          </div>
           <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
             Dates: {primaryPkg?.start_date ? formatDate(primaryPkg.start_date) : '—'} – {primaryPkg?.end_date ? formatDate(primaryPkg.end_date) : '—'}
           </div>
@@ -123,6 +119,7 @@ export const StudentExpandedDetails: React.FC<StudentExpandedDetailsProps> = ({
           <div className={styles.heading}>Financial Overview</div>
           <div className={styles.textWrap}>Agreed: <strong style={{ color: 'var(--color-text-main)' }}>{formatCurrency(financials.totalInvoiced, true, financials.currency)}</strong></div>
           <div className={styles.textWrap}>Received: <strong style={{ color: '#059669' }}>{formatCurrency(financials.totalPaid, true, financials.currency)}</strong></div>
+          {inrEquiv && <div className={styles.textWrap} style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>INR equiv: {inrEquiv}</div>}
           <div style={{ marginTop: '2px' }}>
             <span style={{ color: 'var(--color-text-muted)', marginRight: '4px' }}>Outstanding:</span>
             <strong style={{ color: out.color }}>{out.text}</strong>

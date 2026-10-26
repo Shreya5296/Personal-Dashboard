@@ -35,7 +35,7 @@ export function buildClassScheduleColumns(params: {
 
   return [
     {
-      key: 'student', header: 'Student', width: '20%',
+      key: 'student', header: 'Student', width: '18%',
       render: (c) => (
         <div>
           <span style={{ fontWeight: 600, color: 'var(--color-text-main)', fontSize: 'var(--font-size-sm)', display: 'block' }}>
@@ -48,7 +48,7 @@ export function buildClassScheduleColumns(params: {
       ),
     },
     {
-      key: 'date', header: 'Weekday & Date', width: '18%',
+      key: 'date', header: 'Weekday & Date', width: '17%',
       render: (c) => (
         <span style={{ fontWeight: 600, color: 'var(--color-text-main)', fontSize: 'var(--font-size-sm)' }}>
           {formatClassDate(c.schedule_date || c.class_date || c.scheduled_start)}
@@ -82,7 +82,7 @@ export function buildClassScheduleColumns(params: {
       },
     },
     {
-      key: 'consumed', header: 'Consumed / Purchased', width: '15%',
+      key: 'consumed', header: 'Consumed / Purchased', width: '14%',
       render: (c) => {
         const prog = getProgress ? getProgress(c) : undefined;
         if (prog) {
@@ -91,9 +91,7 @@ export function buildClassScheduleColumns(params: {
               <span style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)', color: 'var(--color-text-main)', fontVariantNumeric: 'tabular-nums' }}>
                 {prog.display}
               </span>
-              <span style={{ display: 'block', fontSize: '11px', color: 'var(--color-text-muted)' }}>
-                {prog.remainingDisplay}
-              </span>
+              <span style={{ display: 'block', fontSize: '11px', color: 'var(--color-text-muted)' }}>{prog.remainingDisplay}</span>
             </div>
           );
         }
@@ -108,7 +106,7 @@ export function buildClassScheduleColumns(params: {
       },
     },
     {
-      key: 'join', header: 'Join Class', width: '14%',
+      key: 'join', header: 'Join Class', width: '12%',
       render: (c) => {
         const raw = c.scheduled_start || c.start_time;
         const d = raw ? new Date(String(raw).trim().replace(/T\s+(\d:)/, 'T0$1')) : null;
@@ -126,15 +124,13 @@ export function buildClassScheduleColumns(params: {
             </a>
           );
         }
-        if (statusCfg.category !== 'UPCOMING') {
-          return <span style={statusCfg.badgeStyle}>{statusCfg.label}</span>;
-        }
+        if (statusCfg.category !== 'UPCOMING') return <span style={statusCfg.badgeStyle}>{statusCfg.label}</span>;
         if (!joinUrl) return <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-subtle)', fontStyle: 'italic' }}>No link</span>;
         return <span style={statusCfg.badgeStyle}>{isPast ? 'Past class' : 'Upcoming'}</span>;
       },
     },
     {
-      key: 'attendance', header: 'Attendance', width: '18%',
+      key: 'attendance', header: 'Attendance', width: '24%',
       render: (c) => (
         <AttendanceControl
           status={c.status}

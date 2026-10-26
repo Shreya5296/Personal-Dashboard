@@ -29,6 +29,25 @@ export function formatMonthTitle(yearMonthStr: string): string {
   return new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(dt);
 }
 
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+export function formatWeekRangeTitle(startDateStr: string, endDateStr: string): string {
+  const [y1, m1, d1] = startDateStr.split('-').map(Number);
+  const [y2, m2, d2] = endDateStr.split('-').map(Number);
+  const d1Str = String(d1).padStart(2, '0');
+  const d2Str = String(d2).padStart(2, '0');
+  const mo1 = MONTHS_SHORT[m1 - 1] || '';
+  const mo2 = MONTHS_SHORT[m2 - 1] || '';
+
+  if (y1 === y2 && m1 === m2) {
+    return `${d1Str} – ${d2Str} ${mo1} ${y1}`;
+  }
+  if (y1 === y2) {
+    return `${d1Str} ${mo1} – ${d2Str} ${mo2} ${y1}`;
+  }
+  return `${d1Str} ${mo1} ${y1} – ${d2Str} ${mo2} ${y2}`;
+}
+
 export function formatDayTitle(dateStr: string, timeZone = 'UTC'): string {
   const [y, m, d] = dateStr.split('-').map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));

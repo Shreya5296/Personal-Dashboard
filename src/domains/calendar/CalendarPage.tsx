@@ -12,7 +12,7 @@ import { getSavedTimezone } from '../../lib/userPreferences';
 import { toInputDateFormat } from '../../lib/dateFormat';
 import { getMondayForDateStr, shiftMondayStr, getWeekDates } from '../dashboard/calendarEventGenerator';
 import { CalendarViewMode } from './calendarTypes';
-import { shiftDateStr, shiftMonthStr, formatMonthTitle, formatDayTitle } from './calendarDateUtils';
+import { shiftDateStr, shiftMonthStr, formatMonthTitle, formatDayTitle, formatWeekRangeTitle } from './calendarDateUtils';
 import { buildDayColumns } from './calendarGridBuilder';
 import { WeeklyTimeGrid } from './WeeklyTimeGrid';
 import { DayCalendarView } from './DayCalendarView';
@@ -98,7 +98,7 @@ export const CalendarPage: React.FC = () => {
     setYearMonthStr(today.slice(0, 7));
   };
 
-  let titleText = `${mondayStr} – ${sundayStr}`;
+  let titleText = formatWeekRangeTitle(mondayStr, sundayStr);
   let countLabel: string | undefined = `${totalWeekEvents} ${totalWeekEvents === 1 ? 'class slot' : 'class slots'}`;
   if (viewMode === 'day') {
     titleText = formatDayTitle(selectedDateStr, activeTz);
@@ -110,10 +110,7 @@ export const CalendarPage: React.FC = () => {
 
   return (
     <div>
-      <PageHeader
-        title="Class Calendar"
-        subtitle={`Schedule views (Day, Week, Month) in ${activeTz}.`}
-      />
+      <PageHeader title="Class Calendar" />
       <CalendarControlsBar
         viewMode={viewMode}
         onChangeViewMode={setViewMode}

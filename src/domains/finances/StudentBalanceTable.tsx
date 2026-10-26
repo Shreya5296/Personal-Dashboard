@@ -41,9 +41,16 @@ export const StudentBalanceTable: React.FC<StudentBalanceTableProps> = ({ record
       header: 'Agreed Package Value',
       width: '20%',
       render: (r) => (
-        <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
-          {formatCurrency(r.totalInvoiced)}
-        </span>
+        <div>
+          <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, display: 'block' }}>
+            {formatCurrency(r.totalInvoiced, true, r.currency || 'INR')}
+          </span>
+          {r.currency && r.currency !== 'INR' && r.inInr ? (
+            <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+              (₹{r.inInr.toLocaleString('en-IN')})
+            </span>
+          ) : null}
+        </div>
       ),
     },
     {
@@ -51,9 +58,16 @@ export const StudentBalanceTable: React.FC<StudentBalanceTableProps> = ({ record
       header: 'Collected Payments',
       width: '18%',
       render: (r) => (
-        <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#059669' }}>
-          {formatCurrency(r.totalPaid)}
-        </span>
+        <div>
+          <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#059669', display: 'block' }}>
+            {formatCurrency(r.totalPaid, true, r.currency || 'INR')}
+          </span>
+          {r.currency && r.currency !== 'INR' && r.inInr ? (
+            <span style={{ fontSize: '11px', color: '#059669' }}>
+              (₹{r.inInr.toLocaleString('en-IN')})
+            </span>
+          ) : null}
+        </div>
       ),
     },
     {
@@ -61,7 +75,7 @@ export const StudentBalanceTable: React.FC<StudentBalanceTableProps> = ({ record
       header: 'Outstanding Balance',
       width: '18%',
       render: (r) => {
-        const out = formatOutstandingBalance(r.outstandingBalance);
+        const out = formatOutstandingBalance(r.outstandingBalance, r.currency || 'INR');
         return (
           <span
             style={{

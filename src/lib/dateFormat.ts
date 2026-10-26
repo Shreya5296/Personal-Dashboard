@@ -77,3 +77,15 @@ export function isPastDate(dateString: string): boolean {
   const now = new Date();
   return target.getTime() < now.getTime();
 }
+
+export function formatDateDdMmYyyy(input: string | Date | null | undefined): string {
+  if (!input) return '—';
+  if (typeof input === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(input.trim())) {
+    const [y, m, d] = input.trim().split('-');
+    return `${d}/${m}/${y}`;
+  }
+  const date = input instanceof Date ? input : parseIsoDate(input);
+  if (!date) return '—';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+}

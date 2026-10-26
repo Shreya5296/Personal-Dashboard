@@ -65,13 +65,10 @@ export function useFinancesData(token?: string | null) {
       const name = pkg.student_name || sid;
       const price = Number(pkg.package_price || pkg.price || 0);
       const existing = map.get(sid) || {
-        student_id: sid,
-        student_name: name,
-        totalInvoiced: 0,
-        totalPaid: 0,
-        outstandingBalance: 0,
-        paymentCount: 0,
+        student_id: sid, student_name: name, totalInvoiced: 0, totalPaid: 0,
+        outstandingBalance: 0, paymentCount: 0, currency: pkg.currency || 'INR',
       };
+      if (pkg.currency) existing.currency = pkg.currency;
       existing.totalInvoiced += price;
       map.set(sid, existing);
     }
@@ -82,13 +79,11 @@ export function useFinancesData(token?: string | null) {
       const name = p.student_name || sid;
       const amt = Number(p.amount || 0);
       const existing = map.get(sid) || {
-        student_id: sid,
-        student_name: name,
-        totalInvoiced: 0,
-        totalPaid: 0,
-        outstandingBalance: 0,
-        paymentCount: 0,
+        student_id: sid, student_name: name, totalInvoiced: 0, totalPaid: 0,
+        outstandingBalance: 0, paymentCount: 0, currency: p.currency || 'INR',
       };
+      if (p.currency && (!existing.currency || existing.currency === 'INR')) existing.currency = p.currency;
+      if (p.in_inr && Number(p.in_inr) > 0) existing.inInr = (existing.inInr || 0) + Number(p.in_inr);
       existing.totalPaid += amt;
       existing.paymentCount += 1;
       if (!existing.lastPaymentDate || p.payment_date > existing.lastPaymentDate) {
