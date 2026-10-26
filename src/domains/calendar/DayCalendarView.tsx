@@ -35,6 +35,7 @@ export const DayCalendarView: React.FC<DayCalendarViewProps> = ({
         {events.map((evt) => {
           const isCancelled = evt.isCancelled;
           const isCompleted = evt.status === 'COMPLETED' || evt.attendanceStatus === 'PRESENT';
+          const isPastCompleted = evt.isPast && isCompleted;
 
           return (
             <div
@@ -44,10 +45,11 @@ export const DayCalendarView: React.FC<DayCalendarViewProps> = ({
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '1rem 1.25rem',
-                backgroundColor: 'var(--color-bg-surface)',
-                border: isToday ? '1px solid #bfdbfe' : '1px solid var(--color-border-subtle)',
+                backgroundColor: isPastCompleted ? '#f4fdf8' : 'var(--color-bg-surface)',
+                border: isToday ? '1px solid #bfdbfe' : isPastCompleted ? '1px solid #bbf7d0' : '1px solid var(--color-border-subtle)',
                 borderRadius: 'var(--radius-lg)',
-                boxShadow: 'var(--shadow-xs)',
+                boxShadow: isPastCompleted ? 'none' : 'var(--shadow-xs)',
+                opacity: isPastCompleted ? 0.85 : 1,
                 gap: 'var(--space-4)',
               }}
             >

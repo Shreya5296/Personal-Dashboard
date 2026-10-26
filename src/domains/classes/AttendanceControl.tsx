@@ -42,7 +42,7 @@ export const AttendanceControl: React.FC<AttendanceControlProps> = ({
   if (status === 'SCHEDULED' || status === 'NOT_MARKED') {
     return (
       <div style={{ display: 'flex', gap: 'var(--space-1)', alignItems: 'center' }}>
-        <Button variant="primary" size="sm" onClick={() => handleAction('ATTENDED')} disabled={loading}>
+        <Button variant="primary" size="sm" onClick={() => handleAction('PRESENT')} disabled={loading}>
           Attended
         </Button>
         <Button variant="outline" size="sm" onClick={() => handleAction('NO_SHOW')} disabled={loading}>

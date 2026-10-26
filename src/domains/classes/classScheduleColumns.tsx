@@ -35,7 +35,7 @@ export function buildClassScheduleColumns(params: {
 
   return [
     {
-      key: 'student', header: 'Student',
+      key: 'student', header: 'Student', width: '20%',
       render: (c) => (
         <div>
           <span style={{ fontWeight: 600, color: 'var(--color-text-main)', fontSize: 'var(--font-size-sm)', display: 'block' }}>
@@ -48,7 +48,7 @@ export function buildClassScheduleColumns(params: {
       ),
     },
     {
-      key: 'date', header: 'Weekday & Date',
+      key: 'date', header: 'Weekday & Date', width: '18%',
       render: (c) => (
         <span style={{ fontWeight: 600, color: 'var(--color-text-main)', fontSize: 'var(--font-size-sm)' }}>
           {formatClassDate(c.schedule_date || c.class_date || c.scheduled_start)}
@@ -56,7 +56,7 @@ export function buildClassScheduleColumns(params: {
       ),
     },
     {
-      key: 'start_time', header: 'Class Time',
+      key: 'start_time', header: 'Class Time', width: '15%',
       render: (c) => {
         const startTime = c.schedule_time || c.start_time || '';
         const dur = c.duration_minutes || 30;
@@ -82,7 +82,7 @@ export function buildClassScheduleColumns(params: {
       },
     },
     {
-      key: 'consumed', header: 'Consumed / Purchased',
+      key: 'consumed', header: 'Consumed / Purchased', width: '15%',
       render: (c) => {
         const prog = getProgress ? getProgress(c) : undefined;
         if (prog) {
@@ -108,7 +108,7 @@ export function buildClassScheduleColumns(params: {
       },
     },
     {
-      key: 'join', header: 'Join Class',
+      key: 'join', header: 'Join Class', width: '14%',
       render: (c) => {
         const raw = c.scheduled_start || c.start_time;
         const d = raw ? new Date(String(raw).trim().replace(/T\s+(\d:)/, 'T0$1')) : null;
@@ -134,7 +134,7 @@ export function buildClassScheduleColumns(params: {
       },
     },
     {
-      key: 'attendance', header: 'Attendance',
+      key: 'attendance', header: 'Attendance', width: '18%',
       render: (c) => (
         <AttendanceControl
           status={c.status}

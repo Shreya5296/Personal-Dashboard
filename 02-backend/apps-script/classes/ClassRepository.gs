@@ -177,11 +177,31 @@ function Classes_update(spreadsheet, id, updates) {
     }
   }
 
+  function _normalizeDateVal(val) {
+    if (!val) return '';
+    if (val instanceof Date) {
+      var dy = val.getFullYear();
+      var dm = val.getMonth() + 1;
+      var dd = val.getDate();
+      return dy + '-' + (dm < 10 ? '0' + dm : String(dm)) + '-' + (dd < 10 ? '0' + dd : String(dd));
+    }
+    var str = String(val).trim().replace(/^'/, '');
+    if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.slice(0, 10);
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(str)) {
+      var dp = str.split('/');
+      var dYear = dp[2];
+      var dMonth = dp[1].length < 2 ? '0' + dp[1] : dp[1];
+      var dDay = dp[0].length < 2 ? '0' + dp[0] : dp[0];
+      return dYear + '-' + dMonth + '-' + dDay;
+    }
+    return str.slice(0, 10);
+  }
+
   // 2. Composite key matching (student_id__schedule_date__schedule_time)
   var targetId = String(id || (updates && updates.session_id) || '').trim();
   var parts = targetId.split('__');
   var sId = parts[0] || (updates && updates.student_id);
-  var sDate = parts[1] || (updates && (updates.schedule_date || updates.class_date));
+  var sDate = _normalizeDateVal(parts[1] || (updates && (updates.schedule_date || updates.class_date)));
   var sTime = parts[2] || (updates && (updates.schedule_time || updates.start_time));
 
   if (sId && sDate && sTime) {
@@ -195,13 +215,14 @@ function Classes_update(spreadsheet, id, updates) {
 
       for (var r = 1; r < rawData2.length; r++) {
         var rVal = rawData2[r];
+        var rowDate = _normalizeDateVal(rVal[dateIdx]);
         var rowTime = (rVal[timeIdx] instanceof Date)
           ? ((rVal[timeIdx].getHours() < 10 ? '0' + rVal[timeIdx].getHours() : String(rVal[timeIdx].getHours())) + ':' + (rVal[timeIdx].getMinutes() < 10 ? '0' + rVal[timeIdx].getMinutes() : String(rVal[timeIdx].getMinutes())))
           : String(rVal[timeIdx] || '').slice(0, 5);
         var targetTime = (sTime instanceof Date)
           ? ((sTime.getHours() < 10 ? '0' + sTime.getHours() : String(sTime.getHours())) + ':' + (sTime.getMinutes() < 10 ? '0' + sTime.getMinutes() : String(sTime.getMinutes())))
           : String(sTime || '').slice(0, 5);
-        if (rVal[stuIdx] === sId && String(rVal[dateIdx]).slice(0, 10) === sDate && rowTime === targetTime) {
+        if (rVal[stuIdx] === sId && rowDate === sDate && rowTime === targetTime) {
           var currentRec = _clsMapper.rowToRecord(map2, rVal);
           for (var key in updates) {
             if (updates.hasOwnProperty(key) && key !== '_rowIndex' && key !== 'rowIndex') {
@@ -215,6 +236,13 @@ function Classes_update(spreadsheet, id, updates) {
         }
       }
     }
+  }
+
+  // 3. Fallback: try locating via Classes_getById
+  var foundRec = Classes_getById(spreadsheet, id);
+  if (foundRec && foundRec._rowIndex) {
+    var merged = Object.assign({}, updates, { _rowIndex: foundRec._rowIndex });
+    return Classes_update(spreadsheet, id, merged);
   }
 
   return _clsRowWriter.updateRecordById(sheet, _clsMapper, headers, 'student_id', id, updates);

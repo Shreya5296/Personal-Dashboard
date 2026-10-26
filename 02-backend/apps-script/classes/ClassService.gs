@@ -268,7 +268,7 @@ function Classes_complete(spreadsheet, data, actor) {
     return Classes_cancel(spreadsheet, data, actor);
   }
 
-  var att = rawAtt || 'ATTENDED';
+  var att = rawAtt || 'PRESENT';
   if (att === 'NO_SHOW') att = 'ABSENT_UNEXCUSED';
   else if (att === 'EXCUSED') att = 'ABSENT_EXCUSED';
 
@@ -280,7 +280,7 @@ function Classes_complete(spreadsheet, data, actor) {
   // - ABSENT (or NO_SHOW / ABSENT_UNEXCUSED): owner decides (default false unless unexcused/late)
   // - NOT_MARKED: deduct_class = false
   var deduct = false;
-  if (att === 'ATTENDED' || att === 'PRESENT') {
+  if (att === 'PRESENT' || att === 'ATTENDED') {
     deduct = true;
   } else if (att === 'ABSENT' || att === 'NO_SHOW' || att === 'ABSENT_UNEXCUSED') {
     deduct = data.deduct_class !== undefined ? Boolean(data.deduct_class) : (att === 'NO_SHOW' || att === 'ABSENT_UNEXCUSED');
@@ -293,6 +293,9 @@ function Classes_complete(spreadsheet, data, actor) {
   var effect = deduct ? 'CONSUME' : 'NO_CONSUME';
 
   var updated = _clsRepo.Classes_update(spreadsheet, sid, {
+    _rowIndex: session._rowIndex,
+    rowIndex: session._rowIndex,
+    student_id: session.student_id,
     session_status: 'COMPLETED',
     attendance_status: att,
     deduct_class: deduct
@@ -352,11 +355,140 @@ function Classes_cancel(spreadsheet, data, actor) {
   var attStatus = isLate ? 'CANCELLED_LATE' : 'CANCELLED';
 
   var updated = _clsRepo.Classes_update(spreadsheet, sid, {
+    _rowIndex: session._rowIndex,
+    rowIndex: session._rowIndex,
+    student_id: session.student_id,
     session_status: 'CANCELLED',
     attendance_status: attStatus,
     cancellation_reason: reason,
     deduct_class: deduct
   });
+
+  // Non-deductible cancellation logic:
+  // If deduct === false, student credit entitlement is preserved.
+  // Schedule replacement session at the next available slot according to student's recurring schedule,
+  // and extend package projected end_date. Idempotency is guaranteed by checking activeSessions < purchased.
+  var replacementSession = null;
+  if (!deduct && session.student_id) {
+    try {
+      var pkgRepo = typeof Packages_getAll === 'function' ? { Packages_getAll: Packages_getAll, Packages_update: Packages_update } : (typeof require !== 'undefined' ? require('../packages/PackageRepository.gs') : null);
+      if (pkgRepo && pkgRepo.Packages_getAll) {
+        var pkgs = pkgRepo.Packages_getAll(spreadsheet) || [];
+        var stuPkg = null;
+        for (var p = 0; p < pkgs.length; p++) {
+          if (pkgs[p].student_id === session.student_id) {
+            stuPkg = pkgs[p];
+            break;
+          }
+        }
+
+        var classesPurchased = stuPkg ? (Number(stuPkg.classes_purchased) || Number(stuPkg.total_classes) || 0) : 0;
+        if (classesPurchased > 0) {
+          var allSessions = _clsRepo.Classes_getAll(spreadsheet) || [];
+          var activeSessions = allSessions.filter(function(s) {
+            return s.student_id === session.student_id && s.session_status !== 'CANCELLED';
+          });
+
+          if (activeSessions.length < classesPurchased) {
+            var schedSvc = typeof Schedules_list === 'function' ? { Schedules_list: Schedules_list } : (typeof require !== 'undefined' ? require('./ClassScheduleService.gs') : null);
+            var schedRes = schedSvc && schedSvc.Schedules_list ? schedSvc.Schedules_list(spreadsheet, session.student_id) : null;
+            var schedEntries = (schedRes && schedRes.success && schedRes.data && schedRes.data.length > 0) ? schedRes.data : [];
+
+            if (!schedEntries.length && stuPkg && stuPkg.class_schedule) {
+              var pkgSvc = typeof _parseScheduleString === 'function' ? { _parseScheduleString: _parseScheduleString } : (typeof require !== 'undefined' ? require('../packages/PackageService.gs') : null);
+              if (pkgSvc && pkgSvc._parseScheduleString) {
+                schedEntries = pkgSvc._parseScheduleString(stuPkg.class_schedule, stuPkg.class_duration);
+              }
+            }
+
+            if (schedEntries.length > 0) {
+              var DAY_MAP = { SUNDAY: 0, MONDAY: 1, TUESDAY: 2, WEDNESDAY: 3, THURSDAY: 4, FRIDAY: 5, SATURDAY: 6 };
+              var latestDateStr = '';
+              for (var s = 0; s < allSessions.length; s++) {
+                if (allSessions[s].student_id === session.student_id) {
+                  var sd = allSessions[s].schedule_date || allSessions[s].class_date;
+                  if (sd && String(sd) > latestDateStr) {
+                    latestDateStr = String(sd).slice(0, 10);
+                  }
+                }
+              }
+
+              var baseDate = latestDateStr ? new Date(latestDateStr + 'T12:00:00Z') : new Date();
+              var existingKeys = {};
+              for (var ek = 0; ek < allSessions.length; ek++) {
+                if (allSessions[ek].student_id === session.student_id) {
+                  var ekDate = allSessions[ek].schedule_date || allSessions[ek].class_date;
+                  var ekTime = allSessions[ek].schedule_time || allSessions[ek].start_time;
+                  if (ekDate && ekTime) {
+                    existingKeys[String(ekDate).slice(0, 10) + '__' + String(ekTime).slice(0, 5)] = true;
+                  }
+                }
+              }
+
+              var candidateDate = new Date(baseDate.getTime() + 86400000);
+              var nextSlot = null;
+              var safety = 0;
+              while (!nextSlot && safety < 120) {
+                var dayNum = candidateDate.getUTCDay();
+                for (var se = 0; se < schedEntries.length; se++) {
+                  var entry = schedEntries[se];
+                  var entryDay = DAY_MAP[String(entry.day_of_week || '').toUpperCase()];
+                  if (entryDay === dayNum) {
+                    var cYear = candidateDate.getUTCFullYear();
+                    var cMonth = String(candidateDate.getUTCMonth() + 1); if (cMonth.length < 2) cMonth = '0' + cMonth;
+                    var cDay = String(candidateDate.getUTCDate()); if (cDay.length < 2) cDay = '0' + cDay;
+                    var dStr = cYear + '-' + cMonth + '-' + cDay;
+                    var tStr = String(entry.start_time || '10:00').slice(0, 5);
+                    if (!existingKeys[dStr + '__' + tStr]) {
+                      nextSlot = {
+                        dateStr: dStr,
+                        timeStr: tStr,
+                        endStr: String(entry.end_time || '').slice(0, 5)
+                      };
+                      break;
+                    }
+                  }
+                }
+                if (!nextSlot) {
+                  candidateDate.setUTCDate(candidateDate.getUTCDate() + 1);
+                  safety++;
+                }
+              }
+
+              if (nextSlot) {
+                var dur = Number(stuPkg && stuPkg.class_duration) || Number(session.duration_minutes) || 60;
+                var startIso = nextSlot.dateStr + 'T' + nextSlot.timeStr + ':00.000Z';
+                var endIso = nextSlot.dateStr + 'T' + (nextSlot.endStr || nextSlot.timeStr) + ':00.000Z';
+                var newSession = {
+                  student_id: session.student_id,
+                  student_name: session.student_name || '',
+                  schedule_date: nextSlot.dateStr,
+                  schedule_time: nextSlot.timeStr,
+                  class_session_id: session.student_id + '__' + nextSlot.dateStr + '__' + nextSlot.timeStr,
+                  class_date: nextSlot.dateStr,
+                  start_time: nextSlot.timeStr,
+                  scheduled_start: startIso,
+                  scheduled_end: endIso,
+                  attendance_status: 'NOT_MARKED',
+                  session_status: 'SCHEDULED',
+                  cancellation_reason: '',
+                  deduct_class: false
+                };
+                _clsRepo.Classes_insert(spreadsheet, newSession);
+                replacementSession = newSession;
+
+                if (pkgRepo.Packages_update && stuPkg) {
+                  pkgRepo.Packages_update(spreadsheet, session.student_id, {
+                    end_date: nextSlot.dateStr
+                  });
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {}
+  }
 
   if (_clsAudit && _clsAudit.recordAuditEvent) {
     _clsAudit.recordAuditEvent(spreadsheet, _clsReg, _clsMap, {
@@ -365,7 +497,7 @@ function Classes_cancel(spreadsheet, data, actor) {
       entity_type: 'CLASS_SESSION',
       entity_id: sid,
       action: 'CANCEL',
-      after_summary: { session_status: 'CANCELLED', attendance_status: attStatus, deduct_class: deduct, reason: reason },
+      after_summary: { session_status: 'CANCELLED', attendance_status: attStatus, deduct_class: deduct, reason: reason, replacement: replacementSession ? replacementSession.schedule_date : null },
       request_id: actor ? actor.requestId : ''
     });
   }
@@ -375,7 +507,8 @@ function Classes_cancel(spreadsheet, data, actor) {
     attendance_status: attStatus,
     cancellation_reason: reason,
     deduct_class: deduct,
-    class_credit_effect: deduct ? 'CONSUME' : 'NO_CONSUME'
+    class_credit_effect: deduct ? 'CONSUME' : 'NO_CONSUME',
+    replacement_session: replacementSession
   });
 
   return { success: true, data: returnData };

@@ -1,4 +1,4 @@
-export type AttendanceStatus = 'SCHEDULED' | 'ATTENDED' | 'NO_SHOW' | 'CANCELLED';
+export type AttendanceStatus = 'SCHEDULED' | 'ATTENDED' | 'PRESENT' | 'NO_SHOW' | 'CANCELLED';
 
 export interface ClassSession {
   session_id: string;

@@ -4,12 +4,12 @@ import { Student } from './studentTypes';
 import { MeetingLink } from '../meeting-links/meetingLinkTypes';
 import { Package } from '../packages/packageTypes';
 import { StudentFinancialInfo } from './useStudentAggregates';
-import { WeeklyScheduleEntry } from '../classes/scheduleApi';
+import { WeeklyScheduleEntry, cleanTime } from '../classes/scheduleApi';
 import { MeetingLinkButton } from '../meeting-links/MeetingLinkButton';
 import { Button } from '../../components/buttons/Button';
 import { formatCurrency } from '../../lib/currencyFormat';
 import { formatDate } from '../../lib/dateFormat';
-import { formatWeeklySchedule } from './scheduleFormatter';
+import { formatTimeTo12Hour } from '../../lib/time12Format';
 import { formatOutstandingBalance } from '../../lib/balanceFormat';
 
 export interface StudentExpandedDetailsProps {
@@ -29,8 +29,10 @@ export const StudentExpandedDetails: React.FC<StudentExpandedDetailsProps> = ({
   const secondaryUrl = meetingLink?.meeting_link_2 || '';
   const remaining = Math.max(0, balance.totalPurchased - balance.totalConsumed);
   const primaryPkg = balance.packages[0];
-  const scheduleText = formatWeeklySchedule(schedule);
   const out = formatOutstandingBalance(financials.outstanding, financials.currency);
+  const inrEquiv = financials.currency !== 'INR'
+    ? (financials.inInr && financials.inInr > 0 ? formatCurrency(financials.inInr, true, 'INR') : 'Not available')
+    : null;
 
   return (
     <div className={styles.container} onClick={(e) => e.stopPropagation()}>
@@ -62,10 +64,27 @@ export const StudentExpandedDetails: React.FC<StudentExpandedDetailsProps> = ({
 
         <div className={styles.section}>
           <div className={styles.heading}>Class Schedule</div>
-          <div style={{ color: schedule.length > 0 ? 'var(--color-text-main)' : 'var(--color-text-subtle)', fontStyle: schedule.length > 0 ? 'normal' : 'italic', fontWeight: 500 }}>
-            {scheduleText}
-          </div>
-          {schedule.length > 0 && <div style={{ color: 'var(--color-text-muted)' }}>{schedule.length} recurring {schedule.length === 1 ? 'slot' : 'slots'}/week</div>}
+          {schedule.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+              {schedule.map((slot, i) => {
+                const day = slot.day_of_week.charAt(0).toUpperCase() + slot.day_of_week.slice(1).toLowerCase();
+                const s12 = formatTimeTo12Hour(cleanTime(slot.start_time));
+                const e12 = slot.end_time ? formatTimeTo12Hour(cleanTime(slot.end_time)) : '';
+                return (
+                  <div key={i} style={{ color: 'var(--color-text-main)', fontSize: '12px', fontWeight: 500 }}>
+                    {day} — {e12 ? `${s12}–${e12}` : s12}
+                  </div>
+                );
+              })}
+              <div style={{ color: 'var(--color-text-muted)', fontSize: '11px', marginTop: '2px' }}>
+                {schedule.length} recurring {schedule.length === 1 ? 'slot' : 'slots'}/week
+              </div>
+            </div>
+          ) : (
+            <div style={{ color: 'var(--color-text-subtle)', fontStyle: 'italic', fontSize: '12px' }}>
+              No configured schedule
+            </div>
+          )}
         </div>
 
         <div className={styles.section}>
@@ -83,12 +102,21 @@ export const StudentExpandedDetails: React.FC<StudentExpandedDetailsProps> = ({
         </div>
 
         <div className={styles.section}>
-          <div className={styles.heading}>Package & Balance</div>
-          <div style={{ color: 'var(--color-text-main)', fontWeight: 600 }}>{primaryPkg?.package_name || primaryPkg?.plan_type || 'No active plan'}</div>
-          <div style={{ color: remaining > 0 ? 'var(--color-success-text)' : 'var(--color-danger-text)', fontWeight: 600 }}>
-            {remaining} classes remaining
+          <div className={styles.heading}>Package Details</div>
+          <div style={{ color: 'var(--color-text-main)', fontWeight: 600 }}>
+            {primaryPkg?.plan_type || primaryPkg?.package_name || 'No active plan'}
+            {primaryPkg?.class_duration ? ` (${primaryPkg.class_duration} min)` : ''}
           </div>
-          {primaryPkg?.end_date && <div className={styles.textWrap}>Projected End: {formatDate(primaryPkg.end_date)}</div>}
+          <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+            Classes: <strong style={{ color: 'var(--color-text-main)' }}>{balance.totalPurchased}</strong> purchased · <strong>{balance.totalConsumed}</strong> consumed · <strong style={{ color: remaining > 0 ? 'var(--color-success-text)' : 'var(--color-danger-text)' }}>{remaining} remaining</strong>
+          </div>
+          <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+            Price: <strong style={{ color: 'var(--color-text-main)' }}>{primaryPkg?.package_price ? formatCurrency(Number(primaryPkg.package_price), true, primaryPkg.currency || 'INR') : '—'}</strong>
+            {inrEquiv && <span> (INR equiv: {inrEquiv})</span>}
+          </div>
+          <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+            Dates: {primaryPkg?.start_date ? formatDate(primaryPkg.start_date) : '—'} – {primaryPkg?.end_date ? formatDate(primaryPkg.end_date) : '—'}
+          </div>
         </div>
 
         <div className={styles.section}>

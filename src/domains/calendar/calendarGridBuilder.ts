@@ -46,6 +46,7 @@ export function buildDayColumns(params: {
       const rawStart = c.start_time || c.scheduled_start || '';
       const rawEnd = c.scheduled_end || '';
       const parsedStart = new Date(String(rawStart).trim().replace(/T\s+(\d:)/, 'T0$1'));
+      const parsedEnd = rawEnd ? new Date(String(rawEnd).trim().replace(/T\s+(\d:)/, 'T0$1')) : null;
 
       let startHour = 17;
       let startMinute = 0;
@@ -67,7 +68,10 @@ export function buildDayColumns(params: {
       const isRecurring = Boolean((c as unknown as { is_recurring?: boolean }).is_recurring);
       const stu = students.find((s) => s.student_id === c.student_id);
       const isCancelled = c.status === 'CANCELLED' || (c as unknown as { session_status?: string }).session_status === 'CANCELLED';
-      const isPast = dayKey < todayKey || (dayKey === todayKey && parsedStart.getTime() < nowMs);
+      const endMs = parsedEnd && !isNaN(parsedEnd.getTime())
+        ? parsedEnd.getTime()
+        : parsedStart.getTime() + (c.duration_minutes || 60) * 60000;
+      const isPast = dayKey < todayKey || (dayKey === todayKey && endMs < nowMs);
       const canJoin = isToday && !isCancelled && c.status !== 'COMPLETED' && Boolean(c.meeting_url);
 
       return {

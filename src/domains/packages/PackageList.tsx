@@ -47,13 +47,14 @@ export const PackageList: React.FC<{ studentId: string }> = ({ studentId }) => {
   };
 
   const columns: Column<Package>[] = [
-    { key: 'package_name', header: 'Package Name', render: (p) => <span style={{ fontWeight: 600 }}>{p.package_name}</span> },
-    { key: 'total_classes', header: 'Total Classes', render: (p) => <span style={{ fontVariantNumeric: 'tabular-nums' }}>{p.total_classes} classes</span> },
-    { key: 'price', header: 'Package Price', render: (p) => <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{formatCurrency(p.price)}</span> },
-    { key: 'start_date', header: 'Start Date', render: (p) => formatDate(p.start_date) },
+    { key: 'package_name', header: 'Package Name', width: '28%', render: (p) => <span style={{ fontWeight: 600 }}>{p.package_name}</span> },
+    { key: 'total_classes', header: 'Total Classes', width: '18%', render: (p) => <span style={{ fontVariantNumeric: 'tabular-nums' }}>{p.total_classes} classes</span> },
+    { key: 'price', header: 'Package Price', width: '20%', render: (p) => <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{formatCurrency(p.price)}</span> },
+    { key: 'start_date', header: 'Start Date', width: '18%', render: (p) => formatDate(p.start_date) },
     {
       key: 'status',
       header: 'Status',
+      width: '16%',
       render: (p) => (
         <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, padding: '2px 8px', borderRadius: 'var(--radius-full)', backgroundColor: p.status === 'ACTIVE' ? 'var(--color-success-bg)' : 'var(--color-bg-subtle)', color: p.status === 'ACTIVE' ? 'var(--color-success-text)' : 'var(--color-text-muted)', border: `1px solid ${p.status === 'ACTIVE' ? 'var(--color-success-border)' : 'var(--color-border)'}` }}>
           {p.status}
@@ -81,7 +82,7 @@ export const PackageList: React.FC<{ studentId: string }> = ({ studentId }) => {
 
       {loading && <LoadingState message="Loading packages…" />}
       {!loading && packages.length === 0 && <EmptyState title="No packages allocated" description="Create a package to assign classes to this student." />}
-      {!loading && packages.length > 0 && <DataTable columns={columns} data={packages} keyExtractor={(p) => p.package_id || `${p.student_id}_${p.start_date}`} />}
+      {!loading && packages.length > 0 && <DataTable fixedLayout columns={columns} data={packages} keyExtractor={(p) => p.package_id || `${p.student_id}_${p.start_date}`} />}
     </div>
   );
 };

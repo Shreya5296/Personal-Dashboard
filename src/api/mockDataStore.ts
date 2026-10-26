@@ -4,6 +4,12 @@ import {
   MOCK_PACKAGES, MOCK_NOTES, MOCK_SCHEDULES, createMockStudent,
   updateMockPackage, scheduleMockClass,
 } from './mockDataInitial';
+import {
+  handleMockClassRecordAttendance,
+  handleMockClassCancel,
+  handleMockClassRestoreCredit,
+  upsertMockMeetingLink,
+} from './mockClassOperations';
 
 export function handleMockApiRequest<T>(operation: string, payload: Record<string, unknown>, reqId: string): ApiResponse<T> {
   const meta = { requestId: reqId, timestamp: new Date().toISOString() };
@@ -46,32 +52,21 @@ export function handleMockApiRequest<T>(operation: string, payload: Record<strin
     return { ok: true, data: (sid ? MOCK_CLASSES.filter(c => c.student_id === sid) : MOCK_CLASSES) as T, meta };
   }
   if (operation === 'classes.schedule') return { ok: true, data: scheduleMockClass(payload) as T, meta };
+  if (operation === 'classes.recordAttendance' || operation === 'classes.complete') {
+    return { ok: true, data: handleMockClassRecordAttendance(payload) as T, meta };
+  }
+  if (operation === 'classes.cancel') {
+    return { ok: true, data: handleMockClassCancel(payload) as T, meta };
+  }
+  if (operation === 'classes.restoreCredit') {
+    return { ok: true, data: handleMockClassRestoreCredit(payload) as T, meta };
+  }
   if (operation === 'meetingLinks.list') {
     const sid = payload.student_id as string | undefined;
     return { ok: true, data: (sid ? MOCK_LINKS.filter(l => l.student_id === sid) : MOCK_LINKS) as T, meta };
   }
   if (operation === 'meetingLinks.create' || operation === 'meetingLinks.update') {
-    const sid = String(payload.student_id || '');
-    let ex = MOCK_LINKS.find(l => l.student_id === sid);
-    const l1 = payload.meeting_link_1 !== undefined ? String(payload.meeting_link_1).trim() : (payload.meeting_url !== undefined ? String(payload.meeting_url).trim() : undefined);
-    const l2 = payload.meeting_link_2 !== undefined ? String(payload.meeting_link_2).trim() : undefined;
-    if (ex) {
-      if (l1 !== undefined) { ex.meeting_link_1 = l1; ex.meeting_url = l1; }
-      if (l2 !== undefined) { ex.meeting_link_2 = l2; }
-    } else {
-      ex = {
-        meeting_link_id: `ml_${Date.now()}`,
-        student_id: sid,
-        student_name: String(payload.student_name || ''),
-        provider: 'GOOGLE_MEET',
-        link_label: 'Class Meeting Link',
-        meeting_url: l1 || '',
-        meeting_link_1: l1 || '',
-        meeting_link_2: l2 || '',
-        is_preferred: true
-      };
-      MOCK_LINKS.push(ex);
-    }
+    const ex = upsertMockMeetingLink(payload);
     return { ok: true, data: ex as T, meta };
   }
   if (operation === 'packages.list') return { ok: true, data: MOCK_PACKAGES as T, meta };

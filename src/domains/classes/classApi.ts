@@ -72,9 +72,10 @@ export async function recordAttendance(
   outcome: AttendanceStatus,
   token?: string | null
 ): Promise<ClassSession> {
+  const normOutcome = (outcome === 'ATTENDED' || outcome === 'PRESENT') ? 'PRESENT' : outcome;
   const response = await sendApiRequest<ClassSession>(
     'classes.recordAttendance',
-    { session_id: sessionId, outcome },
+    { session_id: sessionId, outcome: normOutcome, attendance_status: normOutcome },
     { token }
   );
   return response.data!;

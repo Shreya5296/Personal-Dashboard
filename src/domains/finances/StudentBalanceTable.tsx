@@ -24,6 +24,7 @@ export const StudentBalanceTable: React.FC<StudentBalanceTableProps> = ({ record
     {
       key: 'student_name',
       header: 'Student',
+      width: '24%',
       render: (r) => (
         <div>
           <span style={{ fontWeight: 600, color: 'var(--color-text-main)', display: 'block' }}>
@@ -38,6 +39,7 @@ export const StudentBalanceTable: React.FC<StudentBalanceTableProps> = ({ record
     {
       key: 'totalInvoiced',
       header: 'Agreed Package Value',
+      width: '20%',
       render: (r) => (
         <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
           {formatCurrency(r.totalInvoiced)}
@@ -47,6 +49,7 @@ export const StudentBalanceTable: React.FC<StudentBalanceTableProps> = ({ record
     {
       key: 'totalPaid',
       header: 'Collected Payments',
+      width: '18%',
       render: (r) => (
         <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#059669' }}>
           {formatCurrency(r.totalPaid)}
@@ -56,6 +59,7 @@ export const StudentBalanceTable: React.FC<StudentBalanceTableProps> = ({ record
     {
       key: 'outstandingBalance',
       header: 'Outstanding Balance',
+      width: '18%',
       render: (r) => {
         const out = formatOutstandingBalance(r.outstandingBalance);
         return (
@@ -74,6 +78,7 @@ export const StudentBalanceTable: React.FC<StudentBalanceTableProps> = ({ record
     {
       key: 'paymentCount',
       header: 'Transactions',
+      width: '20%',
       render: (r) => (
         <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
           {r.paymentCount} payment(s)
@@ -85,7 +90,7 @@ export const StudentBalanceTable: React.FC<StudentBalanceTableProps> = ({ record
 
   return (
     <div style={{ backgroundColor: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', overflow: 'hidden' }}>
-      <DataTable columns={columns} data={records} keyExtractor={(r) => r.student_id} />
+      <DataTable fixedLayout columns={columns} data={records} keyExtractor={(r) => r.student_id} />
     </div>
   );
 };

@@ -5,6 +5,7 @@ import { parseYearMonth, getMonthGridDates } from './calendarDateUtils';
 import { getDateKeyInTz } from '../dashboard/calendarEventGenerator';
 import { formatIsoTo12Hour } from '../../lib/time12Format';
 import { toInputDateFormat } from '../../lib/dateFormat';
+import { getMonthSessionStyle } from './monthEventStyle';
 
 export interface MonthCalendarViewProps {
   yearMonthStr: string;
@@ -109,6 +110,8 @@ export const MonthCalendarView: React.FC<MonthCalendarViewProps> = ({
                 {visibleSessions.map((sess, idx) => {
                   const studentName = studentMap.get(sess.student_id) || sess.student_id;
                   const time12 = sess.scheduled_start ? formatIsoTo12Hour(sess.scheduled_start, activeTz) : '';
+                  const st = getMonthSessionStyle(sess, dateStr < todayStr);
+
                   return (
                     <div
                       key={sess.session_id || idx}
@@ -116,9 +119,10 @@ export const MonthCalendarView: React.FC<MonthCalendarViewProps> = ({
                         fontSize: '10px',
                         padding: '1px 3px',
                         borderRadius: '3px',
-                        background: '#ecfdf5',
-                        border: '1px solid #a7f3d0',
-                        color: '#065f46',
+                        background: st.bg,
+                        border: st.border,
+                        color: st.color,
+                        opacity: st.opacity,
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',

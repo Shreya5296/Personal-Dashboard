@@ -16,6 +16,7 @@ export interface StudentFinancialInfo {
   totalPaid: number;
   outstanding: number;
   currency: string;
+  inInr?: number;
 }
 
 export function useStudentAggregates(studentIds: string[], token?: string | null) {
@@ -102,12 +103,16 @@ export function useStudentAggregates(studentIds: string[], token?: string | null
     }
 
     let totalPaid = 0;
+    let inInr = 0;
     for (const pay of studentPays) {
       totalPaid += Number(pay.amount || 0);
+      if (pay.in_inr !== undefined && pay.in_inr !== null) {
+        inInr += Number(pay.in_inr || 0);
+      }
     }
 
     const outstanding = Math.max(0, totalInvoiced - totalPaid);
-    return { totalInvoiced, totalPaid, outstanding, currency };
+    return { totalInvoiced, totalPaid, outstanding, currency, inInr };
   };
 
   return {
