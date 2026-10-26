@@ -2,10 +2,11 @@ import React from 'react';
 import { ClassSession } from '../classes/classTypes';
 import { Student } from '../students/studentTypes';
 import { parseYearMonth, getMonthGridDates } from './calendarDateUtils';
-import { getDateKeyInTz } from '../dashboard/calendarEventGenerator';
-import { formatIsoTo12Hour } from '../../lib/time12Format';
+import { formatIsoTo12Hour, formatTimeTo12Hour } from '../../lib/time12Format';
+import { cleanTime } from '../classes/scheduleApi';
 import { toInputDateFormat } from '../../lib/dateFormat';
 import { getMonthSessionStyle } from './monthEventStyle';
+import { isEventPast } from './calendarClassification';
 
 export interface MonthCalendarViewProps {
   yearMonthStr: string;
@@ -33,10 +34,7 @@ export const MonthCalendarView: React.FC<MonthCalendarViewProps> = ({
   // Index sessions by date string
   const sessionsByDate = new Map<string, ClassSession[]>();
   for (const s of sessions) {
-    const raw = s.scheduled_start || s.start_time;
-    if (!raw) continue;
-    const parsed = new Date(String(raw).trim().replace(/T\s+(\d:)/, 'T0$1'));
-    const dKey = !isNaN(parsed.getTime()) ? getDateKeyInTz(parsed, activeTz) : '';
+    const dKey = s.schedule_date || s.class_date || (s.scheduled_start ? s.scheduled_start.slice(0, 10) : '');
     if (dKey) {
       const arr = sessionsByDate.get(dKey) || [];
       arr.push(s);
@@ -109,8 +107,9 @@ export const MonthCalendarView: React.FC<MonthCalendarViewProps> = ({
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
                 {visibleSessions.map((sess, idx) => {
                   const studentName = studentMap.get(sess.student_id) || sess.student_id;
-                  const time12 = sess.scheduled_start ? formatIsoTo12Hour(sess.scheduled_start, activeTz) : '';
-                  const isPast = dateStr < todayStr || (dateStr === todayStr && Boolean(sess.scheduled_end && new Date(sess.scheduled_end).getTime() < Date.now()));
+                  const sTime = cleanTime(sess.schedule_time || sess.start_time);
+                  const time12 = sTime ? formatTimeTo12Hour(sTime) : (sess.scheduled_start ? formatIsoTo12Hour(sess.scheduled_start, activeTz) : '');
+                  const isPast = isEventPast(dateStr, sess.scheduled_end || sTime, activeTz);
                   const st = getMonthSessionStyle(sess, isPast);
 
                   return (

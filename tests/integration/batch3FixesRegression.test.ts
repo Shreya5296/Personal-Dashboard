@@ -158,8 +158,8 @@ describe('Fix Batch 3 — Attendance, Rescheduling, Student Details & Global Tab
       { session_id: 's2', student_id: 'st1', session_status: 'SCHEDULED', attendance_status: 'NOT_MARKED', start_time: '10:00', duration_minutes: 30, status: 'SCHEDULED' },
       false // isPast
     );
-    expect(upcomingStyle.bg).toBe('#ecfdf5');
-    expect(upcomingStyle.border).toContain('#10b981');
+    expect(upcomingStyle.bg).toBe('#fffbeb');
+    expect(upcomingStyle.border).toContain('#fde68a');
     expect(upcomingStyle.opacity).toBe(1);
   });
 

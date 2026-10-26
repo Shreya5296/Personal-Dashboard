@@ -1,4 +1,5 @@
 export type CalendarViewMode = 'day' | 'week' | 'month';
+export type CalendarDisplayCategory = 'PAST_COMPLETED' | 'CANCELLED' | 'UPCOMING';
 
 export interface CalendarEventItem {
   id: string;
@@ -18,6 +19,7 @@ export interface CalendarEventItem {
   isRecurring: boolean;
   status: string;
   attendanceStatus?: string;
+  category?: CalendarDisplayCategory;
   isPast?: boolean;
   isCancelled?: boolean;
   canJoin?: boolean;

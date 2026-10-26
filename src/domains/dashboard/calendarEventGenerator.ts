@@ -29,9 +29,7 @@ export function makeIsoInTz(dateKey: string, timeStr: string, timeZone: string):
   let offset = '+05:30';
   try {
     const parts = new Intl.DateTimeFormat('en-US', {
-      timeZone,
-      timeZoneName: 'longOffset',
-      year: 'numeric', month: '2-digit', day: '2-digit',
+      timeZone, timeZoneName: 'longOffset', year: 'numeric', month: '2-digit', day: '2-digit',
       hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
     }).formatToParts(tempDate);
     const tzPart = parts.find((p) => p.type === 'timeZoneName');
@@ -39,9 +37,7 @@ export function makeIsoInTz(dateKey: string, timeStr: string, timeZone: string):
       offset = tzPart.value.replace('GMT', '');
       if (!offset.includes(':')) offset = `${offset}:00`;
     }
-  } catch {
-    // fallback to +05:30 for Asia/Kolkata
-  }
+  } catch { /* fallback to +05:30 */ }
   return `${dateKey}T${cleanT}:00${offset}`;
 }
 
@@ -50,13 +46,18 @@ function parseTimeToMin(t?: string): number {
   return (h || 0) * 60 + (m || 0);
 }
 
+function getLocalTime(t?: string | null, tz = 'Asia/Kolkata'): string {
+  if (!t) return '';
+  const s = String(t).trim();
+  if (!s.includes('T')) return cleanTime(s);
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return cleanTime(s);
+  try { return new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).format(d); } catch { return ''; }
+}
+
 export function getDateKeyInTz(d: Date | null, timeZone: string): string {
   if (!d || isNaN(d.getTime())) return '';
-  try {
-    return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
-  } catch {
-    return '';
-  }
+  try { return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d); } catch { return ''; }
 }
 
 export function generateCalendarEvents(params: {
@@ -87,9 +88,13 @@ export function generateCalendarEvents(params: {
     }).map((c) => {
       const pkg = pkgMap.get(c.student_id);
       const dur = c.duration_minutes || pkg?.class_duration || 60;
-      const sTime = cleanTime(c.schedule_time || c.start_time) || '18:00';
-      const startIso = c.scheduled_start || makeIsoInTz(dateStr, sTime, activeTz);
-      return { ...c, duration_minutes: dur, scheduled_start: startIso };
+      const sTime = getLocalTime(c.schedule_time || c.start_time || c.scheduled_start, activeTz);
+      const startIso = sTime ? makeIsoInTz(dateStr, sTime, activeTz) : (c.scheduled_start || makeIsoInTz(dateStr, '18:00', activeTz));
+      const endMins = (sTime ? parseTimeToMin(sTime) : 0) + dur;
+      const endHH = String(Math.floor(endMins / 60)).padStart(2, '0');
+      const endMM = String(endMins % 60).padStart(2, '0');
+      const endIso = sTime ? makeIsoInTz(dateStr, `${endHH}:${endMM}`, activeTz) : c.scheduled_end;
+      return { ...c, duration_minutes: dur, scheduled_start: startIso, scheduled_end: endIso };
     });
 
     events.push(...dayDated);
@@ -119,13 +124,8 @@ export function generateCalendarEvents(params: {
 
       const hasDatedDuplicate = dayDated.some((ds) => {
         if (ds.student_id !== sid) return false;
-        const dsRaw = ds.start_time || ds.scheduled_start;
-        const dsParsed = new Date(String(dsRaw).trim().replace(/T\s+(\d:)/, 'T0$1'));
-        if (isNaN(dsParsed.getTime())) return false;
-        try {
-          const dsTime = new Intl.DateTimeFormat('en-GB', { timeZone: activeTz, hour: '2-digit', minute: '2-digit', hour12: false }).format(dsParsed);
-          return dsTime === startTime;
-        } catch { return false; }
+        const dsLocal = getLocalTime(ds.schedule_time || ds.start_time || ds.scheduled_start, activeTz);
+        return dsLocal === startTime;
       });
 
       if (!hasDatedDuplicate) {

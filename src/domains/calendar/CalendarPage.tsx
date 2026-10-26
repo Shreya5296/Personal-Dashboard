@@ -10,9 +10,9 @@ import { Student } from '../students/studentTypes';
 import { Package } from '../packages/packageTypes';
 import { getSavedTimezone } from '../../lib/userPreferences';
 import { toInputDateFormat } from '../../lib/dateFormat';
-import { getMondayForDateStr, shiftMondayStr, getWeekDates } from '../dashboard/calendarEventGenerator';
+import { getMondayForDateStr, shiftMondayStr, getWeekDates, generateCalendarEvents } from '../dashboard/calendarEventGenerator';
 import { CalendarViewMode } from './calendarTypes';
-import { shiftDateStr, shiftMonthStr, formatMonthTitle, formatDayTitle, formatWeekRangeTitle } from './calendarDateUtils';
+import { shiftDateStr, shiftMonthStr, formatMonthTitle, formatDayTitle, formatWeekRangeTitle, getMonthGridDates } from './calendarDateUtils';
 import { buildDayColumns } from './calendarGridBuilder';
 import { WeeklyTimeGrid } from './WeeklyTimeGrid';
 import { DayCalendarView } from './DayCalendarView';
@@ -93,20 +93,13 @@ export const CalendarPage: React.FC = () => {
   };
   const handleToday = () => {
     const today = toInputDateFormat(new Date(), activeTz);
-    setSelectedDateStr(today);
-    setMondayStr(getMondayForDateStr(today));
-    setYearMonthStr(today.slice(0, 7));
+    setSelectedDateStr(today); setMondayStr(getMondayForDateStr(today)); setYearMonthStr(today.slice(0, 7));
   };
 
   let titleText = formatWeekRangeTitle(mondayStr, sundayStr);
   let countLabel: string | undefined = `${totalWeekEvents} ${totalWeekEvents === 1 ? 'class slot' : 'class slots'}`;
-  if (viewMode === 'day') {
-    titleText = formatDayTitle(selectedDateStr, activeTz);
-    countLabel = undefined;
-  } else if (viewMode === 'month') {
-    titleText = formatMonthTitle(yearMonthStr);
-    countLabel = undefined;
-  }
+  if (viewMode === 'day') { titleText = formatDayTitle(selectedDateStr, activeTz); countLabel = undefined; }
+  else if (viewMode === 'month') { titleText = formatMonthTitle(yearMonthStr); countLabel = undefined; }
 
   return (
     <div>
@@ -130,7 +123,14 @@ export const CalendarPage: React.FC = () => {
       {!loading && !error && viewMode === 'month' && (
         <MonthCalendarView
           yearMonthStr={yearMonthStr}
-          sessions={classes}
+          sessions={generateCalendarEvents({
+            datedSessions: classes,
+            recurringSchedules: schedules,
+            students,
+            weekDates: getMonthGridDates(parseInt(yearMonthStr.slice(0, 4), 10), parseInt(yearMonthStr.slice(5, 7), 10)),
+            activeTz,
+            packages,
+          })}
           students={students}
           activeTz={activeTz}
           onSelectDate={(d) => {

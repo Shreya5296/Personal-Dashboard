@@ -7,6 +7,7 @@ import { generateCalendarEvents, getDateKeyInTz, makeIsoInTz } from '../dashboar
 import { cleanTime } from '../classes/scheduleApi';
 import { formatIsoTo12Hour } from '../../lib/time12Format';
 import { toInputDateFormat } from '../../lib/dateFormat';
+import { classifyCalendarEvent, isEventPast } from './calendarClassification';
 
 export function buildDayColumns(params: {
   datedSessions: ClassSession[];
@@ -18,7 +19,6 @@ export function buildDayColumns(params: {
 }): DayColumnData[] {
   const { datedSessions, recurringSchedules, students, weekDates, activeTz, packages } = params;
   const todayKey = toInputDateFormat(new Date(), activeTz);
-  const nowMs = Date.now();
 
   const allEvents = generateCalendarEvents({
     datedSessions,
@@ -46,15 +46,24 @@ export function buildDayColumns(params: {
     });
 
     const events: CalendarEventItem[] = dayRawEvents.map((c, idx) => {
-      let rawStart = c.scheduled_start || c.start_time || '';
-      let parsedStart = new Date(String(rawStart).trim().replace(/T\s+(\d:)/, 'T0$1'));
-      if (isNaN(parsedStart.getTime())) {
-        const sTime = cleanTime(c.schedule_time || c.start_time) || '17:00';
+      const sTime = cleanTime(c.schedule_time || c.start_time);
+      let rawStart = c.scheduled_start || '';
+      if (sTime) {
         rawStart = makeIsoInTz(dayKey, sTime, activeTz);
-        parsedStart = new Date(rawStart);
+      } else if (!rawStart) {
+        rawStart = makeIsoInTz(dayKey, '17:00', activeTz);
       }
-      const rawEnd = c.scheduled_end || '';
-      const parsedEnd = rawEnd ? new Date(String(rawEnd).trim().replace(/T\s+(\d:)/, 'T0$1')) : null;
+      const parsedStart = new Date(String(rawStart).trim().replace(/T\s+(\d:)/, 'T0$1'));
+
+      const dur = c.duration_minutes || 60;
+      let rawEnd = c.scheduled_end || '';
+      if (sTime) {
+        const [sh, sm] = sTime.split(':').map(Number);
+        const endMins = (sh || 0) * 60 + (sm || 0) + dur;
+        const eHH = String(Math.floor(endMins / 60)).padStart(2, '0');
+        const eMM = String(endMins % 60).padStart(2, '0');
+        rawEnd = makeIsoInTz(dayKey, `${eHH}:${eMM}`, activeTz);
+      }
 
       let startHour = 17;
       let startMinute = 0;
@@ -77,12 +86,16 @@ export function buildDayColumns(params: {
       const stu = students.find((s) => s.student_id === c.student_id);
       const sessStatus = (c as unknown as { session_status?: string }).session_status;
       const isCancelled = c.status === 'CANCELLED' || sessStatus === 'CANCELLED';
-      const endMs = parsedEnd && !isNaN(parsedEnd.getTime())
-        ? parsedEnd.getTime()
-        : parsedStart.getTime() + (c.duration_minutes || 60) * 60000;
-      const isPast = dayKey < todayKey || (dayKey === todayKey && endMs < nowMs);
+      const isPast = isEventPast(dayKey, rawEnd || rawStart, activeTz);
       const isCompleted = c.status === 'COMPLETED' || sessStatus === 'COMPLETED' || (c as unknown as { attendance_status?: string }).attendance_status === 'PRESENT';
       const canJoin = isToday && !isCancelled && !isCompleted && Boolean(c.meeting_url);
+      const category = classifyCalendarEvent({
+        status: c.status,
+        sessionStatus: sessStatus,
+        attendanceStatus: (c as unknown as { attendance_status?: string }).attendance_status,
+        isCancelled,
+        isPast,
+      });
 
       return {
         id: c.session_id || `evt_${idx}_${dayKey}`,
@@ -95,13 +108,14 @@ export function buildDayColumns(params: {
         startTime12: start12,
         endTime12: end12,
         timeRange12: end12 ? `${start12} – ${end12}` : start12,
-        durationMinutes: c.duration_minutes || 60,
+        durationMinutes: dur,
         startHour,
         startMinute,
         dateKey: dayKey,
         isRecurring,
         status: sessStatus || c.status || (isRecurring ? 'RECURRING' : 'SCHEDULED'),
         attendanceStatus: (c as unknown as { attendance_status?: string }).attendance_status,
+        category,
         isPast,
         isCancelled,
         canJoin,

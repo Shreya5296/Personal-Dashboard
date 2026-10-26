@@ -16,12 +16,11 @@ const HOURS = [
 ];
 
 function getEventCardClass(evt: CalendarEventItem): string {
-  if (evt.isCancelled) return styles.cardCancelled;
-  const att = (evt.attendanceStatus || evt.status).toUpperCase();
-  if (att === 'ABSENT' || att === 'NO_SHOW') return styles.cardAbsent;
-  if (att === 'PRESENT' || att === 'ATTENDED' || att === 'COMPLETED' || evt.isPast) {
-    if (att === 'PRESENT' || att === 'ATTENDED' || att === 'COMPLETED') return styles.cardAttended;
-    return styles.cardUnmarked;
+  if (evt.category === 'CANCELLED' || evt.isCancelled) return styles.cardCancelled;
+  if (evt.category === 'PAST_COMPLETED') return styles.cardAttended;
+  if (evt.isPast) {
+    const isComp = evt.status === 'COMPLETED' || evt.attendanceStatus === 'PRESENT' || evt.attendanceStatus === 'ATTENDED';
+    return isComp ? styles.cardAttended : styles.cardCancelled;
   }
   return evt.isRecurring ? styles.recurringCard : styles.sessionCard;
 }
