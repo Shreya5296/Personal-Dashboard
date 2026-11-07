@@ -2,6 +2,7 @@ import { ClassSession } from '../classes/classTypes';
 import { WeeklyScheduleEntry, cleanTime } from '../classes/scheduleApi';
 import { Student } from '../students/studentTypes';
 import { Package } from '../packages/packageTypes';
+import { getSessionStartTime, getSessionDuration, isSessionOnDate } from '../classes/sessionTimeNormalizer';
 
 export const WEEKDAYS = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 
@@ -78,25 +79,26 @@ export function generateCalendarEvents(params: {
     const dt = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
     const dayOfWeek = WEEKDAYS[dt.getUTCDay()];
 
-    const dayDated = datedSessions.filter((c) => {
-      const dDate = c.schedule_date || c.class_date;
-      if (dDate && dDate === dateStr) return true;
-      const raw = c.start_time || c.scheduled_start;
-      if (!raw) return false;
-      const parsed = new Date(String(raw).trim().replace(/T\s+(\d:)/, 'T0$1'));
-      return !isNaN(parsed.getTime()) && getDateKeyInTz(parsed, activeTz) === dateStr;
-    }).map((c) => {
+    const dayDated = datedSessions.filter((c) => isSessionOnDate(c, dateStr, activeTz)).map((c) => {
       const pkg = pkgMap.get(c.student_id);
       const matchSched = (recurringSchedules || []).find((s) => s.student_id === c.student_id && s.day_of_week?.toUpperCase() === dayOfWeek);
-      let sTime = getLocalTime(c.schedule_time || c.start_time || c.scheduled_start, activeTz);
+      let sTime = getSessionStartTime(c, activeTz);
       if (!sTime && matchSched?.start_time) sTime = cleanTime(matchSched.start_time);
-      const dur = c.duration_minutes || pkg?.class_duration || (matchSched ? Math.max(15, parseTimeToMin(matchSched.end_time) - parseTimeToMin(matchSched.start_time)) : 60);
+      const dur = getSessionDuration(c, pkg) || (matchSched ? Math.max(15, parseTimeToMin(matchSched.end_time) - parseTimeToMin(matchSched.start_time)) : 60);
       const startIso = sTime ? makeIsoInTz(dateStr, sTime, activeTz) : (c.scheduled_start || makeIsoInTz(dateStr, '18:00', activeTz));
       const endMins = sTime ? parseTimeToMin(sTime) + dur : 0;
       const endHH = String(Math.floor(endMins / 60)).padStart(2, '0');
       const endMM = String(endMins % 60).padStart(2, '0');
       const endIso = sTime ? makeIsoInTz(dateStr, `${endHH}:${endMM}`, activeTz) : c.scheduled_end;
-      return { ...c, schedule_time: sTime || cleanTime(c.schedule_time), start_time: sTime || cleanTime(c.start_time), duration_minutes: dur, scheduled_start: startIso, scheduled_end: endIso };
+      return {
+        ...c,
+        schedule_date: dateStr,
+        schedule_time: sTime || cleanTime(c.schedule_time),
+        start_time: sTime || cleanTime(c.start_time),
+        duration_minutes: dur,
+        scheduled_start: startIso,
+        scheduled_end: endIso,
+      };
     });
 
     events.push(...dayDated);
@@ -116,7 +118,7 @@ export function generateCalendarEvents(params: {
 
       const stuDated = datedSessions.filter((ds) => ds.student_id === sid && ds.session_status !== 'CANCELLED');
       if (stuDated.length > 0) {
-        const earliest = stuDated.map((ds) => (ds.scheduled_start || ds.start_time || '').slice(0, 10)).filter(Boolean).sort()[0];
+        const earliest = stuDated.map((ds) => ds.schedule_date || (ds.scheduled_start || ds.start_time || '').slice(0, 10)).filter(Boolean).sort()[0];
         if (earliest && dateStr < earliest) continue;
       }
 
@@ -124,10 +126,7 @@ export function generateCalendarEvents(params: {
       const endTime = cleanTime(sched.end_time) || '18:00';
       const duration = Math.max(15, parseTimeToMin(endTime) - parseTimeToMin(startTime));
 
-      const hasDatedDuplicate = dayDated.some((ds) => {
-        if (ds.student_id !== sid) return false;
-        return getLocalTime(ds.schedule_time || ds.start_time || ds.scheduled_start, activeTz) === startTime;
-      });
+      const hasDatedDuplicate = dayDated.some((ds) => ds.student_id === sid && getSessionStartTime(ds, activeTz) === startTime);
 
       if (!hasDatedDuplicate) {
         const startIso = makeIsoInTz(dateStr, startTime, activeTz);

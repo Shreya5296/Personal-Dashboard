@@ -25,6 +25,19 @@ export function upsertMockMeetingLink(payload: Record<string, unknown>) {
   return ex;
 }
 
+export function deleteMockMeetingLink(studentId: string, field: string) {
+  const ex = MOCK_LINKS.find((l) => l.student_id === studentId);
+  if (ex) {
+    if (field === 'meeting_link_1') {
+      ex.meeting_link_1 = '';
+      ex.meeting_url = ex.meeting_link_2 || '';
+    } else if (field === 'meeting_link_2') {
+      ex.meeting_link_2 = '';
+    }
+  }
+  return ex || { student_id: studentId, meeting_link_1: '', meeting_link_2: '' };
+}
+
 export function handleMockClassRecordAttendance(payload: Record<string, unknown>) {
   const sid = String(payload.session_id || payload.class_session_id || '');
   const classesList = MOCK_CLASSES as unknown as Record<string, unknown>[];

@@ -2,11 +2,14 @@ import { ClassSession } from './classTypes';
 import { Column } from '../../components/tables/DataTable';
 import { AttendanceControl } from './AttendanceControl';
 import { Button } from '../../components/buttons/Button';
-import { formatTimeRange12Hour, formatTimeTo12Hour } from '../../lib/time12Format';
-import { calculateEndTime } from './scheduleDurationCalculator';
-import { getDateKeyInTz } from '../dashboard/calendarEventGenerator';
 import { SessionProgress } from './sessionProgressCalculator';
 import { getSessionStatusStyle } from './sessionStatusStyles';
+import {
+  getSessionDate,
+  getSessionDuration,
+  formatSessionTimeRange,
+  isSessionOnDate,
+} from './sessionTimeNormalizer';
 
 export function formatClassDate(rawDate?: string): string {
   if (!rawDate) return '—';
@@ -58,19 +61,8 @@ export function buildClassScheduleColumns(params: {
     {
       key: 'start_time', header: 'Class Time', width: '15%',
       render: (c) => {
-        const startTime = c.schedule_time || c.start_time || '';
-        const dur = c.duration_minutes || 30;
-        let timeDisplay = '';
-        if (startTime && startTime.includes(':')) {
-          const endTime = calculateEndTime(startTime, dur);
-          timeDisplay = endTime ? formatTimeRange12Hour(startTime, endTime) : formatTimeTo12Hour(startTime);
-        } else if (c.scheduled_start) {
-          const raw = c.scheduled_start.slice(11, 16);
-          const endTime = calculateEndTime(raw, dur);
-          timeDisplay = endTime ? formatTimeRange12Hour(raw, endTime) : formatTimeTo12Hour(raw);
-        } else {
-          timeDisplay = '—';
-        }
+        const dur = getSessionDuration(c);
+        const timeDisplay = formatSessionTimeRange(c);
         return (
           <div>
             <span style={{ fontWeight: 600, color: 'var(--color-text-main)', fontSize: 'var(--font-size-sm)', display: 'block' }}>
@@ -108,11 +100,11 @@ export function buildClassScheduleColumns(params: {
     {
       key: 'join', header: 'Join Class', width: '12%',
       render: (c) => {
+        const isToday = isSessionOnDate(c, todayKey);
         const raw = c.scheduled_start || c.start_time;
         const d = raw ? new Date(String(raw).trim().replace(/T\s+(\d:)/, 'T0$1')) : null;
-        const sessionDateKey = c.schedule_date || (d ? getDateKeyInTz(d, 'Asia/Kolkata') : '');
-        const isToday = sessionDateKey === todayKey;
-        const isPast = d ? (sessionDateKey < todayKey || (isToday && d.getTime() < nowMs)) : false;
+        const sessionDateKey = getSessionDate(c);
+        const isPast = sessionDateKey < todayKey || (isToday && d ? d.getTime() < nowMs : false);
         const statusCfg = getSessionStatusStyle(c.session_status || c.status, c.attendance_status);
         const linkObj = getStudentMeetingLink(c.student_id);
         const joinUrl = c.meeting_url || linkObj?.meeting_link_1 || linkObj?.meeting_link_2;

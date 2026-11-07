@@ -65,6 +65,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
       <TodayClassesSection
         classes={classes}
         students={students}
+        packages={packages}
         meetingLinks={meetingLinks}
       />
 

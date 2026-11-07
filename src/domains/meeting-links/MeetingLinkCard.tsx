@@ -8,6 +8,7 @@ export interface MeetingLinkCardProps {
   onEdit: (link: MeetingLink) => void;
   onAddSlot: (link: MeetingLink, slot: 'primary' | 'secondary') => void;
   onCopy: (key: string, url: string) => void;
+  onDeleteSlot?: (link: MeetingLink, slot: 'primary' | 'secondary') => void;
   copiedKey: string | null;
 }
 
@@ -16,6 +17,7 @@ export const MeetingLinkCard: React.FC<MeetingLinkCardProps> = ({
   onEdit,
   onAddSlot,
   onCopy,
+  onDeleteSlot,
   copiedKey,
 }) => {
   const primaryUrl = link.meeting_link_1 || link.meeting_url || '';
@@ -74,6 +76,7 @@ export const MeetingLinkCard: React.FC<MeetingLinkCardProps> = ({
           url={primaryUrl}
           onAdd={() => onAddSlot(link, 'primary')}
           onCopy={(u) => onCopy(`${link.meeting_link_id}_1`, u)}
+          onDelete={onDeleteSlot ? () => onDeleteSlot(link, 'primary') : undefined}
           isCopied={copiedKey === `${link.meeting_link_id}_1`}
         />
 
@@ -82,6 +85,7 @@ export const MeetingLinkCard: React.FC<MeetingLinkCardProps> = ({
           url={secondaryUrl}
           onAdd={() => onAddSlot(link, 'secondary')}
           onCopy={(u) => onCopy(`${link.meeting_link_id}_2`, u)}
+          onDelete={onDeleteSlot ? () => onDeleteSlot(link, 'secondary') : undefined}
           isCopied={copiedKey === `${link.meeting_link_id}_2`}
         />
       </div>

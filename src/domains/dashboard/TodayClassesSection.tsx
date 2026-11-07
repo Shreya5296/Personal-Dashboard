@@ -1,15 +1,21 @@
 import React from 'react';
 import { ClassSession } from '../classes/classTypes';
 import { Student } from '../students/studentTypes';
+import { Package } from '../packages/packageTypes';
 import { MeetingLink } from '../meeting-links/meetingLinkTypes';
 import { toInputDateFormat } from '../../lib/dateFormat';
-import { getDateKeyInTz } from './calendarEventGenerator';
-import { formatIsoTo12Hour } from '../../lib/time12Format';
+import {
+  getSessionStartTime,
+  getSessionDuration,
+  formatSessionTimeRange,
+  isSessionOnDate,
+} from '../classes/sessionTimeNormalizer';
 import { Button } from '../../components/buttons/Button';
 
 export interface TodayClassesSectionProps {
   classes: ClassSession[];
   students?: Student[];
+  packages?: Package[];
   meetingLinks?: MeetingLink[];
   activeTz?: string;
 }
@@ -17,23 +23,21 @@ export interface TodayClassesSectionProps {
 export const TodayClassesSection: React.FC<TodayClassesSectionProps> = ({
   classes,
   students = [],
+  packages = [],
   meetingLinks = [],
   activeTz = 'Asia/Kolkata',
 }) => {
   const todayKey = toInputDateFormat(new Date(), activeTz);
 
-  // Filter actual dated sessions for today (NOT fabricated from recurring templates)
-  const todaySessions = classes.filter((c) => {
-    const raw = c.scheduled_start || c.start_time;
-    if (!raw) return false;
-    const parsed = new Date(String(raw).trim().replace(/T\s+(\d:)/, 'T0$1'));
-    return getDateKeyInTz(parsed, activeTz) === todayKey;
-  });
+  const getPkg = (studentId?: string) => packages.find((p) => p.student_id === studentId);
+
+  // Filter canonical dated sessions for today using the normalizer
+  const todaySessions = classes.filter((c) => isSessionOnDate(c, todayKey));
 
   todaySessions.sort((a, b) => {
-    const sa = a.scheduled_start || a.start_time || '';
-    const sb = b.scheduled_start || b.start_time || '';
-    return sa.localeCompare(sb);
+    const ta = getSessionStartTime(a);
+    const tb = getSessionStartTime(b);
+    return ta.localeCompare(tb);
   });
 
   const getMeetingUrl = (studentId?: string, sessionUrl?: string) => {
@@ -47,7 +51,6 @@ export const TodayClassesSection: React.FC<TodayClassesSectionProps> = ({
     return stu?.subject || c.topic || c.class_title || 'General';
   };
 
-  // Find next imminent session
   const imminent = todaySessions[0];
   const others = todaySessions.slice(1);
 
@@ -55,9 +58,12 @@ export const TodayClassesSection: React.FC<TodayClassesSectionProps> = ({
     if (!c) return false;
     const status = c.session_status || c.status;
     if (status === 'COMPLETED' || status === 'CANCELLED') return false;
-    const url = getMeetingUrl(c.student_id, c.meeting_url);
-    return Boolean(url);
+    return Boolean(getMeetingUrl(c.student_id, c.meeting_url));
   };
+
+  const imminentPkg = imminent ? getPkg(imminent.student_id) : undefined;
+  const imminentRange = imminent ? formatSessionTimeRange(imminent, imminentPkg) : '';
+  const imminentDur = imminent ? getSessionDuration(imminent, imminentPkg) : 60;
 
   return (
     <div style={{ backgroundColor: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-xl)', padding: '1.25rem 1.5rem', boxShadow: 'var(--shadow-xs)' }}>
@@ -72,7 +78,6 @@ export const TodayClassesSection: React.FC<TodayClassesSectionProps> = ({
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-          {/* 1. Next/Most Imminent Class prominently highlighted */}
           <div style={{ padding: '1rem 1.25rem', backgroundColor: '#eff6ff', border: '1.5px solid #60a5fa', borderRadius: 'var(--radius-lg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
             <div>
               <div style={{ fontSize: '11px', fontWeight: 700, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>
@@ -82,8 +87,7 @@ export const TodayClassesSection: React.FC<TodayClassesSectionProps> = ({
                 {imminent.student_name || imminent.student_id} — {getSubject(imminent)}
               </span>
               <span style={{ fontSize: 'var(--font-size-xs)', color: '#1e40af', fontWeight: 500 }}>
-                {formatIsoTo12Hour(imminent.scheduled_start || imminent.start_time, activeTz)}
-                {imminent.scheduled_end ? ` – ${formatIsoTo12Hour(imminent.scheduled_end, activeTz)}` : ''} ({imminent.duration_minutes || 60} min)
+                {imminentRange} ({imminentDur} min)
               </span>
             </div>
 
@@ -98,13 +102,12 @@ export const TodayClassesSection: React.FC<TodayClassesSectionProps> = ({
             )}
           </div>
 
-          {/* 2. Other classes scheduled for today */}
           {others.length > 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginTop: 'var(--space-1)' }}>
               <span style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, color: 'var(--color-text-muted)' }}>Other Classes Scheduled Today</span>
               {others.map((c, idx) => {
-                const rawStart = c.scheduled_start || c.start_time;
-                const time12 = formatIsoTo12Hour(rawStart, activeTz) + (c.scheduled_end ? ` – ${formatIsoTo12Hour(c.scheduled_end, activeTz)}` : '');
+                const pkg = getPkg(c.student_id);
+                const time12 = formatSessionTimeRange(c, pkg);
                 const canJoin = isEligibleToJoin(c);
                 const joinUrl = getMeetingUrl(c.student_id, c.meeting_url);
                 return (

@@ -44,3 +44,16 @@ export async function updateMeetingLink(
   );
   return response.data!;
 }
+
+export async function deleteMeetingLink(
+  studentId: string,
+  field: 'meeting_link_1' | 'meeting_link_2',
+  token?: string | null
+): Promise<MeetingLink> {
+  const response = await sendApiRequest<MeetingLink>(
+    'meetingLinks.delete',
+    { student_id: studentId, field },
+    { token }
+  );
+  return response.data!;
+}

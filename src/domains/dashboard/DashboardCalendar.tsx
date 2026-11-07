@@ -6,12 +6,13 @@ import { Student } from '../students/studentTypes';
 import { Package } from '../packages/packageTypes';
 import { getSavedTimezone } from '../../lib/userPreferences';
 import { toInputDateFormat } from '../../lib/dateFormat';
-import { formatIsoTo12Hour } from '../../lib/time12Format';
+import { formatTimeTo12Hour } from '../../lib/time12Format';
 import { Button } from '../../components/buttons/Button';
 import {
   getMondayForDateStr, shiftMondayStr, getWeekDates,
-  generateCalendarEvents, getDateKeyInTz,
+  generateCalendarEvents,
 } from './calendarEventGenerator';
+import { isSessionOnDate, getSessionStartTime } from '../classes/sessionTimeNormalizer';
 
 export interface DashboardCalendarProps {
   classes: ClassSession[];
@@ -36,7 +37,8 @@ export const DashboardCalendar: React.FC<DashboardCalendarProps> = ({
   });
 
   const rangeText = `${mondayStr} – ${weekDates[6]} (${activeTz})`;
-  const nowMs = Date.now();
+  const now = new Date();
+  const currentMinute = now.getHours() * 60 + now.getMinutes();
 
   return (
     <div className={styles.calendarWrapper}>
@@ -60,12 +62,7 @@ export const DashboardCalendar: React.FC<DashboardCalendarProps> = ({
             const dayDate = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
             const isToday = dayKey === todayKey;
             const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'UTC' }).format(dayDate);
-            const dayClasses = allEvents.filter((c) => {
-              const raw = c.start_time || c.scheduled_start;
-              if (!raw) return false;
-              const parsed = new Date(String(raw).trim().replace(/T\s+(\d:)/, 'T0$1'));
-              return getDateKeyInTz(parsed, activeTz) === dayKey;
-            });
+            const dayClasses = allEvents.filter((c) => isSessionOnDate(c, dayKey));
 
             return (
               <div key={dayKey} className={`${styles.dayCol} ${isToday ? styles.dayColToday : ''}`}>
@@ -78,15 +75,15 @@ export const DashboardCalendar: React.FC<DashboardCalendarProps> = ({
                     <span className={styles.emptyDay}>No classes</span>
                   ) : (
                     dayClasses.map((c, idx) => {
-                      const startTime = c.start_time || c.scheduled_start;
-                      const time12 = formatIsoTo12Hour(startTime, activeTz);
+                      const sTime = getSessionStartTime(c);
+                      const time12 = sTime ? formatTimeTo12Hour(sTime) : '—';
                       const stu = students.find((s) => s.student_id === c.student_id);
-                      const studentName = c.student_name || c.student_id;
+                      const studentName = c.student_name || stu?.student_name || c.student_id;
                       const subject = stu?.subject || c.topic || 'General';
                       const isRec = (c as unknown as { is_recurring?: boolean }).is_recurring;
                       const isCancelled = c.status === 'CANCELLED' || (c as unknown as { session_status?: string }).session_status === 'CANCELLED';
-                      const parsed = new Date(String(startTime).trim().replace(/T\s+(\d:)/, 'T0$1'));
-                      const isPast = dayKey < todayKey || (dayKey === todayKey && parsed.getTime() < nowMs);
+                      const [sh, sm] = (sTime || '00:00').split(':').map(Number);
+                      const isPast = dayKey < todayKey || (dayKey === todayKey && ((sh || 0) * 60 + (sm || 0)) < currentMinute);
 
                       let colorClass = '';
                       if (isCancelled) colorClass = styles.cardCancelled;

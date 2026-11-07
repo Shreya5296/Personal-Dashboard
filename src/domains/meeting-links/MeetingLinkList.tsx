@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { MeetingLink, MeetingLinkInput } from './meetingLinkTypes';
-import { fetchMeetingLinks, createMeetingLink } from './meetingLinkApi';
+import { fetchMeetingLinks, createMeetingLink, deleteMeetingLink } from './meetingLinkApi';
 import { fetchStudents } from '../students/studentApi';
 import { MeetingLinkTable } from './MeetingLinkTable';
 import { MeetingLinkModal } from './MeetingLinkModal';
@@ -74,28 +74,21 @@ export const MeetingLinkList: React.FC<{ studentId?: string }> = ({ studentId })
   };
 
   const handleDeleteSlot = async (link: MeetingLink, slot: 'primary' | 'secondary') => {
+    if (formLoading || !link.student_id) return;
     const slotLabel = slot === 'primary' ? 'primary' : 'secondary';
     const name = link.student_name || link.student_id;
     if (!window.confirm(`Delete ${slotLabel} meeting link for ${name}?`)) return;
 
     setFormLoading(true);
     try {
-      const m1 = slot === 'primary' ? '' : (link.meeting_link_1 || link.meeting_url || '');
-      const m2 = slot === 'secondary' ? '' : (link.meeting_link_2 || '');
-      const payload: MeetingLinkInput = {
-        student_id: link.student_id,
-        student_name: link.student_name,
-        meeting_link_1: m1,
-        meeting_link_2: m2,
-        meeting_url: m1 || m2 || '',
-        provider: link.provider || 'OTHER',
-      };
-      await createMeetingLink(payload, token);
+      const field = slot === 'primary' ? 'meeting_link_1' : 'meeting_link_2';
+      await deleteMeetingLink(link.student_id, field, token);
       setFeedback(`${slot === 'primary' ? 'Primary' : 'Secondary'} meeting link deleted.`);
       setTimeout(() => setFeedback(null), 3000);
       await loadData();
-    } catch (err: any) {
-      setFeedback(`Failed to delete link: ${err?.message || 'Error'}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error';
+      setFeedback(`Failed to delete link: ${message}`);
     } finally {
       setFormLoading(false);
     }

@@ -6,6 +6,7 @@ export interface MeetingLinkButtonProps {
   onCopy?: (url: string) => void;
   onDelete?: () => void | Promise<void>;
   isCopied?: boolean;
+  disabled?: boolean;
 }
 
 export const MeetingLinkButton: React.FC<MeetingLinkButtonProps> = ({
@@ -13,11 +14,13 @@ export const MeetingLinkButton: React.FC<MeetingLinkButtonProps> = ({
   onCopy,
   onDelete,
   isCopied: parentCopied,
+  disabled = false,
 }) => {
   const [localCopied, setLocalCopied] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [touchOpen, setTouchOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const cleanUrl = (url || '').trim();
   if (!cleanUrl || cleanUrl === '-' || cleanUrl === '—') return null;
@@ -44,10 +47,16 @@ export const MeetingLinkButton: React.FC<MeetingLinkButtonProps> = ({
   const handleDeleteClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (onDelete) await onDelete();
+    if (disabled || isDeleting || !onDelete) return;
+    setIsDeleting(true);
+    try {
+      await onDelete();
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
-  const showActions = isHovered || isFocused || touchOpen;
+  const showActions = isHovered || isFocused || touchOpen || isDeleting;
 
   return (
     <div
@@ -103,10 +112,11 @@ export const MeetingLinkButton: React.FC<MeetingLinkButtonProps> = ({
           <button
             type="button"
             onClick={handleDeleteClick}
+            disabled={disabled || isDeleting}
             aria-label="Delete meeting link"
-            style={{ border: '1px solid #f87171', background: 'rgba(254, 242, 242, 0.9)', color: '#dc2626', borderRadius: 'var(--radius-sm)', padding: '2px 6px', fontSize: '10px', fontWeight: 700, cursor: 'pointer', lineHeight: 1.2 }}
+            style={{ border: '1px solid #f87171', background: 'rgba(254, 242, 242, 0.9)', color: '#dc2626', borderRadius: 'var(--radius-sm)', padding: '2px 6px', fontSize: '10px', fontWeight: 700, cursor: disabled || isDeleting ? 'not-allowed' : 'pointer', lineHeight: 1.2, opacity: disabled || isDeleting ? 0.6 : 1 }}
           >
-            Delete
+            {isDeleting ? 'Deleting…' : 'Delete'}
           </button>
         )}
       </div>

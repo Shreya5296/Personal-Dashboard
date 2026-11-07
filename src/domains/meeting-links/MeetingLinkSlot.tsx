@@ -6,6 +6,7 @@ export interface MeetingLinkSlotProps {
   url: string | null | undefined;
   onAdd?: () => void;
   onCopy: (url: string) => void;
+  onDelete?: () => void | Promise<void>;
   isCopied: boolean;
 }
 
@@ -13,6 +14,7 @@ export const MeetingLinkSlot: React.FC<MeetingLinkSlotProps> = ({
   slotTitle,
   url,
   onCopy,
+  onDelete,
   isCopied,
 }) => {
   const cleanUrl = (url || '').trim();
@@ -45,6 +47,7 @@ export const MeetingLinkSlot: React.FC<MeetingLinkSlotProps> = ({
             url={cleanUrl}
             isCopied={isCopied}
             onCopy={onCopy}
+            onDelete={onDelete}
           />
         ) : (
           <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-subtle)', fontStyle: 'italic', margin: '4px 0' }}>

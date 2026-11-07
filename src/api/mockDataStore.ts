@@ -9,6 +9,7 @@ import {
   handleMockClassCancel,
   handleMockClassRestoreCredit,
   upsertMockMeetingLink,
+  deleteMockMeetingLink,
 } from './mockClassOperations';
 
 export function handleMockApiRequest<T>(operation: string, payload: Record<string, unknown>, reqId: string): ApiResponse<T> {
@@ -67,6 +68,12 @@ export function handleMockApiRequest<T>(operation: string, payload: Record<strin
   }
   if (operation === 'meetingLinks.create' || operation === 'meetingLinks.update') {
     const ex = upsertMockMeetingLink(payload);
+    return { ok: true, data: ex as T, meta };
+  }
+  if (operation === 'meetingLinks.delete' || operation === 'meetingLinks.deactivate') {
+    const sid = String(payload.student_id || payload.studentId || '');
+    const rawField = payload.field || (payload.slot === 2 || payload.slot === 'secondary' ? 'meeting_link_2' : 'meeting_link_1');
+    const ex = deleteMockMeetingLink(sid, String(rawField));
     return { ok: true, data: ex as T, meta };
   }
   if (operation === 'packages.list') return { ok: true, data: MOCK_PACKAGES as T, meta };

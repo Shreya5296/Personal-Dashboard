@@ -10,8 +10,9 @@ import {
   FeesIcon,
   ClassesIcon,
   MeetingLinksIcon,
+  SettingsIcon,
 } from '../components/icons/NavIcons';
-import { CloseIcon } from '../components/icons/ActionIcons';
+import { CloseIcon, LogOutIcon } from '../components/icons/ActionIcons';
 
 export type NavSection =
   | 'dashboard'
@@ -101,19 +102,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className={footerStyles.sidebarActions}>
               <button
                 type="button"
-                className={footerStyles.settingsAction}
+                className={`${footerStyles.settingsAction} ${activeSection === 'settings' ? footerStyles.settingsActionActive : ''}`}
                 onClick={() => handleNav('settings')}
                 title="Settings & Regional Preferences"
+                aria-label="Settings & Regional Preferences"
               >
-                Settings
+                <SettingsIcon size={16} />
               </button>
               <button
                 type="button"
                 className={footerStyles.logoutAction}
                 onClick={signOut}
                 title="Log out of session"
+                aria-label="Log out of session"
               >
-                Logout
+                <LogOutIcon size={16} />
               </button>
             </div>
           </div>
