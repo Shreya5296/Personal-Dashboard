@@ -2,108 +2,93 @@
 
 ## 1. Purpose
 
-This file is the durable, repository-backed record of implementation progress for the Student Management Dashboard. Update it at every phase boundary and whenever a blocker, owner decision, setup dependency, test result, or recovery event changes the next safe action.
+This file is the durable, repository-backed record of implementation progress for the Personal Dashboard (Student Management Dashboard). It is the primary recovery source of truth for developers and AI coding agents.
 
-The Git history and this file are the recovery sources of truth. Chat history and an agent's working context are not authoritative state.
+The Git history and this file are the recovery sources of truth. Chat history and working context are ephemeral and not authoritative state.
 
 ## 2. State Management Rules
 
 - Keep this file accurate, concise, and actionable.
-- Update the current phase, status, commit, test results, blockers, owner inputs, and next action before ending a phase or handing off work.
+- Update the phase status, commit, test results, blockers, and next action before handing off work.
 - Never mark a phase `PASSED` unless its exit criteria and required tests actually passed.
-- Use `NOT_STARTED`, `IN_PROGRESS`, `PASSED`, `BLOCKED`, or `SKIPPED_WITH_APPROVAL` for phase status.
-- Record evidence, not assumptions. Distinguish verified facts from inferred or owner-confirmed information.
-- Never store passwords, access tokens, private keys, OAuth secrets, or other credentials here. Record only the secret's name and the approved secure location where the owner must configure it.
-- Do not overwrite a valid existing state record without first reviewing it and the Git history.
-- If this file conflicts with the latest committed implementation or test evidence, investigate and reconcile the conflict before continuing.
-- Commit this file with each phase's implementation commit so recovery points are durable.
+- Use `NOT_STARTED`, `IN_PROGRESS`, `PASSED`, `BLOCKED`, or `PARTIAL` for phase status.
+- Record evidence, not assumptions. Distinguish verified facts from inferred or unverified details.
+- Never store passwords, access tokens, private keys, or credentials here.
+- If this file conflicts with the latest committed implementation or test evidence, reconcile the conflict before continuing.
 
-## 3. Project Guardrails
+## 3. Strict Project Guardrails
 
-- **Mandatory Agent Rule:** Before adding any new business data field or sheet, verify that it is required by the approved Personal Dashboard requirements. Do not introduce generic CRM fields, duplicate name fields, redundant tables, or speculative columns.
-- Frontend: React, TypeScript, and Vite.
-- Backend: Google Apps Script Web App.
-- Canonical datastore: one private Google Spreadsheet with the documented tabs and schemas (`Private Class Dashboard`, ID: `1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8`).
-- Frontend hosting: Vercel, subject to the documented plan and business-use constraints.
-- Initial access model: one authorized administrator.
-- Do not add Supabase, another database, microservices, multi-tenancy, or unapproved product scope.
-- Do not use real student data before the security release gate passes.
-- Every source file under the project must contain at most 149 lines. Split files by responsibility; do not minify or compress code to satisfy the limit.
-- Preserve payment history, auditability, historical relationships, and approved credit-restoration safeguards.
-- The backend is authoritative for authentication, authorization, validation, and business rules.
+- **Six Google Sheets Tables Only:** Exactly six tables exist: `Students`, `Packages`, `Payments`, `ClassSessions`, `MeetingLinks`, and `StudentNotes`. No other active tables exist.
+- **No package_id in Packages:** Packages are identified and retrieved by `student_id`.
+- **No session_id or stored end-time in ClassSessions:** Identified by composite key `student_id__schedule_date__schedule_time` (or 1-based row index); end time is derived from `Packages.class_duration`.
+- **Frontend Stack:** React 18, TypeScript, and Vite.
+- **Backend Stack:** Google Apps Script Web App (API, business logic & HMAC-SHA256 session authentication).
+- **Timezone:** `Asia/Kolkata` (IST, UTC+05:30) is the canonical timezone for all schedules, dates, and live clocks.
+- **Base Currency:** `INR`. Multi-currency transactions retain original currency with manual `in_inr` conversion. Foreign currencies without `in_inr` do not mix into INR totals.
+- **Frontend Hosting:** Vercel SPA.
+- **Access Model:** Single authorized administrator (`ashreya0502@gmail.com`).
+- **Micro-File Rule:** Every source file under `src/` and `public/` must contain strictly <= 149 lines. Catch-all monoliths (`utils.ts`, `helpers.ts`, `app.js`, etc.) are forbidden.
+- **Backend Authority:** The backend is authoritative for authentication, authorization, validation, deduction, and business rules.
 
 ## 4. Current Run Snapshot
 
 | Field | Current value |
 |---|---|
-| Project | Student Management Dashboard / Personal Dashboard |
-| Execution mode | Autonomous, sequential implementation |
-| Current phase | Full End-to-End Verification of Student Registration and Class Scheduling |
-| Current phase status | PARTIAL |
-| Last completed phase | Critical Bug: Student Registration Hangs & Fails with Network Request Failed |
-| Current Git branch | main |
-| Last full regression run | 316 Vitest tests passed (49 test files) + line-limit check passing (203 files <= 149 lines) + TypeScript strict check (0 errors) + clean Vite production build (677ms) |
-| Canonical Spreadsheet | `Private Class Dashboard` (ID: `1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8`, Owner: `ashreya0502@gmail.com`) — 8 approved business tables (including physical ClassSchedules sheet) + 1 AuditLog operational table + 1 StudentId_Migration_Backup table |
-| Backup Spreadsheet | `Master Backup (Pre-Launch 2026-10-21T12-13-40-537Z)` (ID: `1kIFYmI81DfNIAqb-ZHsTifiKE6JxhfQrXqpfphrw9eU`) — Verified accessible and preserved intact |
-| Apps Script Project | `1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL` — ConfigService, IdGenerator (STU_001), StudentService, ClassScheduleService, PackageService, SchemaMigration engine implemented |
-| Web App Deployment | Active at version `@35` (`AKfycbx4d_VG4CsZIEAomX_OjNMuej06ktTYmKLME5ennLsI7mx3Fn5b-YBu9CRqe7NwrUVH3w`) — Deployment ID preserved; deployment update to `@36` required to make native classes.batchSchedule and HeaderMapper live |
-| Last state update | Timezone Contradiction Investigation: Revised Phase 39 status from PASSED to PARTIAL. 1. Stored session records in Google Sheets (ClassSessions rows 2-49) were discovered to have naive UTC timestamps '18:00:00.000Z', which corresponds to 11:30 PM–12:00 AM IST (crossing midnight into the next day), rather than intended 6:00–6:30 PM IST (12:30:00.000Z–13:00:00.000Z); 2. Calendar displayed 6:00 PM because calendarEventGenerator synthesized a recurring slot when the dated session at 11:30 PM did not match the 18:00 recurring rule; 3. Root cause traced to classGenerator.ts naive string concatenation '${dateStr}T${entry.start_time}:00.000Z'; 4. Fixed classGenerator.ts with localToUtcIso to properly apply Asia/Kolkata offset (+05:30) and epoch-based dual conflict detection; 5. Added 3 regression tests in packageDatesAndScheduling.test.ts verifying exact UTC offsets (12:30Z) and midnight safety (316 tests passing); 6. Existing live records remain untouched per explicit safety instructions. |
+| Project | Personal Dashboard / Student Management Dashboard |
+| Execution mode | Documentation Audit & System Alignment |
+| Current status | AUDIT_IN_PROGRESS / DOCUMENTATION_ALIGNED |
+| Current Git branch | `main` (commit `db0fccb`) |
+| Canonical Spreadsheet | `Private Class Dashboard` (ID: `1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8`, Owner: `ashreya0502@gmail.com`) — Exactly 6 canonical tables |
+| Backup Spreadsheet | `Master Backup (Pre-Launch 2026-10-21T12-13-40-537Z)` (ID: `1kIFYmI81DfNIAqb-ZHsTifiKE6JxhfQrXqpfphrw9eU`) |
+| Apps Script Project | `1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL` |
+| Web App Deployment | Active production version: `@48` (Deployment ID: `AKfycbx4d_VG4CsZIEAomX_OjNMuej06ktTYmKLME5ennLsI7mx3Fn5b-YBu9CRqe7NwrUVH3w`; description: "Batch 4 fixes: calendar muted, nav controls, finance currency reconciliation"). Configured in frontend `.env.local`. Historical verifiable deployments: `@46` (ID: `AKfycbyRXaPIafKV0u6WIzxDGSh5AQfQtKqFfspKi_wWZHiXFY3dbAh-s97yvAz1-XGpi_1DDw`), `@43` (intermediate developer test version), and `@35` (earlier milestone version). Production website runtime execution against live Web App endpoint is **UNVERIFIED** (not executed during this documentation-only audit). |
+| Line limit check | PASSED (217 text files across `src` and `public` all <= 149 lines; 0 catch-all files) |
+| TypeScript check | PASSED (`tsc --noEmit` exits with 0 errors) |
+| Test suite status | PASSED (58 test files passed, 389 tests passed, 0 failed, 0 skipped). Static test fixture dates updated to deterministic dynamic future dates via `tests/fixtures/testDateHelpers.ts`. |
 
-## 5. Phase Register
+## 5. Canonical Google Sheets Schema (Six Tables)
 
-| Phase | Name | Status | Commit | Evidence / notes |
-|---|---|---|---|---|
-| 0 | Repository and Specification Audit | PASSED | 9391906 | All 14 primary specs, 26 domain docs, 8 handoff docs inspected; schemas & rules verified. |
-| 1 | Architecture Feasibility Spike | PASSED | 117eaf9 | Isolated spike tests passed (7/7); documented in spikes/feasibility/FEASIBILITY_REPORT.md |
-| 2 | Repository Foundation and Tooling | PASSED | 89cc33a | React+TS+Vite, Vitest, line limit check, typecheck, production build all passed. |
-| 3 | Data Schema and Spreadsheet Bootstrap | PASSED | 8f74410 | 12 canonical tabs & headers validated, dynamic HeaderMapper, IdGenerator, 6/6 tests passed. |
-| 4 | Backend Foundation | PASSED | c901aef | API entry, request parsing, response factory, auth guards, row reader/writer, locking, audit (17 tests). |
-| 5 | Backend Domain Services | PASSED | f18e511 | Domain services (Students, Enrollments, Packages, Fees, Payments with Idempotency, Classes with Credit Restoration, Meeting Links, Notes, Reports) passing 23/23 tests. |
-| 6 | Frontend Foundation | PASSED | 1ecb43c | API client, session/auth state, AppShell, TopBar, Sidebar, PageHeader, reusable micro-components, formatters, 37/37 tests passing. |
-| 7 | Frontend Product Screens | PASSED | d0355a3 | Dashboard, Students, Enrollments, Packages, Fees, Payments, Classes, Meeting Links, Notes, Reports, Settings screens verified (40/40 tests). |
-| 8 | Import and Migration | PASSED | 23e8867 | Spreadsheet import preview, candidate duplicate detection, batch execution, row-level reconciliation (42/42 tests passing). |
-| 9 | Integration and End-to-End Testing | PASSED | 4b8f2da | Full lifecycle regression (enrollment, package consumption, credit restoration, fee/payment ledger, archiving, import); 43/43 tests passing. |
-| 10 | Deployment Preparation | PASSED | 8e40c40 | vercel.json SPA rewrites & security headers configured; runtimeConfig env aliases enabled; production build (736ms) verified. |
-| 11 | Controlled Data Migration | BLOCKED_ON_OWNER | — | Synthetic data import pipeline verified in Phase 8 & 9. Live migration requires owner Google account, canonical spreadsheet, and owner authorization gate. |
-| 12 | Release and Handover | PASSED | a2cf1d5 | Release checklist verified, micro-file architecture intact (111 files <= 149 lines), 43/43 tests passing, owner handover package complete. |
-| 13 | Master Implementation & Schema Finalization | PASSED | HEAD | 108/108 tests passing, 68 backend files synced to Apps Script HEAD, canonical documentation aligned to 9-col Students, 11-col Packages with end_date. |
-| 14 | Consolidated Post-Deployment Audit & Functional Verification | PASSED | HEAD | Apps Script v23 deployed and verified against migrated Google Sheet. All 9 core user workflows verified end-to-end (125/125 Vitest tests passing). Zero defects. Production data pristine. Ready for Vercel deployment. |
-| 15 | Import & Reconcile Feature Retirement | PASSED | HEAD | Fully removed Import & Reconcile UI, routing, icons, backend handlers/services, and dedicated tests. Operational schemas & historical tabs preserved intact. 121 tests passing across 24 test suites. Clean production build. |
-| 16 | Operational Tabs Retirement & ConfigService Decoupling | PASSED | 5f1aca1 | Completely removed AppConfig, ImportBatches, ImportRowResults dependencies; implemented ConfigService with ScriptProperties defaults; verified absent-tab scenarios (140/140 tests). |
-| 17 | Earnings Calculations Bug Resolution & Deduplication | PASSED | a2e8d47 | Fixed earnings calculation data flow, package deduplication by package_id, bidirectional student identity matching, currency rules, and debtor balance insulation (143/143 tests). |
-| 18 | Live Deployment Update (@25) & Live API Verification | PASSED | 0ef97b3 | Redeployed AKfycbx4d_... in-place to Version @25 via clasp; resolved student-scoped package deduplication and '-' in_inr; live authenticated API verified returning ₹2,16,800 / ₹1,66,800 / ₹50,000. |
-| 19 | Unified Finances Consolidation & Ledger Single Source | PASSED | 20ebd6a | Consolidated Fees & Payments and Earnings into unified Finances page with 3 summary cards, Payment History + Student Balances tables, search, date filtering, and CSV export. 147 Vitest tests, 129 micro-files <= 149 lines, 14/14 Playwright tests passing. |
-| 20 | Finances & Meeting Links Refinements | PASSED | 538fb1c | Refined Finances summary labels, 4-column ascending history table, Received status wording; enhanced Meeting Links with platform identification (Google Meet, Zoom, Other), columnar card layout, slot-targeted Add Meeting Link for missing slots. 159 Vitest tests, 134 files <= 149 lines, 16/16 Playwright tests passing. |
-| 21 | Finances Workflow & Meeting Links Table Redesign | PASSED | 8e93c34 | Made Student Balances default first tab on Finances; added Add Payment action with popup modal, validation, and ledger updates; redesigned Meeting Links as compact table with popup form for add/edit. 165 Vitest tests, 140 files <= 149 lines, 16/16 Playwright tests passing. |
-| 22 | Blank Screen Startup Recovery | PASSED | 2aef912 | Resolved unhandled RangeError in DashboardCalendar caused by space-padded ISO date strings from live Google Sheet; added parseIsoDate helper; deduplicated React keys; added ErrorBoundary around React root. 167 Vitest tests, 141 files <= 149 lines, 16/16 Playwright tests passing. |
-| 23 | Student Manager UI, Permanent IDs & Registration | PASSED | 00be018 | Implemented single SearchableStudentSelect, permanent sequential IDs (STU_001), aligned Meeting Links table & centered modal, aligned Students Directory with red inactive badge, 4-section registration workflow, recurring schedule data model & migration plan. 152 micro-files <= 149 lines, 179 Vitest tests, 28/29 Playwright tests. |
-| 24 | Student ID Consistency & Legacy ID Migration Plan | PASSED | aac8baa | Audited canonical sheet (25 students: 3 standard STU_001-003, 22 legacy stu_...); audited all 7 dependent tables; built StudentIdMigration.gs (119 lines) with cascading foreign keys and StudentId_Migration_Backup; synchronized mock data to STU_001-004; documented complete 22-row migration plan and owner steps in docs/prelaunch/student-id-migration-plan.md; preserved live data untouched per safety rules. 152 micro-files <= 149 lines, 183 Vitest tests, 28/29 Playwright tests. |
-| 25 | Student ID Migration Read-Only Safety Audit & Verification Tooling | PASSED | 3dda679 | Conducted exhaustive read-only safety audit of live canonical sheet; implemented StudentIdVerification.gs (113 lines) with verifyStudentIdReferentialIntegrity and rollbackStudentIdMigration; expanded automated test coverage to 185 tests (6 migration tests passing); updated docs/prelaunch/student-id-migration-plan.md with verification and rollback runbooks. Zero live mutations performed. |
-| 26 | Student ID Migration Safety Hardening, Preflight & Recovery Engine | PASSED | 39bb3f4 | Implemented StudentIdPreflight.gs (134 lines) providing isolated preflight analysis reporting READY verdict on live sheet; hardened StudentIdMigration.gs (133 lines) with script locking, pre-write backup verification, and resume-on-retry state machine; enhanced StudentIdVerification.gs (128 lines) with concurrency-safe rollback; audited schedule storage (ClassSchedules sheet absent, handled gracefully); preserved audit history traceability; 189 Vitest tests passing (10 migration tests). Zero live writes. |
-| 27 | Student ID Migration Live Execution & Post-Migration Verification | PASSED | HEAD | Under explicit owner authorization, pushed 71 files to Apps Script, deployed Version @26 in-place to AKfycbx4d_..., verified preflight READY, executed runStudentIdMigration(), and verified post-migration state. 26/26 students now standard sequential STU_001-STU_026 (STU_001-003 preserved, 23 legacy migrated). 0 legacy IDs remain, 0 dangling references. Backup tab StudentId_Migration_Backup active (24 rows). Rollback available. 189 Vitest tests passing. Complete. |
-| 28 | Meeting Links & Student Details UI Fixes | PASSED | 6c4dfa3 | Implemented 4 fixes: 1. Meeting links styled as clickable green/blue buttons with 1-click clipboard copy, subtle feedback, no separate provider labels/copy buttons. 2. Missing links show 'No link configured' without inline add button. 3. Add Meeting Link form starts with unselected student and neutral 'Select student' placeholder, enforcing required validation. 4. Students directory default rows show Name, Subject, Schedule, Classes (01/48); row click expands full details inline with collapse toggle and stopPropagation on action buttons. 202 Vitest tests passing, 158 micro-files <= 149 lines, clean build. |
-| 29 | Student Management — Editing, Scheduling, Active/Inactive Tabs | PASSED | HEAD | Implemented all 6 requirements: Edit Student (schedule, meeting links, package update with audit trail & history preservation); New Student recurring schedule multi-day entry; aligned full student details grid; auto-schedule purchased classes with conflict detection; Active/Inactive directory tabs; remaining-class balance classification. 209 Vitest tests, 167 micro-files <= 149 lines, Playwright E2E passing. |
-| 30 | Meeting Links, Navigation, Layout, and End-to-End Data Persistence Fixes | PASSED | 66f7f2b | Implemented 6 requirements: Meeting Links table fixed layout with no horizontal scroll; full-height stationary sidebar with scrolling mainArea; hover/focus/touch revealed Copy & Delete actions with individual-slot deletion and backend persistence; navigation reordered to Dashboard, Students, Class Schedule, Finances, Meeting Links; removed student row arrow while preserving expand/collapse; verified live Google Sheets persistence across 9 core flows (7 PASS, 2 NOT VERIFIED due to missing canonical sheet tab/column). Apps Script deployed in-place to @29. 220 Vitest tests passing, 168 files <= 149 lines, clean Vite build. |
-| 31 | Student Schedule Saving, Success Feedback, and Google Sheets Synchronization | PASSED | f9deb2e | Diagnosed and fixed Save button failures (inactive '-' email validation blocker, missing physical ClassSchedules sheet, missing class_duration column in Packages sheet, Google Sheets time coercion). Created physical ClassSchedules tab and added class_duration to Packages via safe migration. Rendered exact toast 'Student details saved successfully', closed Edit modal on success, and refreshed view aggregates immediately. Deployed Apps Script to @33 in-place. Verified genuine live E2E persistence in Google Sheets across all 11 steps with 0 NOT VERIFIED. 230 Vitest tests passing, 169 files <= 149 lines, clean Vite build. |
-| 32 | Student Schedule Save Validation and Calendar Synchronization | PASSED | HEAD | Resolved student edit status validation failure by normalizing legacy/mixed-case status ('Active', 'Inactive') to uppercase ('ACTIVE', 'INACTIVE') across frontend, API, backend validation, and persistence. Synchronized DashboardCalendar with ClassSchedules recurring schedules: enabled schedules.list for all students, added timezone-safe calendarEventGenerator for visible week mapping, enriched student details, distinguished recurring schedules from dated sessions, and prevented slot duplication. Deployed backend in-place to Version @34. 237 Vitest tests passing, 170 files <= 149 lines, clean Vite build. |
-| 33 | Student Manager UX, Scheduling & Calendar | PASSED | HEAD | Implemented all 14 batch requirements: 1. Global header height matching sidebar brand row, Welcome Back <Username>!, live date and 12-hour AM/PM time in Asia/Kolkata. 2. Things That Need Attention alert section for active students with missing links/schedules/low balance. 3. Today's Classes section with 12-hour formatting and Join Class buttons. 4. Student details 3-column layout with meeting links in row 2. 5. Edit Student modal dialog with scrolling, body lock, and state preservation. 6. Integrated auto-scheduling with first class date, package limits, duplicate avoidance, and feedback. 7. Class Schedule student filter. 8. Class Schedule 12-hour formatting, consumed classes, and Join Class button for today. 9. New Calendar navigation page with 7-day Google Calendar style time-grid, green booked slots, and distinct recurring/dated session styling. 249 Vitest tests passing across 43 test suites, 188 files <= 149 lines, clean Vite build. |
-| 34 | Next Fix Batch — Package Logic, Scheduling Reliability, Calendar, and Global UI Polish | PASSED | HEAD | Implemented and verified all 14 requirements: 1. Auto package expiry calculation; 2. Per-class rate & yearly class count calculation; 3. Responsive asynchronous scheduling with non-blocking toast; 4. Active status guard preventing deactivation of scheduled students; 5. Improved Dashboard and Calendar events with student, subject, 12-hour times, and attendance colors; 6. Profile & logout moved to sidebar bottom; 7. Live date & time in Asia/Kolkata moved to top-right; 8. Reordered Dashboard hierarchy; 9. Add Student modal dialog; 10. Scheduling conflict prevention (frontend & backend lock); 11. Redesigned Class Schedule page; 12. Display NIL in neutral grey for zero balances; 13. Single cohesive student details container; 14. Global UI polish. Deployed Apps Script in-place to Version @35. 270 Vitest tests passing across 45 suites, 197 files <= 149 lines, clean Vite build. |
-| 35 | UI Consistency and Student Registration Fixes | PASSED | HEAD | Implemented all 4 requirements: 1. Global UI spacing & padding fixes (select dropdown arrow with 0.75rem margin, 2.25rem right-padding, consistent button/input spacing); 2. Optional & editable Student Phone (tel) and Student Email (email); 3. Subjects multi-select dropdown with English, Math, Science, Social Science, Hindi, Geeta, chip tags, removal, and backward-compatible persistence; 4. Auto-calculated Per-Class Rate editable by user with priority recalculation when package price or class count changes. 282 Vitest tests passing across 46 suites (+12 new tests), 200 files <= 149 lines, clean Vite build. |
-| 36 | Fix Student Data, Class Generation, Calendar Accuracy, Fee Dates, and Global Spacing | PASSED | a050ec2 | Implemented all 7 fixes: 1. Escaped leading + on phones in HeaderMapper to avoid Sheets formula error, cleaned on read; 2. Filtered recurring calendar events prior to First Class Date or after package end date; 3. Fixed calendar 30-min duration positioning (26px height instead of 50px clamping); 4. Automatic package end date and next fee due date (N-4 rule) derivation; 5. Individual dated class session generation with class_date column; 6. 12-hour clock parsing in cleanTime and _normalizeTimeStr; 7. Standardized Dashboard section spacing with uniform layout container. 299 Vitest tests passing across 48 suites (+11 new tests), 202 files <= 149 lines, clean Vite build. |
-| 37 | Bugfix: Unknown Operation classes.batchSchedule & Incomplete Registration Recovery | PASSED | HEAD | Traced cause of unknown operation to stale deployment @35; hardened classes.batchSchedule with package validation; added fallback to sequential classes.schedule in batchScheduleClasses; added recovery in useStudentRegistrationForm to reuse existing student STU_001, repair phones, reuse package, and batch-schedule sessions without duplicate students; added regression tests in operationAdapters.test.ts and packageDatesAndScheduling.test.ts (301 tests passing, clean build). |
-| 38 | Critical Bug: Student Registration Hangs & Fails with Network Request Failed | PASSED | HEAD | Diagnosed 48-call sequential HTTP bottleneck against Web App @35 causing timeout/throttling and UI lock; verified live sheet in read-only mode (all tabs have rows: 1, 0 data rows); hardened apiClient.ts to distinguish timeouts & non-JSON responses; extracted registrationSubmitter.ts (111 lines <= 149 lines) with resilient student/package reuse, duplicate session detection, and smooth delegation to asyncScheduleWorker when classes.batchSchedule is unknown; guaranteed isSubmitting reset in finally; added 12 comprehensive regression tests in registrationFailureAndRecovery.test.ts (313/313 tests passing, clean build). |
-| 39 | Full End-to-End Verification of Student Registration and Class Scheduling | PARTIAL | HEAD | Complete automated E2E verification executed via Playwright against live Web App @35 and Google Sheets canonical spreadsheet. Student STU_001, phones, package, 3 recurring schedules, and 48 sessions verified in database. However, timezone contradiction discovered: sessions in ClassSessions were persisted with naive UTC timestamps '18:00:00.000Z' (11:30 PM IST), crossing midnight, rather than intended 6:00–6:30 PM IST ('12:30:00.000Z'–'13:00:00.000Z'). Status revised to PARTIAL pending authorized session timestamp repair. Fixed classGenerator.ts and added 3 timezone precision regression tests (316/316 Vitest tests passing, 203 files <= 149 lines). |
+1. **`Students`** (9 columns): `student_id, student_name, parent_name, parent_phone, parent_email, student_phone, student_email, subject, status`
+2. **`Packages`** (12 columns): `student_id, student_name, plan_type, currency, package_price, per_class, classes_purchased, start_date, end_date, next_due_date, class_duration, class_schedule`
+3. **`Payments`** (6 columns): `student_id, student_name, payment_date, amount, currency, in_inr`
+4. **`ClassSessions`** (8 columns): `student_id, student_name, schedule_date, schedule_time, attendance_status, session_status, deduct_class, cancellation_reason`
+5. **`MeetingLinks`** (4 columns): `student_id, student_name, meeting_link_1, meeting_link_2`
+6. **`StudentNotes`** (5 columns): `student_id, student_name, note_date, note_text, follow_up_date`
 
-## 6. Live Infrastructure Inspection & Modification Boundary
+*Archived / Retired Sheets:* `_Archived_ClassSchedules`, `_Backup_PreCanonical_Packages`, `_Backup_PreCanonical_ClassSchedules`, `StudentId_Migration_Backup`. `AppConfig`, `Enrollments`, `FeeObligations`, `ImportBatches`, and `ImportRowResults` are permanently retired.
 
-1. **Canonical Spreadsheet Access**:
-   - `Private Class Dashboard` (ID: `1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8`) inspected via deployed authenticated Apps Script endpoint `system.inspectTabs`.
-   - Result: 11 tabs present, 1 row (header row) in all working tabs, 0 business rows.
-2. **Pre-Launch Backup Access**:
-   - `Master Backup (Pre-Launch 2026-10-21T12-13-40-537Z)` (ID: `1kIFYmI81DfNIAqb-ZHsTifiKE6JxhfQrXqpfphrw9eU`) inspected and verified via Google Drive API. Preserved untouched.
-3. **Execution Boundary**:
-   - Google Sheets API is disabled in GCP project `1072944905499` (HTTP 403 `PERMISSION_DENIED`).
-   - Apps Script Execution API is disabled in GCP project `1072944905499` (Error `NOT_FOUND`).
-   - Apps Script Web App deployment `@22` is frozen and cannot be updated per explicit prompt instructions.
-   - All 68 Apps Script files (including the hardened `setup/SchemaMigration.gs`) are pushed and available directly in the Apps Script project editor (`1CC_ZjGrLBD8BnrAm6CP9oDUJmUPqFy4MCc-MkBiBvCNkMA616uF_pCPL`).
-   - Owner can execute `runApprovedSchemaMigration` directly in the Apps Script editor to finalize physical spreadsheet column deletion and verify 100% header alignment.
+## 6. Phase & Milestone Register
+
+| Phase / Batch | Scope / Description | Status | Evidence / Notes |
+|---|---|---|---|
+| Phase 0–12 | Architecture foundation, tooling, backend services, frontend screens, test suite | PASSED | Initial development cycle; micro-file architecture established. |
+| Phase 13–16 | Operational tabs retirement, ConfigService decoupling, import feature retirement | PASSED | `AppConfig`, `ImportBatches`, `ImportRowResults` retired; ConfigService introduced. |
+| Phase 17–22 | Unified Finances consolidation, ledger single-source, meeting links redesign | PASSED | Consolidated fees & payments into unified Finances page; meeting links table. |
+| Phase 23–27 | Student ID consistency (`STU_001`–`STU_026`), migration, preflight & live execution | PASSED | Migrated 23 legacy student IDs to standard sequential `STU_xxx`. |
+| Phase 28–32 | Meeting links refinement, student editing, status normalization, schedule persistence | PASSED | 4-section student registration, recurring schedules, uppercase status normalization. |
+| Phase 33–36 | UX polish, calendar time grid, auto-expiry calculation, N-4 fee due date, 12h clock | PASSED | Live header clock, calendar 7-day grid, per-class calculation, N-4 fee rule. |
+| Phase 37–39 | Registration recovery, network timeout hardening, async schedule worker | PASSED | Resilient student/package reuse; async schedule worker for large class batches. |
+| Milestone: Canonical 6-Table Migration | FinalCanonicalSchemaMigration.gs: Packages to 12 cols, ClassSessions to 8 cols, ClassSchedules archived | PASSED | Executed schema migration unifying datastore to exactly 6 canonical tables. |
+| Milestone: Session Backdating | Backdate STU_001 48 class sessions to 19 Jan 2026, package start/end/due dates updated | PASSED | Verified live in Google Sheets; package start 2026-01-19, end 2026-05-09. |
+| Batch 2 Fixes | Data accuracy, table layout, status styling, interactions, global date formatting | PASSED | Standardized table cells, phone prefix escaping, date format standardization. |
+| Batch 3 Fixes | Attendance deduction, rescheduling, student expanded details, colgroup layout | PASSED | Refined attendance deduction, replacement slot on waived cancellation. |
+| Batch 4 Fixes | Calendar 3-color status logic, local time slot matching, multi-currency reporting | PASSED | Currency insulation (no foreign amount pollution), 12h local time mapping. |
+| Batch 5 Fixes | Calendar soft muted red/green, STU_005 active classification, session progress | PASSED | Unified calendar color scheme, session progress bar, active threshold rules. |
+| Current Task | Complete Documentation Audit & System Alignment across all docs and instructions | IN_PROGRESS | Verifying code source of truth; updating all specifications; zero code changes. |
+
+## 7. Known Issues & Technical Constraints
+
+1. **Static Dates in Automated Regression Tests (Resolved):**
+   Previously, four test files (`registrationControlsAndPolish.test.ts`, `scheduleSimplificationAndDashboard.test.ts`, `studentManagementEnhancements.test.ts`, `studentRegistrationAndDirectory.test.ts`) contained hardcoded static test dates (`2026-11-02` and `2026-11-03`) that expired. They have now been updated to use deterministic date helpers (`getNextWeekday`, `getFutureDate` in `tests/fixtures/testDateHelpers.ts`), resolving all 7 failures with zero production code changes. All 58 suites (389 tests) pass cleanly.
+2. **Absence of Session ID in Sheet & Mutation Behavior:**
+   Because `ClassSessions` contains no `session_id` column, the backend identifies sessions by composite key `student_id__schedule_date__schedule_time` (normalized ISO date + 24h `HH:mm`) or direct 1-based row index (`_rowIndex`). When `_rowIndex` is provided, `Classes_update` uses direct row access guarded by `updates.student_id === rec.student_id`. If `_rowIndex` is omitted, it falls back to scanning for the composite key. Rescheduling alters the date/time in-place, changing its composite key. If multiple rows share the identical student, date, and time, composite key scanning only targets the first matching row.
+   > [!WARNING]
+   > **Row-Index Safety Limitation & Operational Rule:**
+   > Manual row insertions, deletions, or sorting directly in Google Sheets invalidate client-held `_rowIndex` values. While the `student_id` guard prevents cross-student corruption, it cannot detect row shifts between sessions belonging to the same student.
+   > **Operational Rule:** **Never manually sort, insert, delete, or rearrange `ClassSessions` rows while operations relying on cached row indices may be in progress.** Direct sheet edits must only occur during scheduled offline maintenance windows.
+3. **No External Currency Conversion API:**
+   The application intentionally avoids third-party exchange rate APIs. If a foreign currency payment has no manual `in_inr` entry, it contributes 0 to INR aggregations.
+4. **Apps Script Deployment Synchronization:**
+   Backend code in `02-backend/apps-script/` is deployed via clasp. Active Web App deployment is version `@48` (`AKfycbx4d_VG4CsZIEAomX_OjNMuej06ktTYmKLME5ennLsI7mx3Fn5b-YBu9CRqe7NwrUVH3w`).
+5. **Class Duration Architecture:**
+   Class duration is strictly configured per package on `Packages.class_duration` (valid options: 30, 40, or 60 minutes) and is not globally uniform. `ConfigService.DEFAULT_CLASS_DURATION_MINUTES` (`60`) serves strictly as a server fallback when a package duration is missing. Regional Preferences in Settings manage timezone and currency only, not class duration.

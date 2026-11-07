@@ -121,7 +121,7 @@ Each backup must receive basic integrity checks. At minimum, verify:
 7. The backup file has the expected restricted access.
 8. The backup operation completed without an unreported error.
 
-Useful record-count checks include Students, Enrollments, Packages, FeeObligations, Payments, ClassSessions, MeetingLinks, StudentNotes, AuditLog, ImportBatches, and ImportRowResults.
+Useful record-count checks include strictly the six canonical tables: Students, Packages, Payments, ClassSessions, MeetingLinks, and StudentNotes.
 
 A record-count difference is not automatically corruption; records may have changed while the backup was created. The backup procedure should minimize concurrent writes during snapshot creation or record the snapshot timing and flag discrepancies for review.
 

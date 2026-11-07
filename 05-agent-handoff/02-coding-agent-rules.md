@@ -2,273 +2,104 @@
 
 ## 1. Purpose
 
-These rules govern any coding agent working on the Student Management Dashboard. The agent must implement the approved documentation, not redesign the product or invent undocumented behavior.
+These rules govern any AI coding agent or developer working on the Personal Dashboard (Student Management Dashboard). The agent must maintain the approved architecture and business invariants, and never invent undocumented behavior or unnecessary infrastructure.
 
-The product is an admin-only student management application using:
-
-- React, TypeScript, and Vite for the separate frontend.
+The system is a private, admin-only management application using:
+- React 18, TypeScript, and Vite for the frontend.
 - Google Apps Script as the backend API and business-logic layer.
-- Google Sheets as the canonical datastore.
-- Vercel for frontend hosting, subject to current plan eligibility and terms.
+- Google Sheets as the canonical datastore (strictly six tables).
+- Vercel for frontend hosting.
 - GitHub for version control.
 
-The architecture must remain appropriately small for a single administrator and a modest operational workload.
+## 2. Non-Negotiable Source-of-Truth Hierarchy
 
-## 2. Source-of-Truth Order
+Before making changes, inspect the actual source code and documentation. Follow this strict hierarchy:
 
-Before making changes, inspect the available project files and read the relevant specifications. Use this authority order:
+1. **Actual Implementation Source of Truth:**
+   The verified, running source code (`src/`, `02-backend/apps-script/`, configuration, and passing tests) is the primary source of truth for existing behavior.
+2. **Approved Specifications (`00-documentation/`):**
+   Governing system architecture, data model, business rules, API reference, and security boundaries.
+3. **Domain Deep-Dives (`01-frontend/`, `02-backend/`, `03-data/`, `04-quality-and-operations/`):**
+   Detailed contracts, schemas, test strategies, and operations.
+4. **Handoff Documentation (`05-agent-handoff/`):**
+   Project state, implementation sequence, and agent execution protocols.
 
-1. Explicitly approved decisions and constraints from the project owner.
-2. `00-documentation/` product and architecture specifications.
-3. Domain-specific documents in `01-frontend/`, `02-backend/`, `03-data/`, and `04-quality-and-operations/`.
-4. Agent-handoff documents in `05-agent-handoff/`.
-5. Existing implementation, only where it does not conflict with approved specifications.
+*Rule:* If an older document contradicts current code or the six-table canonical schema, the current code and canonical schema take precedence. Document the discrepancy rather than implementing obsolete behavior.
 
-If documents conflict, stop the affected work, report the exact conflict, and propose the smallest documentation change needed. Do not silently choose an interpretation or implement both incompatible approaches.
+## 3. The Strict Six-Table Datastore Restriction
 
-Do not assume a referenced document exists merely because it appears in an index. Check the workspace. If required documentation is missing, identify it as a blocker rather than fabricating its contents.
+The project has **strictly six Google Sheets tables**. No other tables exist.
 
-## 3. Documentation-First Workflow
+An agent is **strictly prohibited** from:
+- Creating or referencing new Google Sheets tables (e.g. `ClassSchedules`, `FeeObligations`, `Enrollments`, `PackageHistory`, `StudentPayments`, `Attendance`, `Invoices`, `AppConfig`, etc.).
+- Adding a `package_id` column to the `Packages` sheet. Packages are uniquely keyed by `student_id`.
+- Adding a `session_id` or stored end-time column to the `ClassSessions` sheet. Sessions use composite key `student_id__schedule_date__schedule_time` (or 1-based row index) and end time is derived from `Packages.class_duration`.
+- Storing recurring schedules in a separate sheet. Recurring schedules are stored directly inside `Packages.class_schedule`.
 
-The project owner has explicitly chosen to finalize the documentation before implementation.
+Any change to the physical Google Sheets schema requires an explicit, separate scope change and migration plan approved by the owner.
 
-Until the owner authorizes implementation:
-
-- Write and review documentation only.
-- Do not scaffold the application.
-- Do not generate application source code.
-- Do not create production services or deploy infrastructure.
-- Do not connect to real student spreadsheets.
-- Do not import real student or payment data.
-
-Once implementation is authorized, follow `01-implementation-sequence.md` and the acceptance criteria. Do not skip ahead because a later feature seems easy to build.
+### 3.1 ClassSessions Row-Index Safety & Operational Rule
+- The backend identifies sessions via composite key `student_id__schedule_date__schedule_time` and executes performant updates using 1-based row index (`_rowIndex`).
+- **Limitation:** While `updates.student_id === rec.student_id` prevents cross-student corruption, it cannot detect shifted rows among sessions belonging to the same student if rows are altered directly in Google Sheets.
+- **Operational Rule:** **Never manually sort, insert, delete, or rearrange `ClassSessions` rows while operations relying on cached row indices may be in progress.** Direct spreadsheet maintenance must occur only during scheduled offline windows.
+- Coding agents must not introduce a new session-ID architecture without explicit, approved schema RFC.
 
 ## 4. Mandatory Micro-File Architecture
 
-Every domain in `src/` and `public/` must be a directory of single-purpose micro-files. Each source file must remain strictly under 150 lines: maximum 149 lines.
+Every domain in `src/` and `public/` must consist of single-purpose micro-files. Each source file must remain strictly under 150 lines: **maximum 149 lines**.
 
-This rule is mandatory, not a suggestion.
+This rule is mandatory and enforced by automated CI checks (`npm run check:lines`).
 
-### 4.1 Required practices
-
-- Organize files by domain and responsibility.
+### 4.1 Required Practices
+- Organize files by domain and single responsibility.
 - Give each file one clear reason to change.
-- Split large components into smaller components, hooks, schemas, types, and services where appropriate.
+- Split components into presentation, hooks, types, validation, and api clients.
 - Keep business rules out of presentation components.
-- Keep API transport concerns out of domain components.
-- Keep styles close to their owning component or domain.
-- Use explicit names that communicate responsibility.
-- Check file lengths after creating or modifying files.
+- Keep CSS modules co-located with their owning component.
+- Check line limits before and after editing files: `npm run check:lines`.
 
-### 4.2 Prohibited patterns
+### 4.2 Prohibited Patterns
+Do not create catch-all files:
+- `utils.ts`, `helpers.ts`, `common.ts`
+- `app.js`, `actions.js`, `api.ts` (catch-all for all endpoints)
+- Monolithic CSS files
+- Monolithic page components combining multiple domain workflows
 
-Do not create catch-all or monolithic files such as:
+Do not evade the limit by minifying code, concatenating statements onto single lines, or stripping comments.
 
-- `actions.js`
-- `app.js` used as a catch-all for unrelated logic
-- `utils.ts` containing unrelated helpers
-- `helpers.ts` containing unrelated helpers
-- `api.ts` containing every endpoint and domain operation
-- A single giant page component containing all dashboard behavior
-- A monolithic CSS file for the entire application
+## 5. Security and Data Protection Rules
 
-A necessary framework entry point is allowed only for its narrow entry-point responsibility. It must not become a place for unrelated application logic.
+- **Frontend Isolation:** The frontend must never access Google Sheets directly. All operations pass through the Apps Script backend.
+- **Zero Secrets in Frontend:** Never place privileged credentials, service-account secrets, private tokens, or spreadsheet write credentials in frontend code or Git.
+- **Server-Side Authorization:** Every protected backend operation must authenticate and authorize the caller using server-side HMAC-SHA256 session token verification.
+- **Never Trust Client Flags:** Never trust frontend flags (`isAdmin`), client-supplied emails, or unvalidated parameters as proof of authorization.
+- **Allowlist Enforcement:** Authorize only allowlisted administrators configured in backend Script Properties (`ashreya0502@gmail.com`).
+- **Input Sanitization:** Validate and sanitize all inputs server-side. Escape leading `+` or `=` characters on phone numbers and text to prevent formula injection in Google Sheets.
 
-### 4.3 Splitting guidance
+## 6. Business Logic and Technical Invariants
 
-Split by meaningful responsibility, not by arbitrary line count. Examples include:
+- **Timezone:** Use `Asia/Kolkata` (IST, UTC+05:30) consistently across all scheduling, calendar rendering, date parsing, and live headers.
+- **Date Format:** User-facing and Google Sheets date format requirement is `dd/mm/yyyy`. Backend `HeaderMapper.gs` normalizes between `dd/mm/yyyy` and ISO `yyyy-mm-dd`.
+- **Time Format:** Stored as 24-hour `HH:mm`; displayed in 12-hour AM/PM format.
+- **Currency:** Preserve original currency on payments and packages. Manual `in_inr` entry is required for foreign payment conversion. Never mix foreign currency amounts directly into INR totals; do not call unapproved third-party exchange-rate APIs.
+- **Class Balance Derivation:** Consumed classes are derived by counting sessions where `deduct_class === true`. Remaining classes = `classes_purchased - consumed_classes`.
+- **Attendance Deduction:**
+  - `PRESENT` / `ATTENDED`: `deduct_class = true`.
+  - `ABSENT` / `NO_SHOW`: user/owner specifies deduction (default false unless unexcused).
+  - `NOT_MARKED`: `deduct_class = false`.
+  - `CANCELLED`: if < 4 hours before scheduled time and not waived, `deduct_class = true`. If cancelled >= 4 hours in advance or waived, `deduct_class = false`, and an automatic replacement session is scheduled at the next available recurring slot.
+- **Calendar Event Classification:**
+  1. `PAST_COMPLETED` (soft muted green): Past session marked `COMPLETED` or `PRESENT`.
+  2. `CANCELLED` (soft muted red): Explicitly cancelled session, or past session that was not completed.
+  3. `UPCOMING` (amber / warm): Scheduled future session or recurring slot.
 
-- A page shell and its individual sections.
-- A form component and its validation schema.
-- An API client and individual domain API modules.
-- A business service and its repository.
-- A table and its filters, columns, and row actions.
-- CSS tokens, shared primitives, and domain-specific styles.
+## 7. Verification and Testing Mandate
 
-Do not evade the limit by minifying code, putting many statements on one line, or moving source into generated strings. Count comments and blank lines when checking the limit so the rule is applied consistently.
-
-The precise directory tree must follow `08-frontend-file-and-code-architecture.md` and the approved backend structure. Do not invent an alternative tree without documenting and approving the change.
-
-## 5. Security Rules
-
-- The frontend must never access the master Google Spreadsheet directly.
-- Never place privileged credentials, service-account secrets, private tokens, or spreadsheet write credentials in frontend code.
-- Never commit secrets to source control.
-- Every protected backend operation must authenticate and authorize the caller server-side.
-- Never trust a frontend flag such as `isAdmin` as proof of authorization.
-- Never trust an email address supplied as ordinary request data.
-- Validate identity tokens using the approved verification flow, including issuer, expiry, and audience checks where applicable.
-- Fail closed when authentication or authorization cannot be verified.
-- Do not make the spreadsheet public or publish it to the web.
-- Do not use JSONP, disabled browser security, or other insecure workarounds to expose private records.
-- Do not log authentication tokens, secrets, or unnecessary student, guardian, or financial information.
-- Validate meeting URLs and render them as links, never as executable HTML.
-- Do not add third-party analytics that receive student or financial data without explicit approval and documented privacy review.
-
-If the selected frontend-to-Apps-Script integration cannot support the required secure authenticated request flow, stop and report the blocker. Do not weaken security to make a demo work.
-
-## 6. Data and Business-Rule Integrity
-
-- Google Sheets is the canonical datastore.
-- Use stable backend-generated IDs; never use row numbers, names, or phone numbers as record IDs.
-- Reference related records by IDs and validate relationships server-side.
-- Use the exact approved tab names, column names, enum values, and data types.
-- Resolve columns by validated headers, not hard-coded column letters.
-- Do not add undocumented columns or rename schema fields without an approved migration.
-- Do not calculate authoritative financial or class balances only in the frontend.
-- Do not treat a manually edited remaining-class count as the source of truth.
-- Do not overwrite payment history to represent a correction.
-- Do not hard-delete inactive students or their historical records through normal UI actions.
-- Do not count cancelled or rescheduled classes as completed classes.
-- Do not silently create duplicate students or duplicate import records.
-- Use the approved rules for partial payments, overpayments, refunds, no-shows, credits, and package adjustments. If a rule is not specified, flag it for a product decision.
-- Use locking and revalidation for concurrent mutations where required by the backend specification.
-- Do not claim a multi-record operation is atomic unless the implementation actually guarantees it.
-
-## 7. API and Error Handling
-
-- Follow the approved API contract exactly.
-- Use the documented request and response envelope.
-- Validate every request on the backend, including requests from the legitimate frontend.
-- Reject unknown operations and malformed payloads.
-- Return stable, documented error codes and safe user-facing messages.
-- Do not return stack traces, secrets, or internal implementation details to the browser.
-- Do not report success before persistence has succeeded.
-- Treat malformed, unexpected, or incomplete API responses as errors.
-- Keep transport, domain validation, business logic, and spreadsheet persistence in their documented layers.
-- Do not duplicate business rules across frontend and backend. Frontend checks may improve usability, but backend checks are authoritative.
-
-## 8. Frontend Rules
-
-- Use TypeScript types for domain data and API contracts.
-- Avoid `any`; when unavoidable at an external boundary, narrow and validate the value immediately.
-- Keep components focused and accessible.
-- Provide loading, empty, success, and error states for data-driven views.
-- Distinguish an actual zero from unavailable or failed data.
-- Refresh or reconcile displayed data after successful mutations.
-- Do not present optimistic local state as persisted truth.
-- Confirm financially significant or destructive actions.
-- Keep active and historical records clearly distinguishable.
-- Do not expose inactive students in default active operational lists unless specified.
-- Do not hard-code production URLs, spreadsheet IDs, administrator emails, or secrets into components.
-- Keep environment-specific configuration separate and documented.
-- Do not add dependencies for functionality that can be implemented clearly with the approved stack and existing dependencies.
-
-## 9. Apps Script Rules
-
-- Keep API routing, authentication, validation, domain services, repositories, and spreadsheet utilities separated by responsibility.
-- Use the documented Apps Script project structure.
-- Centralize spreadsheet access and header mapping.
-- Validate required tabs and schema before performing mutations.
-- Batch spreadsheet reads and writes where practical.
-- Avoid repeated full-sheet scans inside loops.
-- Use script locks for critical concurrent mutations where required.
-- Keep lock duration short and release locks reliably.
-- Avoid external network calls while holding a lock unless strictly necessary.
-- Handle partial-write risks explicitly and provide reconciliation or recovery behavior where rollback cannot be guaranteed.
-- Do not assume Apps Script offers relational transactions.
-- Do not store secrets in the public `AppConfig` sheet.
-- Respect Apps Script runtime, quota, payload, and deployment limitations.
-
-## 10. Dependencies and Complexity
-
-- Prefer the smallest dependency set that meets the documented requirements.
-- Do not introduce a new framework, database, backend host, state-management library, or service without approval.
-- Do not add Supabase, Firebase, a SQL database, or another persistence service unless the owner approves an architecture change.
-- Do not build multi-tenant support, role hierarchies, student portals, parent portals, payment gateways, or automated meeting creation in Version 1.
-- Do not introduce microservices or a generic plugin framework.
-- Avoid speculative abstractions for hypothetical future requirements.
-- Prefer straightforward, typed, testable modules over clever abstractions.
-
-## 11. Testing Rules
-
-- Add or update tests with each behavior change.
-- Test business rules independently from UI rendering.
-- Test API authorization and validation, not only successful requests.
-- Test financial calculations with partial payments, voids, and boundary cases defined in the specifications.
-- Test package balances for completed, cancelled, rescheduled, and no-show sessions according to the approved policy.
-- Test imports for duplicates, invalid rows, retries, and partial failures.
-- Test archiving and reactivation without loss of history.
-- Test the actual frontend-to-Apps-Script integration in a controlled environment before relying on it.
-- Never use production student data as casual test fixtures.
-- Use synthetic fixtures with clearly fake names and contact details.
-- Do not mark a test as passed unless it was actually run and its result observed.
-
-## 12. Configuration and Environments
-
-- Separate development, test, and production configuration.
-- Do not let development code write to the production spreadsheet by accident.
-- Keep secrets out of `.env` files committed to Git.
-- Provide a safe example environment file containing placeholders only.
-- Document each required configuration value and where it is stored.
-- Validate required configuration at startup or through a documented health check.
-- Fail safely when required configuration is missing.
-- Do not silently fall back to production values when development configuration is absent.
-
-## 13. Git and Workspace Rules
-
-Before editing:
-
-1. Inspect the current working directory and repository status.
-2. Read relevant documentation and existing code.
-3. Check for uncommitted user changes.
-4. Do not overwrite or discard unrelated work.
-
-During work:
-
-- Make small, coherent changes.
-- Keep generated files and dependencies intentional.
-- Do not commit secrets, private exports, real student records, or local credentials.
-- Do not rewrite Git history or force-push unless explicitly authorized.
-- Do not claim a remote push occurred unless it actually succeeded.
-- Do not claim a commit exists unless Git confirms it.
-
-After work:
-
-1. Run the relevant tests, type checks, lint checks, and build checks available for the project.
-2. Inspect the diff for unrelated changes and accidental secrets.
-3. Check that all source files remain under 150 lines.
-4. Summarize files changed and checks actually run.
-5. Commit only when requested or required by the current task, and report the resulting commit ID.
-
-If the expected workspace or repository is missing, do not pretend to have modified it. Create or use a workspace only when the task context clearly authorizes that, and report any limitation accurately.
-
-## 14. Documentation Maintenance
-
-When an implementation changes an approved contract:
-
-- Identify every affected document.
-- Update the authoritative specification before or alongside the code change.
-- Update tests and requirements traceability.
-- Record the reason and impact of the change.
-- Keep examples, names, enum values, and API contracts consistent.
-
-Do not use code as an excuse to leave documentation knowingly incorrect.
-
-## 15. Required Agent Response Format
-
-At the end of a work unit, report briefly:
-
-- Outcome: completed, blocked, or partially completed.
-- Files created or changed.
-- Tests and checks actually run, including failures.
-- Any unresolved decision or blocker.
-- Commit ID, if a commit was actually created.
-- Remote push status, only if a push was attempted.
-
-Do not claim completion based only on generated code or a successful-looking UI. Completion requires the relevant acceptance criteria to pass.
-
-## 16. Definition of Compliance
-
-An agent is compliant when it:
-
-- Follows approved documentation and the implementation sequence.
-- Preserves the documentation-first gate.
-- Uses single-purpose files under 150 lines in every `src/` and `public/` domain.
-- Keeps the frontend separate from privileged data access.
-- Enforces authentication and authorization on the backend.
-- Preserves historical student, payment, enrollment, and class records.
-- Implements and tests documented business rules.
-- Avoids unapproved dependencies and features.
-- Reports failures and limitations honestly.
-- Leaves the repository in a reviewable state.
+Before declaring any coding or documentation task complete, run the verification suite:
+```bash
+npm run check:lines    # Must pass (all files <= 149 lines)
+npm run typecheck      # Must pass (0 errors)
+npm run test           # Vitest suite
+```
+When debugging test failures, investigate whether failure is due to implementation bugs, environment issues, or expired static dates in test fixtures before attempting code modifications.
+Never alter application code during a documentation-only task.

@@ -1,63 +1,65 @@
-# 03 — Financial and Class Balance Calculations
+# 03 Data — 03 Financial and Class Balance Calculations
 
-**Project:** Student Management Dashboard / Personal Dashboard  
-**Status:** Authoritative Architecture Specification  
-**Version:** 3.0.0 (Finalized Owner 6-Table Schema)  
-**Canonical Datastore:** One private Google Spreadsheet  
-**Companion Schema:** `03-data/01-master-spreadsheet-schema.md`
+## 1. Document Control
 
----
-
-## 1. Purpose & Principles
-
-This document defines the authoritative mathematical and business rules for:
-1. **Package Class Credit Balances**: Dynamic derivation of consumed and remaining classes.
-2. **Attendance & Deduction Rules**: Enforcing the boolean `deduct_class` flag across sessions.
-3. **Payment Details & Currency Handling**: Tracking receipts in original currency and manual `in_inr`.
-4. **Student Financial Balances**: Deriving total billed and total paid balances.
-
-### Cardinal Rule: Zero Balance Drift
-Balances are never stored as static integer columns that can drift when manual edits occur. They are dynamically derived at runtime from underlying immutable event records (`ClassSessions` and `Payments`).
+- **Product:** Personal Dashboard (Student Management Dashboard)
+- **Document ID:** Data-03
+- **Status:** Authoritative Calculations Specification
+- **Version:** 4.0.0 (Strict Six-Table Architecture)
 
 ---
 
-## 2. Package Class Credit Balance Calculations
+## 2. Dynamic Class Balance Calculations
 
-### 2.1 Dynamic Credit Derivation
-For any student $S$:
-$$\text{Total Consumed Classes}(S) = \sum_{C \in \text{ClassSessions}(S)} \mathbb{I}(C.\text{deduct\_class} = \text{`TRUE'})$$
+Class balances are **derived dynamically** on read by combining `Packages` and `ClassSessions`. There are no stored running balance columns in Google Sheets.
 
-For each package $P \in \text{Packages}(S)$ ordered FIFO by `start_date`:
-$$\text{Allocated Consumed}(P) = \min\left(\text{Remaining Consumed}, P.\text{classes\_purchased}\right)$$
-$$\text{Remaining Consumed} \leftarrow \text{Remaining Consumed} - \text{Allocated Consumed}(P)$$
-$$\text{Remaining Classes}(P) = \max\left(0, P.\text{classes\_purchased} - \text{Allocated Consumed}(P)\right)$$
-$$\text{Is Exhausted}(P) = (\text{Remaining Classes}(P) \le 0)$$
+### 2.1 Formula Definitions
+1. **Purchased Classes:**
+   $$\text{Purchased} = \text{Packages.classes\_purchased}$$
+2. **Consumed Classes:**
+   $$\text{Consumed} = \sum_{\substack{s \in \text{ClassSessions} \\ s.\text{student\_id} = \text{student} \\ s.\text{deduct\_class} = \text{TRUE}}} 1$$
+3. **Remaining Classes:**
+   $$\text{Remaining} = \max(0, \text{Purchased} - \text{Consumed})$$
+4. **Exhausted Status:**
+   $$\text{is\_exhausted} = (\text{Remaining} \le 0)$$
 
-### 2.2 Attendance & Deduction Rules
-In `ClassSessions`, class consumption is governed by the boolean column `deduct_class`:
-
-| Attendance Status | Session Status | Rule | `deduct_class` |
+### 2.2 Attendance State Effects
+| Attendance State | Session Status | Default `deduct_class` | Effect on Package Balance |
 |---|---|---|---|
-| `ATTENDED` / `PRESENT` | `COMPLETED` | Conducted session automatically consumes 1 credit | `TRUE` |
-| `ABSENT` | `COMPLETED` / `NO_SHOW` | Owner specifies whether to deduct (default false unless unexcused) | `TRUE` / `FALSE` |
-| `NOT_MARKED` | `SCHEDULED` | Unmarked session does not consume credit | `FALSE` |
-| `CANCELLED` | `CANCELLED` | Does not automatically deduct (unless explicitly applied by owner) | `FALSE` (or `TRUE` if late penalty applied) |
+| `PRESENT` / `ATTENDED` | `COMPLETED` | `TRUE` | Consumes 1 class credit |
+| `NOT_MARKED` | `SCHEDULED` | `FALSE` | Credit is not consumed |
+| `ABSENT` / `NO_SHOW` (Unexcused) | `COMPLETED` | `TRUE` (if applied by admin) | Consumes 1 class credit |
+| `ABSENT` (Excused) | `COMPLETED` | `FALSE` | Credit is not consumed |
+| `CANCELLED` ($< 4$h notice, unexcused) | `CANCELLED` | `TRUE` | Consumes 1 class credit |
+| `CANCELLED` ($\ge 4$h notice or waived) | `CANCELLED` | `FALSE` | Credit preserved; replacement auto-scheduled |
 
 ---
 
-## 3. Financial & Payment Details Calculations
+## 3. Financial Calculations & Multi-Currency Rules
 
-### 3.1 Payment Details (Physical Sheet: `Payments`)
-- `student_id`: Student receiving credit.
-- `payment_date`: Date received (`YYYY-MM-DD`).
-- `amount`: Numeric value in original transaction currency.
-- `currency`: Currency code (`INR`, `USD`, `GBP`).
-- `in_inr`: Numeric equivalent in Indian Rupees.
-  - **Invariant:** `in_inr` is entered manually and must **never** be overwritten by automated exchange rate conversions.
+### 3.1 Financial Summary Metrics (`ReportService.gs`)
+The financial dashboard calculates three primary metrics across all students:
 
-### 3.2 Total Paid & Financial Balance
-For a student $S$:
-$$\text{Total Paid}(S) = \sum_{P \in \text{Payments}(S)} P.\text{amount}$$
-$$\text{Total Agreed Packages}(S) = \sum_{P \in \text{Packages}(S)} P.\text{package\_price}$$
-$$\text{Outstanding Balance}(S) = \max\left(0, \text{Total Agreed Packages}(S) - \text{Total Paid}(S)\right)$$
-$$\text{Unapplied / Advance Credit}(S) = \max\left(0, \text{Total Paid}(S) - \text{Total Agreed Packages}(S)\right)$$
+1. **Total Invoiced Value:**
+   $$\text{Total Invoiced} = \sum_{p \in \text{Packages}} \text{INR\_Value}(p)$$
+   - If `currency === 'INR'`, $\text{INR\_Value} = p.\text{package\_price}$.
+   - If foreign currency, uses manual `in_inr` if present; otherwise matches student payments in INR; otherwise 0.
+2. **Collected Earnings:**
+   $$\text{Total Collected} = \sum_{\substack{m \in \text{Payments} \\ m.\text{status} \ne \text{VOID}}} \text{INR\_Value}(m)$$
+   - If `currency === 'INR'`, $\text{INR\_Value} = m.\text{amount}$.
+   - If foreign currency with valid manual `in_inr` ($> 0$), $\text{INR\_Value} = m.\text{in\_inr}$.
+   - If foreign currency without manual `in_inr`, $\text{INR\_Value} = 0$.
+3. **Total Outstanding Balance:**
+   $$\text{Total Outstanding} = \sum_{\text{student}} \max(0, \text{Billed}_{\text{student}} - \text{Paid}_{\text{student}})$$
+
+### 3.2 Debtor Balance Insulation
+Debts and overpayments are isolated per student:
+- If Student A has paid ₹10,000 against a ₹6,000 package (overpayment of ₹4,000), their outstanding balance is ₹0.
+- Student A's surplus **does not offset** Student B's unpaid balance of ₹5,000.
+- Total outstanding balance reflects the true sum of all uncollected debts across students:
+  $$\text{Total Outstanding} = \sum_{\text{student}} \max(0, \text{Outstanding}_{\text{student}})$$
+
+### 3.3 Strict Currency Insulation
+- Foreign payments retain original currency (`USD`, `EUR`, `GBP`) in `Payments.currency`.
+- Foreign currency amounts are **never** added directly to INR totals.
+- No automated external exchange-rate APIs are called. Only manually entered `in_inr` values are used for conversion.

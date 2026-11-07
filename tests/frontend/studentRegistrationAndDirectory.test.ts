@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { validateRegistrationForm } from '../../src/domains/students/registrationValidation';
 import { formatStatusBadge } from '../../src/lib/textFormat';
 import { RegistrationFormData } from '../../src/domains/students/registrationTypes';
+import { getNextWeekday } from '../fixtures/testDateHelpers';
 
 describe('Student Registration and Directory Improvements', () => {
   describe('Registration Form Validation across 4 Sections', () => {
@@ -44,7 +45,7 @@ describe('Student Registration and Directory Improvements', () => {
           { id: '1', day_of_week: 'MONDAY', start_time: '16:00', end_time: '17:00' },
           { id: '2', day_of_week: 'THURSDAY', start_time: '18:30', end_time: '19:30' },
         ],
-        first_class_date: '2026-11-02',
+        first_class_date: getNextWeekday('MONDAY'),
       };
 
       const result = validateRegistrationForm(validForm);

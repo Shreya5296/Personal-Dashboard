@@ -10,6 +10,7 @@ import {
   enrichStudentData,
 } from '../../src/domains/students/studentApi';
 import { calculatePerClassRate } from '../../src/domains/packages/packageCalculations';
+import { getFutureDate } from '../fixtures/testDateHelpers';
 import { MockSpreadsheet } from '../mocks/MockSpreadsheet';
 // @ts-ignore
 import SheetRegistry from '../../02-backend/apps-script/sheets/SheetRegistry.gs';
@@ -36,7 +37,7 @@ describe('Registration Controls and UI Polish', () => {
         parent: { parent_name: 'Karan Patel', parent_phone: '+91 98765 00000', parent_email: '' },
         pkg: { plan_type: 'Package', currency: 'INR', package_price: '25000', per_class: '1250', classes_purchased: '20', class_duration: '60' },
         schedules: [],
-        first_class_date: '2026-11-02',
+        first_class_date: getFutureDate(7),
       };
       const res = validateRegistrationForm(form);
       expect(res.isValid).toBe(true);
@@ -54,7 +55,7 @@ describe('Registration Controls and UI Polish', () => {
         parent: { parent_name: 'Anita Sen', parent_phone: '+91 98222 11111', parent_email: 'anita@example.com' },
         pkg: { plan_type: 'Package', currency: 'INR', package_price: '', per_class: '', classes_purchased: '', class_duration: '60' },
         schedules: [],
-        first_class_date: '2026-11-02',
+        first_class_date: getFutureDate(7),
       };
       const res = validateRegistrationForm(form);
       expect(res.isValid).toBe(true);
@@ -162,7 +163,7 @@ describe('Registration Controls and UI Polish', () => {
         parent: { parent_name: 'Ravi V', parent_phone: '+91 98765 00000', parent_email: '' },
         pkg: { plan_type: 'Package', currency: 'INR', package_price: '25000', per_class: '1400', classes_purchased: '20', class_duration: '60' },
         schedules: [],
-        first_class_date: '2026-11-02',
+        first_class_date: getFutureDate(7),
       };
       const val = validateRegistrationForm(form);
       expect(val.isValid).toBe(true);

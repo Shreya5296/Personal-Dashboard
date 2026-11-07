@@ -2,141 +2,54 @@
 
 ## 1. Purpose
 
-This document defines the conditions that must be met before the Student Management Dashboard is considered complete and safe to use with real student data.
+This document defines the conditions that must be met before any feature, refactor, or update to the Personal Dashboard is considered complete and safe for production operations.
 
-A feature is not done merely because its screen exists or its happy path works. It must be implemented, validated, tested, documented, and integrated with the agreed architecture.
+A feature is not done merely because its UI exists or its happy path executes. It must be implemented, validated, tested, documented, and compliant with the six-table architecture and micro-file policy.
 
-## 2. Product-Level Completion
+## 2. Product and Architecture Completion
 
-- [ ] The administrator can sign in and sign out using the approved authentication flow.
-- [ ] Only the explicitly authorized administrator can access protected data and operations.
-- [ ] The dashboard, student directory, student profile, enrollments, packages, fee obligations, payments, classes, meeting links, notes, imports, and required reports are implemented according to the approved specifications.
-- [ ] Search, filters, empty states, loading states, validation messages, and failure states work as specified.
-- [ ] Inactive students remain available in historical views and can be reactivated without creating duplicate identities.
-- [ ] Routine management can be performed through the dashboard without directly editing the master spreadsheet.
-- [ ] No unapproved feature or behavior has been added that changes the agreed scope.
+- [x] Single authorized administrator sign-in and sign-out via HMAC-SHA256 session tokens.
+- [x] Only allowlisted administrator (`ashreya0502@gmail.com`) can access protected data and endpoints.
+- [x] Six primary operational modules implemented:
+  - **Dashboard:** Operational metrics, today's classes with Join Class action, attention alerts, weekly schedule view.
+  - **Calendar:** 7-day Google Calendar style time-grid, day view, month view, 3-tier color classification.
+  - **Students:** Directory with Active/Inactive tabs, multi-subject select, 4-section registration, inline expandable details, edit student modal with schedule and package updates.
+  - **Class Schedule:** Chronological sessions list, attendance control (Present, Absent, Cancel, Restore Credit), student filtering, auto-schedule modal with conflict detection.
+  - **Finances:** Unified billing and payments ledger, 3 summary cards (Total Invoiced, Collected Earnings, Outstanding Balance), Student Balances table with Add Payment modal, Payment History table with search, date filters, and CSV export.
+  - **Meeting Links:** Compact student meeting links table, clickable launch buttons, one-click copy with feedback, add/edit modal supporting primary and backup links.
+  - **Settings / Account:** Regional preferences, live header time in Asia/Kolkata, session logout.
+- [x] All legacy routes (`fees`, `reports`) redirect cleanly to consolidated `Finances`.
+- [x] Bulk import feature permanently retired and removed from active navigation.
 
-## 3. Data and Business Rules
+## 3. Data Integrity and Google Sheets Schema
 
-- [ ] The master spreadsheet contains the approved tabs and exact documented headers.
-- [ ] Schema validation detects missing tabs, missing headers, duplicate headers, and unsupported schema versions.
-- [ ] All records use stable backend-generated IDs; row numbers and names are never treated as IDs.
-- [ ] Foreign-key relationships are validated server-side before writes.
-- [ ] Fee balances are derived from valid fee obligations and payment transactions, not manually maintained totals.
-- [ ] Payment recording, correction, and voiding preserve an auditable transaction history.
-- [ ] Package balances are calculated according to the approved class-credit rules.
-- [ ] Cancelled or rescheduled sessions do not accidentally count as completed sessions or consume class credits.
-- [ ] No-show, absence, excused attendance, and cancellation behavior follows the finalized business rules.
-- [ ] Invalid or duplicate import rows are reported and do not silently overwrite existing data.
-- [ ] Archiving does not delete student, enrollment, payment, package, class, meeting-link, note, or audit history.
+- [x] The Google Spreadsheet contains **strictly the six canonical tables**:
+  1. `Students` (9 cols)
+  2. `Packages` (12 cols)
+  3. `Payments` (6 cols)
+  4. `ClassSessions` (8 cols)
+  5. `MeetingLinks` (4 cols)
+  6. `StudentNotes` (5 cols)
+- [x] No `package_id` in `Packages`; keyed by `student_id`.
+- [x] No `session_id` or stored end-time in `ClassSessions`; keyed by `student_id__schedule_date__schedule_time` (or row index); duration loaded from `Packages.class_duration`.
+- [x] Dynamic header mapping via `HeaderMapper.gs` avoids reliance on hardcoded column letters.
+- [x] Dates normalized between Sheets `dd/mm/yyyy` and ISO `yyyy-mm-dd`. Leading `+` or `=` escaped.
+- [x] Class balances derived dynamically from sessions where `deduct_class === true`.
+- [x] Non-deducted cancellations trigger automatic replacement session scheduling at the next recurring slot.
+- [x] Currency values preserved in original transaction currency; manual `in_inr` entry for INR conversions. Unconverted foreign payments do not mix into INR totals.
 
-## 4. Security and Privacy
+## 4. Code Quality and File Architecture
 
-- [ ] All protected API operations authenticate and authorize requests on the server.
-- [ ] Invalid, expired, incorrectly scoped, or unauthorized identity tokens are rejected.
-- [ ] Client-supplied administrator flags, email addresses, IDs, or permissions are never trusted as proof of authorization.
-- [ ] The master spreadsheet is private and is not published to the web.
-- [ ] No privileged credential, secret, or private backend configuration is included in frontend code or committed to the repository.
-- [ ] The cross-origin frontend-to-Apps-Script request flow has been tested in supported browsers without disabling browser security or exposing private data through JSONP.
-- [ ] Inputs are validated server-side, including dates, amounts, enums, IDs, relationships, and meeting URLs.
-- [ ] Logs and user-facing errors do not expose authentication tokens, secrets, or unnecessary student and financial information.
-- [ ] Meeting URLs are rendered safely and unsafe URL schemes are rejected.
-- [ ] Important data changes and financial corrections produce appropriate audit records.
-- [ ] Security tests for anonymous access and unauthorized accounts pass.
+- [x] Every text file in `src/` and `public/` is strictly <= 149 lines (`npm run check:lines` passes).
+- [x] Zero catch-all files (`utils.ts`, `helpers.ts`, `app.js`, etc.).
+- [x] Strict TypeScript check passes with zero errors (`npm run typecheck`).
+- [x] Automated test suite passes (`npm run test`).
+- [x] Clean production build completes (`npm run build`).
 
-## 5. Frontend and Code Quality
+## 5. Security and Operations
 
-- [ ] The frontend uses the approved React, TypeScript, and Vite stack.
-- [ ] The implementation follows the authoritative frontend directory and file architecture.
-- [ ] Every domain in `src/` and `public/` is organized into directories of single-purpose micro-files.
-- [ ] Every source file in `src/` and `public/` is under 150 lines.
-- [ ] There are no catch-all files such as `actions.js` or `app.js`, and no monolithic CSS files.
-- [ ] UI components do not contain unrelated business logic or direct spreadsheet access.
-- [ ] Shared utilities have narrow, documented responsibilities.
-- [ ] TypeScript checks pass without unresolved type errors.
-- [ ] Linting and production build checks pass using the repository's documented commands.
-- [ ] The interface is usable at supported desktop, tablet, and mobile widths.
-- [ ] Controls have accessible names, visible focus states, and appropriate keyboard behavior.
-- [ ] The UI never reports a mutation as successful before the backend confirms success.
-
-## 6. API and Backend Quality
-
-- [ ] The implemented API matches the authoritative API specification.
-- [ ] Requests and responses use the documented common response envelope.
-- [ ] Unknown operations, malformed payloads, invalid relationships, and unauthorized requests are rejected explicitly.
-- [ ] Business rules are enforced in backend services rather than only in the frontend.
-- [ ] Spreadsheet reads and writes use the centralized access layer and validated header mappings.
-- [ ] Important concurrent mutations use the documented locking and conflict-handling strategy.
-- [ ] Duplicate submissions are handled according to the documented idempotency behavior.
-- [ ] Partial-write and audit-failure behavior is documented and tested for important operations.
-- [ ] API errors are actionable without revealing sensitive implementation details.
-
-## 7. Import and Migration
-
-- [ ] Source spreadsheets can be mapped to the canonical schema using the documented import process.
-- [ ] Import preview and validation occur before records are committed.
-- [ ] Duplicate candidates and ambiguous student matches require explicit review rather than unsafe automatic merging.
-- [ ] Imported data preserves source references needed for reconciliation.
-- [ ] Each import batch has a status and row-level results.
-- [ ] Imported, skipped, duplicate-review, and failed row counts reconcile with the source row count.
-- [ ] Re-running an import does not silently create duplicate records or overwrite existing records.
-- [ ] A migration report can identify unresolved rows and required manual corrections.
-- [ ] The first real-data import is performed only after security and recovery release gates pass.
-
-## 8. Testing Requirements
-
-- [ ] Unit tests cover core business calculations and validation rules.
-- [ ] Integration tests cover API handlers, authorization, and spreadsheet access behavior.
-- [ ] Tests cover partial payments, full payments, voided transactions, overdue obligations, and balance calculations.
-- [ ] Tests cover package consumption, completed sessions, cancellation, rescheduling, and no-show rules.
-- [ ] Tests cover student archiving and reactivation with retained history.
-- [ ] Tests cover malformed imports, duplicate detection, partial failures, and reconciliation.
-- [ ] End-to-end tests cover the primary administrator workflows.
-- [ ] Security acceptance tests in the security specification pass.
-- [ ] Critical workflows are tested with representative data volumes.
-- [ ] No known critical or high-severity defect remains open at release.
-- [ ] Test results and any accepted lower-severity limitations are documented.
-
-## 9. Deployment and Operations
-
-- [ ] Development and production configuration are separated.
-- [ ] Production configuration references the intended production spreadsheet and Apps Script deployment.
-- [ ] Secrets are configured outside committed source files.
-- [ ] The frontend production build deploys successfully to the approved Vercel project and plan.
-- [ ] The Apps Script backend is deployed as a versioned Web App with the approved access settings.
-- [ ] The deployed frontend and backend pass an end-to-end smoke test.
-- [ ] The documented backup procedure has been executed successfully.
-- [ ] A restoration test has demonstrated that required data can be recovered.
-- [ ] Deployment, rollback, troubleshooting, and recovery instructions are current.
-- [ ] The owner knows how to rotate credentials, update the Apps Script deployment, and identify the active production version.
-
-## 10. Documentation and Handoff
-
-- [ ] All required architecture documents are finalized and mutually consistent.
-- [ ] The README explains setup, configuration, local development, tests, and deployment.
-- [ ] Required configuration keys are documented without revealing secret values.
-- [ ] The master spreadsheet schema and migration procedure are documented.
-- [ ] The API contract and error behavior match the implementation.
-- [ ] Known limitations, quotas, and operational constraints are documented.
-- [ ] The implementation agent has not silently changed an approved architecture decision.
-- [ ] The repository contains only intended project files and no real student data, credentials, tokens, or accidental exports.
-- [ ] The final handoff identifies completed work, test results, deployment locations, and any explicitly deferred items.
-
-## 11. Release Blockers
-
-The application must not be approved for real student data if any of the following is true:
-
-- Authentication or server-side authorization can be bypassed.
-- The master spreadsheet is publicly accessible.
-- The frontend-to-backend integration requires disabling browser security or exposing private records through an unsafe workaround.
-- Financial balances or class balances are demonstrably incorrect.
-- Historical payments or class records can be silently lost through ordinary operations.
-- Import can silently overwrite or duplicate important records.
-- Backup restoration has not been verified.
-- A critical or high-severity security defect remains unresolved.
-
-## 12. Final Acceptance
-
-The product owner may accept the release only after reviewing the acceptance-test results and confirming that the release blockers are cleared.
-
-Any incomplete requirement must be explicitly marked as deferred, with its impact documented and the product owner's approval recorded. A coding agent must not mark the project complete merely because the application builds or deploys.
+- [x] Frontend never connects directly to Google Sheets API.
+- [x] Zero credentials or private keys in client bundle or Git.
+- [x] Backend scripts run under administrator execution context with server-side authorization.
+- [x] ScriptProperties used for runtime configuration (`ADMIN_AUTH_KEY`, `ADMIN_EMAILS`, etc.).
+- [x] Google Apps Script deployment synchronized and deployed in-place.

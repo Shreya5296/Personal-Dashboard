@@ -1,660 +1,259 @@
 # 06 — Apps Script API Specification
 
-## 1. Purpose
+## 1. Document Control
+
+- **Product:** Personal Dashboard (Student Management Dashboard)
+- **Document ID:** 06
+- **Status:** Authoritative API Contract Specification
+- **Version:** 4.0.0
+- **Audience:** Frontend developers, backend engineers, AI coding agents
+
+---
+
+## 2. API Architecture & Transport Principles
+
+1. **Single Entry Point (`doPost(e)`):**
+   All API requests are sent via HTTP POST to the deployed Google Apps Script Web App URL.
+2. **Text/Plain POST Transport:**
+   To prevent browser CORS preflight (`OPTIONS`) requests—which Apps Script Web Apps cannot handle—the client sends requests with header `'Content-Type': 'text/plain;charset=utf-8'` and JSON stringified body.
+3. **HTTP 302 Redirect Handling:**
+   Apps Script redirects successful requests to `script.googleusercontent.com`. The frontend `apiClient.ts` uses `redirect: 'follow'`.
+4. **Server-Side Authorization:**
+   Protected operations require verified HMAC-SHA256 session tokens. Unauthorized requests return `{ ok: false, error: { code: 'UNAUTHORIZED' } }`.
+
+---
+
+## 3. Request & Response Envelopes
+
+### 3.1 Standard Request Envelope
+```json
+{
+  "apiVersion": "1",
+  "operation": "students.list",
+  "identityToken": "eyJhbGciOiJIUzI1NiJ9...signature",
+  "requestId": "req_1730000000000_abc123",
+  "idempotencyKey": "idemp_optional_uuid",
+  "payload": { ... }
+}
+```
+
+### 3.2 Standard Response Envelope
+```json
+{
+  "apiVersion": "1",
+  "requestId": "req_1730000000000_abc123",
+  "ok": true,
+  "data": { ... },
+  "error": null,
+  "meta": {
+    "totalCount": 26,
+    "timestamp": "2026-11-07T12:00:00.000Z"
+  }
+}
+```
+
+### 3.3 Error Envelope
+```json
+{
+  "apiVersion": "1",
+  "requestId": "req_1730000000000_abc123",
+  "ok": false,
+  "data": null,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Student name is required",
+    "details": { "student_name": "Required field" },
+    "retryable": false
+  }
+}
+```
+
+---
+
+## 4. Authoritative Operation Registry
+
+### 4.1 System & Authentication
+
+#### `system.health`
+- **Description:** Verifies Web App responsiveness and health.
+- **Access:** Public.
+- **Payload:** `{}`.
+- **Returns:** `{ status: "ok", apiVersion: "1", schemaVersion: "2.0.0", checkedAt: ISOString }`.
+
+#### `auth.verifySession`
+- **Description:** Validates administrator session token and returns identity.
+- **Access:** Protected.
+- **Payload:** `{}`.
+- **Returns:** `{ authenticated: true, displayIdentity: string, actorId: string, verifiedAt: ISOString }`.
+
+---
+
+### 4.2 Students Domain
+
+#### `students.list`
+- **Description:** Lists all student records from `Students` sheet.
+- **Payload:** `{ query?: string, status?: string }`.
+- **Returns:** Array of `Student` objects (`student_id, student_name, parent_name, parent_phone, parent_email, student_phone, student_email, subject, status`).
+
+#### `students.get`
+- **Description:** Retrieves a single student by ID.
+- **Payload:** `{ student_id: string }`.
+- **Returns:** `Student` object.
+
+#### `students.create`
+- **Description:** Appends a new student to `Students`. Generates next sequential `student_id` (`STU_xxx`).
+- **Payload:** `{ student_name: string, parent_name: string, parent_phone: string, parent_email?: string, student_phone?: string, student_email?: string, subject?: string, status?: string }`.
+- **Returns:** Created `Student` object.
+
+#### `students.update`
+- **Description:** Updates existing student record matched by `student_id`.
+- **Payload:** `{ student_id: string, updates: Partial<Student> }`.
+- **Returns:** Updated `Student` object.
+
+#### `students.archive` / `students.reactivate`
+- **Description:** Sets student status to `ARCHIVED` or `ACTIVE`.
+- **Payload:** `{ student_id: string }`.
+- **Returns:** Updated `Student` object.
+
+---
 
-This document defines the API contract between the React + TypeScript frontend and the Google Apps Script backend for the Student Management Dashboard.
+### 4.3 Packages Domain
+
+#### `packages.list`
+- **Description:** Lists packages from `Packages` sheet, enriched with dynamically calculated consumed and remaining classes.
+- **Payload:** `{ student_id?: string }`.
+- **Returns:** Array of `Package` objects.
+
+#### `packages.get` / `packages.getBalance`
+- **Description:** Retrieves a student's package and balance breakdown.
+- **Payload:** `{ student_id: string }` or `{ package_id: string }`.
+- **Returns:** Enriched package object (`classes_purchased, consumed_classes, remaining_classes, is_exhausted`).
+
+#### `packages.create`
+- **Description:** Creates a package record in `Packages` (12 columns). Idempotently updates existing package if matching student and class count exists.
+- **Payload:** `{ student_id: string, student_name?: string, plan_type: string, currency?: string, package_price: number, per_class?: number, classes_purchased: number, class_duration?: number, class_schedule?: string, start_date?: string, end_date?: string, next_due_date?: string }`.
+- **Returns:** Enriched `Package` record.
+
+#### `packages.update`
+- **Description:** Updates a package in `Packages` matched by `student_id` (or `_rowIndex`).
+- **Payload:** `{ student_id: string, updates: Partial<Package> }`.
+- **Returns:** Updated `Package` record.
+
+---
 
-The API is the only supported application boundary for reading or changing master spreadsheet data. The frontend must not access Google Sheets directly.
+### 4.4 Payments Domain
+
+#### `payments.list`
+- **Description:** Lists payment records from `Payments` sheet.
+- **Payload:** `{ student_id?: string, startDate?: string, endDate?: string }`.
+- **Returns:** Array of `Payment` records (`student_id, student_name, payment_date, amount, currency, in_inr`).
 
-This specification is subordinate to the product requirements, system architecture, security specification, Google Sheets data model, and business rules. If an operation conflicts with those documents, resolve the conflict before implementation rather than inventing behavior.
+#### `payments.record`
+- **Description:** Appends a payment record to `Payments`. Supports `idempotency_key` caching.
+- **Payload:** `{ student_id: string, student_name?: string, payment_date: string, amount: number, currency: string, in_inr?: number, idempotency_key?: string }`.
+- **Returns:** Created `Payment` record with generated ID.
 
-## 2. API Principles
-
-1. All protected operations require verified administrator identity.
-2. Authorization and validation happen on the server for every request.
-3. The backend owns business rules and calculated balances.
-4. Clients send stable record IDs, not spreadsheet row numbers.
-5. API responses never expose raw spreadsheet rows or internal secrets.
-6. Mutations return success only after the required persistence work succeeds.
-7. Mutations that may be retried support an idempotency key.
-8. Unknown operations and unsupported fields are rejected.
-9. Errors are structured and safe to display.
-10. The API must not use JSONP or expose sensitive data through URL parameters.
-
-## 3. Transport and Integration Gate
-
-The production endpoint is a versioned Google Apps Script Web App URL configured outside the frontend source code.
-
-The intended request method is HTTPS POST with a JSON request envelope. Apps Script receives requests through `doPost(e)` and returns JSON through ContentService.
-
-Authentication material must never be placed in a URL, query string, or fragment. The exact token transport and browser request mode must be established by the cross-origin integration proof required by Documents 02 and 03.
-
-Before implementing protected data operations, verify all of the following in a real browser:
-
-- Requests can be sent from the deployed frontend origin.
-- Redirect behavior is understood and does not lose request data or expose tokens.
-- The browser can read successful and failed responses.
-- Authentication material reaches the backend without appearing in URLs or logs.
-- Browser preflight and content-type behavior are supported by the selected transport.
-- The backend can return safe structured errors.
-- Anonymous and unauthorized requests cannot read data.
-
-If direct browser-to-Apps-Script transport cannot meet these requirements, stop and revise the integration architecture. Do not work around the problem by making the spreadsheet public, using JSONP, disabling browser security, or trusting frontend checks.
-
-## 4. Request Envelope
-
-Every request uses one envelope with these conceptual fields:
-
-- `apiVersion`: required string; initially `1`.
-- `operation`: required registered operation name.
-- `requestId`: required unique request identifier generated by the client.
-- `idempotencyKey`: required for supported retryable mutations; otherwise optional.
-- `identityToken`: short-lived identity token required for protected operations, transported only in the HTTPS request body if that is the approved integration method.
-- `payload`: object containing operation-specific fields.
-
-The server must reject a missing or unsupported API version, unknown operation, malformed envelope, invalid identity token, and payload that does not match the operation schema.
-
-The backend must not log the full envelope because it may contain authentication material or personal data.
-
-## 5. Response Envelope
-
-Every response must use a consistent JSON envelope:
-
-- `apiVersion`: API version used by the response.
-- `requestId`: echoes the safe request identifier when available.
-- `ok`: boolean indicating whether the operation succeeded.
-- `data`: operation result on success; omitted or null on failure.
-- `error`: structured error on failure; omitted on success.
-- `meta`: optional safe metadata, such as pagination information.
-
-The error object contains:
-
-- `code`: stable machine-readable error code.
-- `message`: safe, user-displayable message.
-- `fieldErrors`: optional map of field names to validation messages.
-- `retryable`: boolean indicating whether retry may be appropriate.
-
-Stack traces, spreadsheet internals, access tokens, secrets, and raw exception details must never be returned to the client.
-
-## 6. Standard Error Codes
-
-- `INVALID_REQUEST`: envelope or payload is malformed.
-- `UNSUPPORTED_API_VERSION`: requested API version is unsupported.
-- `UNKNOWN_OPERATION`: operation is not registered.
-- `AUTH_REQUIRED`: credentials are missing.
-- `AUTH_INVALID`: credentials cannot be verified.
-- `AUTH_EXPIRED`: credentials have expired.
-- `ACCESS_DENIED`: verified identity is not authorized.
-- `VALIDATION_FAILED`: one or more fields are invalid.
-- `NOT_FOUND`: requested record does not exist or is not visible.
-- `CONFLICT`: current record state prevents the operation.
-- `DUPLICATE_REQUEST`: an idempotency key was already processed.
-- `DUPLICATE_RECORD`: operation would create a duplicate.
-- `SCHEMA_MISMATCH`: required spreadsheet schema is missing or invalid.
-- `RATE_LIMITED`: request limit or application protection limit was reached.
-- `DEPENDENCY_UNAVAILABLE`: required Google service is unavailable.
-- `PERSISTENCE_FAILED`: requested write could not be confirmed.
-- `INTERNAL_ERROR`: unexpected failure with no sensitive details exposed.
-
-Use the same code for the same class of failure across all operations.
-
-## 7. Authentication and Authorization Contract
-
-All operations listed in this document are protected. There are no anonymous student, payment, class, meeting-link, import, export, or configuration endpoints.
-
-For every request, the backend must:
-
-1. Verify the identity token using a supported trusted verification method.
-2. Validate issuer, audience, expiry, and other required token claims.
-3. Obtain the administrator identity only from verified claims.
-4. Check the verified identity against the server-side administrator allowlist.
-5. Fail closed if verification or authorization cannot be completed.
-6. Continue to operation-specific validation only after authorization succeeds.
-
-An email address or `isAdmin` value in the payload is never proof of identity or permission.
-
-## 8. Common Query Conventions
-
-List operations may accept:
-
-- `limit`: optional bounded page size; the backend enforces a maximum.
-- `cursor`: opaque continuation token, if cursor pagination is implemented.
-- `sort`: a documented allowlisted sort key.
-- `direction`: `asc` or `desc`.
-- `search`: optional bounded search text.
-
-The backend must not accept arbitrary spreadsheet column names or formulas as sort or filter expressions.
-
-For the small initial dataset, a server-side filtered response may be sufficient. Pagination must be added where needed to avoid returning unbounded class, payment, audit, or import history.
-
-## 9. Health and Session Operations
-
-### `system.health`
-
-Purpose: confirm that the API is reachable and its required configuration and schema are valid.
-
-Authentication: required for detailed health information. An optional minimal public liveness response may be added only if it reveals no configuration, identity, or data information.
-
-Payload: no business fields.
-
-Success data:
-- `status`: `ok`.
-- `apiVersion`.
-- `schemaVersion`.
-- `checkedAt`.
-
-Do not expose spreadsheet IDs, administrator email lists, secrets, or detailed infrastructure configuration.
-
-### `auth.verifySession`
-
-Purpose: verify the current administrator identity and return safe session metadata.
-
-Payload: no additional business fields beyond the identity token in the request envelope.
-
-Success data:
-- `authenticated`: true.
-- `displayIdentity`: verified administrator email or approved display label.
-- `verifiedAt`.
-
-This operation does not issue a new Google identity token. Token refresh remains the responsibility of the selected identity provider flow.
-
-## 10. Dashboard Operations
-
-### `dashboard.getSummary`
-
-Payload:
-- `fromDate`: optional ISO calendar date.
-- `toDate`: optional ISO calendar date.
-
-Success data:
-- `activeStudentCount`.
-- `upcomingClassCount`.
-- `overdueFeeCount`.
-- `outstandingAmount`.
-- `scheduledClassCount` for the selected period.
-- `recentPayments`: bounded list of safe payment summaries.
-- `recentlyUpdatedStudents`: bounded list of safe student summaries.
-
-All totals must be calculated from canonical records. The dashboard must not maintain independent manually editable totals.
-
-## 11. Student Operations
-
-### `students.list`
-
-Payload:
-- `status`: optional `ACTIVE` or `INACTIVE`.
-- `search`: optional search text.
-- `overdueOnly`: optional boolean.
-- `upcomingClassesOnly`: optional boolean.
-- `packageState`: optional documented package-state filter.
-- standard pagination fields.
-
-Success data: student summary records and pagination metadata.
-
-### `students.get`
-
-Payload:
-- `studentId`: required stable student ID.
-
-Success data:
-- student profile.
-- current enrollment summaries.
-- active package summaries.
-- calculated financial summary.
-- upcoming classes.
-- active meeting-link summaries.
-
-Historical data may be fetched through dedicated operations to avoid unnecessarily large profile responses.
-
-### `students.create`
-
-Payload: permitted writable fields from the Students schema, excluding generated IDs, timestamps, and audit-managed fields.
-
-Success data: created student record with generated `student_id` and timestamps.
-
-### `students.update`
-
-Payload:
-- `studentId`: required.
-- `expectedUpdatedAt` or equivalent concurrency token: required for conflict-sensitive edits.
-- `changes`: allowlisted writable fields only.
-
-Success data: updated student record.
-
-The server must reject attempts to alter IDs, audit fields, or derived values.
-
-### `students.archive`
-
-Payload:
-- `studentId`.
-- `reason`: required short explanation.
-- concurrency token where supported.
-
-Success data: updated lifecycle status and archive timestamp.
-
-Archiving does not delete or void related financial, enrollment, package, class, meeting-link, or note records. Any separate business consequences must be explicitly defined in Document 05.
-
-### `students.reactivate`
-
-Payload:
-- `studentId`.
-- optional `reason`.
-
-Success data: updated lifecycle status.
-
-Reactivation must preserve the existing student ID. A new enrollment or package is created separately when required.
-
-## 12. Enrollment Operations
-
-### `enrollments.list`
-
-Payload: optional `studentId`, status, date range, and pagination.
-
-### `enrollments.get`
-
-Payload: `enrollmentId`.
-
-### `enrollments.create`
-
-Payload: student ID and permitted enrollment fields.
-
-### `enrollments.update`
-
-Payload: enrollment ID, concurrency token, and allowlisted changes.
-
-### `enrollments.close`
-
-Payload: enrollment ID, closing status, and reason where required.
-
-Rules for status transitions, closure, cancellation, and historical editing are defined in Document 05. The API must reject transitions not allowed by those rules.
-
-## 13. Package Operations
-
-### `packages.list`
-
-Payload: optional student ID, enrollment ID, package status, and pagination.
-
-### `packages.get`
-
-Payload: `packageId`.
-
-### `packages.create`
-
-Payload: student ID, optional enrollment ID, purchased class quantity, price, dates, status, and notes as permitted by the data model.
-
-### `packages.update`
-
-Payload: package ID, concurrency token, and allowlisted editable fields.
-
-### `packages.close`
-
-Payload: package ID, closing status, and reason where required.
-
-The backend returns calculated class balances. Clients cannot submit a remaining-class balance as an authoritative value.
-
-## 14. Fee Obligation Operations
-
-### `fees.listObligations`
-
-Payload: optional student ID, enrollment ID, package ID, status, overdue-only filter, date range, and pagination.
-
-### `fees.getObligation`
-
-Payload: `feeObligationId`.
-
-Success data includes the obligation, valid allocated payment summaries, paid amount, outstanding amount, and current payment state.
-
-### `fees.createObligation`
-
-Payload: student ID, optional enrollment/package IDs, description, amount due, issue date, due date, currency, and notes.
-
-### `fees.updateObligation`
-
-Payload: obligation ID, concurrency token, and allowlisted changes.
-
-Changes that affect an obligation with payments must follow Document 05 and create audit history. The API must not silently rewrite financial history.
-
-### `fees.voidObligation`
-
-Payload: obligation ID, required reason, and concurrency token.
-
-The server must enforce the voiding policy and preserve the original record. If payments are allocated, the operation must follow the explicit correction policy rather than silently discarding the allocation.
-
-## 15. Payment Operations
-
-### `payments.list`
-
-Payload: optional student ID, fee obligation ID, payment status, date range, and pagination.
-
-### `payments.get`
-
-Payload: `paymentId`.
-
-### `payments.record`
-
-Payload:
-- `studentId` (required string).
-- `feeObligationId` (required string; mandatory for every Version 1 payment; advance payments and unallocated credits are explicitly out of scope).
-- `paymentDate` (required date string `YYYY-MM-DD`).
-- `amount` (required positive number).
-- `currency` (required string, `INR`).
-- `paymentMethod` (required enum: `UPI`, `BANK_TRANSFER`, `CASH`, `CARD`, `OTHER`).
-- optional `transactionReference` (string).
-- optional `notes` (string).
-
-The request envelope must include `idempotencyKey`.
-
-Validation and rejection rules:
-- Reject missing `feeObligationId`.
-- Reject nonexistent or void fee obligations.
-- Reject student mismatches (`feeObligation.student_id !== payload.studentId`).
-- Reject currency mismatches (`feeObligation.currency !== payload.currency`).
-- Reject payments exceeding the obligation's remaining balance (`amount > outstanding_amount`).
-- Duplicate submission: verify `idempotencyKey` against persisted `Payments.idempotency_key`. Retrying with the same key and equivalent payload returns the original outcome; reusing the key with a materially different payload returns `CONFLICT`.
-
-Success data: the persisted payment record (including `idempotency_key`) and updated financial summary.
-
-### `payments.void`
-
-Payload:
-- `paymentId`.
-- required reason.
-- concurrency token where supported.
-
-Voiding a payment preserves the original transaction and records an audit event. A refund or reversal is a separate business operation and must not be represented by silently changing a payment to a negative amount.
-
-## 16. Class Session Operations
-
-### `classes.list`
-
-Payload: optional student ID, enrollment ID, package ID, session status, attendance status, date range, and pagination.
-
-### `classes.get`
-
-Payload: `classSessionId`.
-
-### `classes.create`
-
-Payload: student ID, optional enrollment/package/meeting-link IDs, title, scheduled start/end, and notes.
-
-The backend validates time ranges and record relationships.
-
-### `classes.update`
-
-Payload: class session ID, concurrency token, and allowlisted editable fields.
-
-### `classes.reschedule`
-
-Payload: class session ID, new scheduled start/end, reason, and concurrency token.
-
-The operation must preserve history and must not create duplicate class consumption.
-
-### `classes.cancel`
-
-Payload: class session ID, reason, and concurrency token.
-
-### `classes.complete`
-
-Payload: class session ID, actual start/end where recorded, completion details, and concurrency token.
-
-The backend applies the documented class-credit rules exactly once. Repeating the same request with the same idempotency key must not consume another class.
-
-### `classes.recordAttendance`
-
-Payload: class session ID, attendance status, optional notes, and concurrency token.
-
-Attendance changes that affect package balances must follow Document 05 and be auditable.
-
-## 17. Meeting-Link Operations
-
-### `meetingLinks.list`
-
-Payload: student ID, optional status/provider filters, and pagination.
-
-### `meetingLinks.create`
-
-Payload: student ID, provider, label, URL, preferred flag, validity dates, and notes.
-
-### `meetingLinks.update`
-
-Payload: meeting link ID, concurrency token, and allowlisted changes.
-
-### `meetingLinks.setPreferred`
-
-Payload: meeting link ID.
-
-The backend ensures the link is active and belongs to the relevant student/scope before making it preferred. It must enforce the one-preferred-link rule defined by the data model.
-
-### `meetingLinks.deactivate`
-
-Payload: meeting link ID and optional reason.
-
-The record is retained. Deactivation must not delete old class references or historical data.
-
-## 18. Student Note Operations
-
-### `notes.list`
-
-Payload: student ID, optional note type, follow-up status, date range, and pagination.
-
-### `notes.create`
-
-Payload: student ID, note type, note text, optional follow-up date/status.
-
-### `notes.update`
-
-Payload: note ID, concurrency token, and allowlisted changes.
-
-All note changes must be auditable. Notes must not be used to modify financial or class balances.
-
-## 19. Audit Operations
-
-### `audit.list`
-
-Payload: optional entity type, entity ID, action, date range, and pagination.
-
-### `audit.get`
-
-Payload: audit ID.
-
-Audit operations are read-only through the application API. There is no standard endpoint to edit or delete audit entries.
-
-## 20. Import Operations
-
-> [!NOTE]
-> **RETIRED FEATURE:** Import operations (`imports.preview`, `imports.execute`, `imports.start`, etc.) have been completely removed from active routing and handlers per owner decision. The system relies on direct student creation and updates.
-
-### `imports.preview`
-
-Payload:
-- source spreadsheet/tab reference authorized for import.
-- source column mapping.
-- selected import entity type or supported import bundle.
-- optional preview limits.
-
-The backend validates access and schema and returns a preview containing row counts, mapped fields, missing required values, invalid values, and potential duplicates. Preview must not mutate canonical records.
-
-### `imports.start`
-
-Payload:
-- approved preview or mapping reference.
-- import mode supported by the migration specification.
-- duplicate-handling choice from the allowed options.
-
-The request must include an idempotency key.
-
-### `imports.getBatch`
-
-Payload: import batch ID.
-
-### `imports.listBatches`
-
-Payload: optional status, date range, and pagination.
-
-### `imports.getRowResults`
-
-Payload: import batch ID, optional row status, and pagination.
-
-The import service must report imported, skipped, duplicate-review, and failed rows. It must not silently overwrite canonical records. Source spreadsheet access must be authorized and must not be granted to the public frontend.
-
-## 21. Export Operations
-
-### `exports.prepare`
-
-Payload:
-- entity/report type from an allowlist.
-- validated filters.
-- requested format from supported formats.
-
-The backend authorizes the export, validates scope, and returns either a bounded export payload or a short-lived export reference according to the implementation chosen in Document 11.
-
-Exports must not include authentication tokens, secrets, or unrelated student records. Large exports must not exceed Apps Script execution and response limits; use a bounded or staged process when necessary.
-
-Every export must be auditable.
-
-## 22. Configuration Operations
-
-### `config.getPublicSettings`
-
-Returns only non-sensitive display settings needed by the UI, such as currency and timezone.
-
-### `config.updateSetting`
-
-Payload: allowlisted configuration key and validated value.
-
-Only explicitly editable keys may be changed through the application. Schema version, spreadsheet identifiers, administrator allowlists, identity-provider settings, and secrets must not be editable through this generic operation.
-
-## 23. Idempotency and Duplicate Prevention
-
-The architecture enforces a concrete two-identifier model and persistence strategy:
-
-1. **`requestId` vs `idempotencyKey`:**
-   - `requestId`: Generated per HTTP request envelope for end-to-end tracing and audit logging.
-   - `idempotencyKey`: Provided in the request envelope for state-changing mutations to ensure logical deduplication.
-
-2. **Payment Creation (`payments.record`):**
-   - The `idempotencyKey` is persisted directly in the `Payments.idempotency_key` column in the master spreadsheet alongside the transaction record.
-   - A repeated request with the same key and equivalent payload returns the original payment outcome with HTTP/envelope success, without appending a new row or mutating balances twice.
-   - Reusing the key with a materially different payload (e.g. different amount, student, or obligation) returns a `409 CONFLICT` (`IDEMPOTENCY_CONFLICT`) error.
-   - In case a network failure occurs after persistence succeeded but before the response reached the client, a client retry returns the original persisted payment record safely.
-
-3. **Class Completion (`classes.complete`):**
-   - Deduplication does not require an additional ledger column.
-   - Enforced by:
-     - Script locking (`LockService.getScriptLock()`) during the transition.
-     - Existing-state validation: verifying that the session is in `SCHEDULED` status and `class_credit_effect` is `PENDING`.
-     - Single-credit-consumption protection: once completed, any retry detects the existing `COMPLETED` state and returns the current record without consuming a second credit.
-
-## 24. Concurrency Control
-
-Updates to existing records must use an expected version, `updated_at`, or equivalent concurrency token where concurrent or stale writes could lose data.
-
-The backend must compare the expected state against the current persisted state before applying a mutation.
-
-If the record has changed, return `CONFLICT` and require the client to reload or reconcile changes.
-
-For multi-record financial or class operations, use a script lock where appropriate, re-read relevant records inside the protected section, validate current state, and minimize the time the lock is held.
-
-Google Sheets does not provide full relational transactions. If a multi-step write partially fails, the backend must report failure and make the incomplete state detectable and recoverable. It must not report success merely because the first write succeeded.
-
-## 25. Date, Time, and Money Conventions
-
-- Calendar dates use `YYYY-MM-DD`.
-- Timestamps use ISO 8601 with an explicit timezone or UTC marker.
-- Class start/end times represent instants and must be timezone-aware.
-- The application display timezone is Asia/Kolkata unless explicitly configured.
-- Monetary amounts are numeric INR values with consistent precision.
-- Currency symbols are presentation-only.
-- The backend performs authoritative monetary calculations.
-- Invalid dates, impossible time ranges, unsupported currencies, and invalid monetary precision are rejected.
-
-## 26. Meeting URL Validation
-
-The backend must validate the URL scheme and reject executable or unsafe schemes.
-
-HTTPS is preferred. Provider-specific host validation should recognize expected Zoom and Google Meet domains without assuming every unfamiliar URL is valid.
-
-If an `OTHER` provider is allowed, the UI must identify it as such and avoid presenting it as a verified Zoom or Google Meet URL.
-
-## 27. Rate and Payload Limits
-
-The backend must set reasonable maximums for:
-
-- request body size;
-- string field lengths;
-- list page size;
-- import preview rows;
-- import batch size;
-- export size;
-- search text length;
-- number of mutations per request.
-
-Limits must reflect Apps Script runtime and service quotas. Bulk operations should be explicit operations with progress and recovery behavior, not hidden inside ordinary create/update endpoints.
-
-## 28. API Versioning
-
-The initial API version is `1`.
-
-Breaking changes to operation names, required fields, response shapes, or business meaning require a version change or a controlled compatibility plan.
-
-Adding an optional response field is generally backward-compatible if clients ignore unknown fields. The frontend must handle missing optional fields safely.
-
-## 29. Minimum API Test Matrix
-
-The implementation must test:
-
-- valid authenticated request;
-- anonymous request;
-- invalid token;
-- expired token;
-- wrong token audience;
-- unauthorized identity;
-- unknown operation;
-- unsupported API version;
-- malformed JSON;
-- invalid payload fields;
-- missing related record;
-- cross-student relationship mismatch;
-- stale concurrency token;
-- repeated idempotency key;
-- same key with a different payload;
-- spreadsheet schema mismatch;
-- spreadsheet service failure;
-- partial multi-step write failure;
-- safe error response;
-- pagination limits;
-- import preview with no mutation;
-- import duplicate detection;
-- export authorization;
-- browser cross-origin success and failure behavior.
-
-## 30. Acceptance Criteria
-
-The API specification is implemented when:
-
-1. Every operation is registered and documented.
-2. Every protected operation verifies identity and authorization.
-3. Request and response envelopes are consistent.
-4. Input validation occurs on the backend.
-5. Business rules are enforced independently of frontend state.
-6. Financial and class calculations are authoritative on the backend.
-7. Mutations use concurrency and idempotency safeguards where required.
-8. Errors are structured and do not disclose secrets.
-9. Spreadsheet access remains behind the repository layer.
-10. Imports and exports are authorized and auditable.
-11. The cross-origin transport gate passes before real student data is used.
-12. Automated tests cover the minimum test matrix.
-
-## 31. Related Documents
-
-This document must remain consistent with:
-
-- `01-product-requirements.md`
-- `02-system-architecture.md`
-- `03-security-and-authentication.md`
-- `04-google-sheets-data-model.md`
-- `05-business-rules-and-workflows.md`
-- `09-data-import-and-migration.md`
-- `10-testing-and-acceptance-criteria.md`
-- `11-deployment-and-operations.md`
-- `12-implementation-agent-instructions.md`
+#### `payments.void`
+- **Description:** Marks a payment as voided.
+- **Payload:** `{ payment_id: string, reason?: string }`.
+- **Returns:** `{ success: true, payment_id: string }`.
+
+---
+
+### 4.5 Class Sessions Domain
+
+#### `classes.list`
+- **Description:** Lists sessions from `ClassSessions` sheet with derived end-times and durations from `Packages`.
+- **Payload:** `{ student_id?: string, startDate?: string, endDate?: string }`.
+- **Returns:** Array of `ClassSession` objects (`session_id, student_id, student_name, schedule_date, schedule_time, duration_minutes, attendance_status, session_status, deduct_class, cancellation_reason`).
+
+#### `classes.schedule` / `classes.create`
+- **Description:** Schedules a single class session with conflict detection.
+- **Payload:** `{ student_id: string, student_name?: string, schedule_date: string, schedule_time: string, duration_minutes?: number }`.
+- **Returns:** Scheduled session record.
+
+#### `classes.batchSchedule`
+- **Description:** Inserts multiple class sessions idempotently under a script lock.
+- **Payload:** `{ student_id: string, sessions: Array<{ schedule_date: string, schedule_time: string, duration_minutes?: number }> }`.
+- **Returns:** `{ count: number, data: ClassSession[] }`.
+
+#### `classes.complete` / `classes.recordAttendance`
+- **Description:** Marks session completed and applies attendance deduction rule.
+- **Payload:** `{ session_id: string, attendance_status: 'PRESENT' | 'ABSENT' | 'NOT_MARKED', deduct_class?: boolean }`.
+- **Returns:** Updated session record (`session_status: 'COMPLETED', deduct_class: boolean`).
+
+#### `classes.cancel`
+- **Description:** Cancels session. If $< 4$h notice without waiver, deducts credit. If advance/waived, preserves credit and auto-schedules replacement session.
+- **Payload:** `{ session_id: string, cancellation_reason?: string, credit_waiver?: boolean, deduct_class?: boolean }`.
+- **Returns:** `{ session_status: 'CANCELLED', deduct_class: boolean, replacement_session?: ClassSession }`.
+
+#### `classes.restoreCredit`
+- **Description:** Reverses class deduction on an incorrectly deducted session (`deduct_class = false`).
+- **Payload:** `{ session_id: string }`.
+- **Returns:** Updated session record.
+
+#### `classes.update` / `classes.batchUpdate`
+- **Description:** Updates session fields by composite ID or `_rowIndex`.
+- **Payload:** `{ session_id: string, updates: Record<string, unknown> }`.
+- **Returns:** Updated session record.
+
+---
+
+### 4.6 Recurring Schedules Domain
+
+#### `schedules.list`
+- **Description:** Retrieves weekly recurring schedule slots for a student (parsed from `Packages.class_schedule`).
+- **Payload:** `{ student_id: string }`.
+- **Returns:** Array of `WeeklyScheduleEntry` (`day_of_week, start_time, end_time`).
+
+#### `schedules.save`
+- **Description:** Saves recurring schedule entries directly into `Packages.class_schedule`.
+- **Payload:** `{ student_id: string, schedules: WeeklyScheduleEntry[] }`.
+- **Returns:** Updated entries.
+
+---
+
+### 4.7 Meeting Links Domain
+
+#### `meetingLinks.list`
+- **Description:** Lists student meeting links from `MeetingLinks` sheet.
+- **Payload:** `{ student_id?: string }`.
+- **Returns:** Array of `MeetingLink` objects (`student_id, student_name, meeting_link_1, meeting_link_2`).
+
+#### `meetingLinks.create` / `meetingLinks.update`
+- **Description:** Upserts primary and secondary meeting links for a student.
+- **Payload:** `{ student_id: string, student_name?: string, meeting_link_1: string, meeting_link_2?: string }`.
+- **Returns:** Updated `MeetingLink` record.
+
+#### `meetingLinks.deactivate`
+- **Description:** Clears links for a student slot.
+- **Payload:** `{ student_id: string, slot?: 1 | 2 }`.
+- **Returns:** Updated `MeetingLink` record.
+
+---
+
+### 4.8 Student Notes Domain
+
+#### `notes.list`
+- **Description:** Lists student notes from `StudentNotes` sheet.
+- **Payload:** `{ student_id?: string }`.
+- **Returns:** Array of `StudentNote` records (`student_id, student_name, note_date, note_text, follow_up_date`).
+
+#### `notes.create`
+- **Description:** Appends a new pedagogical note to `StudentNotes`.
+- **Payload:** `{ student_id: string, student_name?: string, note_date?: string, note_text: string, follow_up_date?: string }`.
+- **Returns:** Created note record.
+
+---
+
+### 4.9 Reports & Dashboard Domain
+
+#### `dashboard.overview`
+- **Description:** Returns high-level metrics for dashboard cards.
+- **Payload:** `{}`.
+- **Returns:** `{ activeStudentsCount: number, classesUpcoming7Days: number, outstandingFeesTotal: number, currency: "INR" }`.
+
+#### `reports.financialSummary`
+- **Description:** Aggregates invoices, receipts, and outstanding debt across domestic INR and foreign transactions.
+- **Payload:** `{ startDate?: string, endDate?: string }`.
+- **Returns:** `{ totalInvoiced: number, totalCollected: number, totalOutstanding: number, currency: "INR" }`.

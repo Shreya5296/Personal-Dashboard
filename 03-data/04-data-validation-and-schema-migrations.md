@@ -1,91 +1,64 @@
-# 04 — Data Validation and Schema Migrations
+# 03 Data — 04 Data Validation and Schema Migrations
 
-**Project:** Student Management Dashboard / Personal Dashboard  
-**Status:** Authoritative Architecture Specification  
-**Version:** 3.0.0 (Finalized Owner 6-Table Schema)  
-**Companion Schema:** `03-data/01-master-spreadsheet-schema.md`
+## 1. Document Control
 
----
-
-## 1. Purpose & Migration Philosophy
-
-This document defines the validation rules, integrity safeguards, and schema migration procedures for the Personal Dashboard Google Spreadsheet database.
-
-### 1.1 Core Principles
-1. **Physical Column Deletion, Not Just Renaming**: Obsolete columns are physically deleted from the spreadsheet grid (`sheet.deleteColumns(targetColCount + 1, count)`), not merely overwritten in Row 1.
-2. **Strict Verification**: After mutating headers, the migration runner reads back Row 1 and asserts that `lastColumn == targetColCount` and that every column matches the expected header name.
-3. **Forbidden Obsolete Columns Assertions**: The runner explicitly scans headers to guarantee forbidden legacy CRM fields (`first_name`, `last_name`, `dob`, `city`, `expiry_date`, `plan_name`, `fee_obligation_id`, `payment_method`, `transaction_reference`, `class_credit_effect`, `meeting_link_id`, `note_id`, etc.) do not exist.
-4. **Physical Handling of Legacy Tabs (`Enrollments`, `FeeObligations`)**:
-   - If empty ($\le 1$ row), physically deleted via `ss.deleteSheet()`.
-   - If non-empty, renamed to `Enrollments_Archive` / `FeeObligations_Archive`.
-5. **Operational Tabs Preservation**: Operational tabs (`AuditLog`, `ImportBatches`, `ImportRowResults`, `AppConfig`) are strictly preserved.
-6. **Pre-Launch Backup Preservation**: Canonical backup `1kIFYmI81DfNIAqb-ZHsTifiKE6JxhfQrXqpfphrw9eU` is preserved untouched.
+- **Product:** Personal Dashboard (Student Management Dashboard)
+- **Document ID:** Data-04
+- **Status:** Authoritative Migration & Schema History
+- **Version:** 4.0.0 (Strict Six-Table Architecture)
 
 ---
 
-## 2. Authoritative Target Schemas
+## 2. Schema History & Executed Migrations
 
-The migration runner enforces these exact physical columns in this exact order across all six tables:
+### 2.1 Milestone 1: Student ID Migration (Phase 27)
+- **Problem:** Legacy student records contained inconsistent identifiers (`stu_...` mixed with `STU_...`).
+- **Migration Script:** `StudentIdMigration.gs`.
+- **Execution Result:**
+  - Migrated 23 legacy IDs to standardized sequential format `STU_001` through `STU_026`.
+  - Cascaded foreign key updates across all dependent tables.
+  - Backup preserved in `StudentId_Migration_Backup` tab.
+  - Zero legacy IDs remain.
 
-```javascript
-var TARGET_SCHEMAS = {
-  'Students': [
-    'student_id', 'student_name', 'parent_name', 'parent_phone', 'student_phone',
-    'parent_email', 'student_email', 'subject', 'status'
-  ],
-  'Packages': [
-    'package_id', 'student_id', 'student_name', 'plan_type', 'currency',
-    'package_price', 'per_class', 'classes_purchased',
-    'start_date', 'end_date', 'next_due_date'
-  ],
-  'Payments': [
-    'student_id', 'student_name', 'payment_date', 'amount', 'currency', 'in_inr'
-  ],
-  'ClassSessions': [
-    'class_session_id', 'student_id', 'scheduled_start', 'scheduled_end',
-    'attendance_status', 'session_status', 'cancellation_reason', 'deduct_class'
-  ],
-  'MeetingLinks': [
-    'student_id', 'student_name', 'meeting_link_1', 'meeting_link_2'
-  ],
-  'StudentNotes': [
-    'student_id', 'student_name', 'note_date', 'note_text', 'follow_up_date'
-  ]
-};
-```
+### 2.2 Milestone 2: Canonical Six-Table Schema Migration
+- **Problem:** Datastore previously contained redundant intermediate tabs (`ClassSchedules`, `FeeObligations`, `Enrollments`) and non-canonical columns (`package_id` in Packages, `class_session_id` in ClassSessions).
+- **Migration Script:** `FinalCanonicalSchemaMigration.gs` (`runFinalCanonicalSchemaMigration`).
+- **Execution Result:**
+  1. **`Packages` (12 columns):**
+     - Target headers: `student_id, student_name, plan_type, currency, package_price, per_class, classes_purchased, start_date, end_date, next_due_date, class_duration, class_schedule`.
+     - Embedded recurring schedule string into column 12 (`class_schedule`).
+     - Removed `package_id` column.
+     - Pre-migration backup created: `_Backup_PreCanonical_Packages`.
+  2. **`ClassSessions` (8 columns):**
+     - Target headers: `student_id, student_name, schedule_date, schedule_time, attendance_status, session_status, deduct_class, cancellation_reason`.
+     - Removed `class_session_id`, `scheduled_start`, `scheduled_end`, `topic` columns.
+     - Formatted columns 3 (`schedule_date`) and 4 (`schedule_time`) as plain text `@` to eliminate timezone drift.
+  3. **`ClassSchedules` Archived:**
+     - Renamed sheet to `_Archived_ClassSchedules`.
+     - Pre-migration backup created: `_Backup_PreCanonical_ClassSchedules`.
 
-### Forbidden Obsolete Columns
-```javascript
-var FORBIDDEN_OBSOLETE_COLUMNS = [
-  'first_name', 'last_name', 'preferred_name', 'date_of_birth', 'dob',
-  'parent_guardian_name', 'parent_guardian_relationship', 'primary_phone',
-  'secondary_phone', 'internal_summary', 'city', 'first_enrollment_date',
-  'last_active_date', 'source_reference', 'in_INR', 'closed_at',
-  'expiry_date', 'plan_name', 'package_status',
-  'fee_obligation_id', 'payment_method', 'transaction_reference',
-  'class_credit_effect', 'credit_restoration_for_session_id', 'class_title',
-  'meeting_link_id', 'link_label', 'provider', 'is_preferred',
-  'note_id', 'note_type', 'created_by'
-];
-```
+### 2.3 Milestone 3: Class Session Backdating
+- **Problem:** Student `STU_001` (Seerat) sessions required backdating to initial commencement date.
+- **Migration Script:** `FinalCanonicalSchemaMigration.gs` (`runBackdateStudentSessions`).
+- **Execution Result:**
+  - Backdated 48 class sessions starting from `2026-01-19` through `2026-05-09`.
+  - Updated `Packages`: `start_date = 2026-01-19`, `end_date = 2026-05-09`, `next_due_date = 2026-04-29`.
+  - Embedded schedule string: `Mon - 6:00 PM, Wed - 6:00 PM, Sat - 10:00 AM`.
+  - Set student status to `ACTIVE`.
+
+### 2.4 Milestone 4: Date Format Standardization
+- **Problem:** Date columns across sheets had inconsistent mixed formats (`YYYY-MM-DD`, `M/D/YYYY`, Date objects).
+- **Migration Script:** `DateFormatService.gs` (`standardizeAllDateFormats`).
+- **Execution Result:**
+  - Standardized date column number formatting to `dd/MM/yyyy` across all sheets.
+  - Ensured backend `HeaderMapper.gs` normalizes between spreadsheet `dd/MM/yyyy` and ISO `YYYY-MM-DD`.
 
 ---
 
-## 3. Migration Execution Procedure
+## 3. Schema Validation Rules (`SchemaValidator.gs`)
 
-```javascript
-// Located in 02-backend/apps-script/setup/SchemaMigration.gs
-function runApprovedSchemaMigration(spreadsheet) { ... }
-```
-
-### 3.1 Verification Checklist Prior to Live Execution
-1. Canonical spreadsheet ID verified (`1cVQknq_Ix-T6igp7c-DwwuYHvgn60fVGbwTGZfGSii8`).
-2. Script lock acquired (`LockService.getScriptLock()`).
-3. Each of the 6 working sheets adjusted:
-   - Extra columns deleted.
-   - Header row set and formatted bold.
-   - Headers read back and asserted for equality.
-   - No forbidden columns present.
-4. `Enrollments` and `FeeObligations` tabs safely removed or archived.
-5. Operational tabs confirmed present.
-6. Audit log entry recorded with action `MIGRATE_PHYSICAL_SCHEMA`.
+During bootstrapping or integrity checks:
+1. Verifies that all six canonical tables exist.
+2. Checks that Row 1 headers exactly match expected canonical headers.
+3. Detects duplicate header names and missing required columns.
+4. Alerts if unsupported legacy tabs are present.

@@ -4,6 +4,7 @@ import { RegistrationFormData } from '../../src/domains/students/registrationTyp
 import { generateAttentionAlerts } from '../../src/domains/dashboard/attentionAlerts';
 import { Student } from '../../src/domains/students/studentTypes';
 import { WeeklyScheduleEntry } from '../../src/domains/classes/scheduleApi';
+import { getNextWeekday } from '../fixtures/testDateHelpers';
 
 describe('Schedule Simplification & Dashboard Reorganization', () => {
   describe('1. First Class Date Validation', () => {
@@ -30,15 +31,15 @@ describe('Schedule Simplification & Dashboard Reorganization', () => {
     });
 
     it('rejects when first class date does not match configured recurring schedule weekday', () => {
-      // 2026-11-03 is Tuesday, but configured day is MONDAY
-      const res = validateRegistrationForm({ ...baseForm, first_class_date: '2026-11-03' });
+      // Next Tuesday is not the configured MONDAY
+      const res = validateRegistrationForm({ ...baseForm, first_class_date: getNextWeekday('TUESDAY') });
       expect(res.isValid).toBe(false);
       expect(res.errors.first_class_date).toContain('configured recurring days are MONDAY');
     });
 
     it('accepts valid future first class date matching configured recurring weekday', () => {
-      // 2026-11-02 is Monday
-      const res = validateRegistrationForm({ ...baseForm, first_class_date: '2026-11-02' });
+      // Next Monday matches configured MONDAY
+      const res = validateRegistrationForm({ ...baseForm, first_class_date: getNextWeekday('MONDAY') });
       expect(res.isValid).toBe(true);
       expect(res.errors.first_class_date).toBeUndefined();
     });
