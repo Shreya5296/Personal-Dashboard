@@ -239,7 +239,7 @@ Voids a previously recorded payment and restores the obligation balance.
 
 #### Deduplication & Integrity Rules
 1. Acquires script lock (`LockService.getScriptLock()`).
-2. Validates idempotency key against `AuditLog.request_id`.
+2. Validates idempotency key against durable properties store and memory cache.
 3. Verifies target session:
    - Must exist in `ClassSessions`.
    - Must match `studentId` and `classPackageId`.

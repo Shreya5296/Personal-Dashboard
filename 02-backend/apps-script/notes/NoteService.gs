@@ -1,12 +1,11 @@
 /**
- * NoteService: Business logic and audit integration for student notes (5 columns: student_id, student_name, note_date, note_text, follow_up_date).
+ * NoteService: Business logic for student notes (5 columns: student_id, student_name, note_date, note_text, follow_up_date).
  */
 
 var _noteIdGen = typeof generateNoteId === 'function' ? { generateNoteId: generateNoteId } : (typeof require !== 'undefined' ? require('../shared/IdGenerator.gs') : null);
 var _noteVal = typeof validateNoteInput === 'function' ? { validateNoteInput: validateNoteInput } : (typeof require !== 'undefined' ? require('./NoteValidation.gs') : null);
 var _noteRepo = typeof Notes_getAll === 'function' ? { Notes_getAll: Notes_getAll, Notes_getById: Notes_getById, Notes_getByStudentId: Notes_getByStudentId, Notes_insert: Notes_insert, Notes_update: Notes_update } : (typeof require !== 'undefined' ? require('./NoteRepository.gs') : null);
 var _noteStuRepo = typeof Students_getById === 'function' ? { Students_getById: Students_getById } : (typeof require !== 'undefined' ? require('../students/StudentRepository.gs') : null);
-var _noteAudit = typeof recordAuditEvent === 'function' ? { recordAuditEvent: recordAuditEvent } : (typeof require !== 'undefined' ? require('../audit/AuditService.gs') : null);
 var _noteReg = {
   get SHEET_NAMES() {
     return (typeof SHEET_NAMES !== 'undefined' && SHEET_NAMES) || (typeof require !== 'undefined' ? require('../sheets/SheetRegistry.gs').SHEET_NAMES : {});
@@ -38,18 +37,6 @@ function Notes_create(spreadsheet, data, actor) {
   _noteRepo.Notes_insert(spreadsheet, record);
 
   var noteId = _noteIdGen ? _noteIdGen.generateNoteId() : ('note_' + Date.now());
-
-  if (_noteAudit && _noteAudit.recordAuditEvent) {
-    _noteAudit.recordAuditEvent(spreadsheet, _noteReg, _noteMap, {
-      actor_id: actor ? actor.actorId : 'SYSTEM',
-      actor_email: actor ? actor.email : '',
-      entity_type: 'STUDENT_NOTE',
-      entity_id: noteId,
-      action: 'CREATE',
-      after_summary: { student_id: data.student_id, note_date: record.note_date },
-      request_id: actor ? actor.requestId : ''
-    });
-  }
 
   var returnData = Object.assign({}, record, {
     note_id: noteId,

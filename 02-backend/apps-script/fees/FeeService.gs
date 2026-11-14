@@ -6,7 +6,6 @@ var _feeIdGen = typeof generateFeeObligationId === 'function' ? { generateFeeObl
 var _feeVal = typeof validateFeeObligationInput === 'function' ? { validateFeeObligationInput: validateFeeObligationInput, validateFeeVoidInput: validateFeeVoidInput } : (typeof require !== 'undefined' ? require('./FeeValidation.gs') : null);
 var _feeRepo = typeof FeeObligations_getAll === 'function' ? { FeeObligations_getAll: FeeObligations_getAll, FeeObligations_getById: FeeObligations_getById, FeeObligations_getByStudentId: FeeObligations_getByStudentId, FeeObligations_findByStudentAndPeriodOrIdempotency: typeof FeeObligations_findByStudentAndPeriodOrIdempotency === 'function' ? FeeObligations_findByStudentAndPeriodOrIdempotency : null, FeeObligations_insert: FeeObligations_insert, FeeObligations_update: FeeObligations_update } : (typeof require !== 'undefined' ? require('./FeeRepository.gs') : null);
 var _feeStuRepo = typeof Students_getById === 'function' ? { Students_getById: Students_getById } : (typeof require !== 'undefined' ? require('../students/StudentRepository.gs') : null);
-var _feeAudit = typeof recordAuditEvent === 'function' ? { recordAuditEvent: recordAuditEvent } : (typeof require !== 'undefined' ? require('../audit/AuditService.gs') : null);
 var _feeLock = typeof withLock === 'function' ? { withLock: withLock } : (typeof require !== 'undefined' ? require('../sheets/LockManager.gs') : null);
 var _feePaySvc = typeof Payments_isVoid === 'function' ? { Payments_isVoid: Payments_isVoid } : (typeof require !== 'undefined' ? require('../payments/PaymentService.gs') : null);
 var _feeReg = {
@@ -76,16 +75,6 @@ function FeeObligations_create(spreadsheet, data, actor) {
 
     _feeRepo.FeeObligations_insert(spreadsheet, record);
 
-    _feeAudit.recordAuditEvent(spreadsheet, _feeReg, _feeMap, {
-      actor_id: actor.actorId,
-      actor_email: actor.email,
-      entity_type: 'FEE_OBLIGATION',
-      entity_id: id,
-      action: 'CREATE',
-      after_summary: { fee_obligation_id: id, student_id: data.student_id, amount: record.amount_due },
-      request_id: actor.requestId
-    });
-
     return { success: true, data: record };
   });
 
@@ -112,17 +101,6 @@ function FeeObligations_void(spreadsheet, data, actor) {
     voided_at: now,
     void_reason: String(data.void_reason).trim(),
     updated_at: now
-  });
-
-  _feeAudit.recordAuditEvent(spreadsheet, _feeReg, _feeMap, {
-    actor_id: actor.actorId,
-    actor_email: actor.email,
-    entity_type: 'FEE_OBLIGATION',
-    entity_id: data.fee_obligation_id,
-    action: 'VOID',
-    before_summary: { obligation_status: existing.obligation_status },
-    after_summary: { obligation_status: 'VOID', void_reason: data.void_reason },
-    request_id: actor.requestId
   });
 
   return { success: true, data: updated };

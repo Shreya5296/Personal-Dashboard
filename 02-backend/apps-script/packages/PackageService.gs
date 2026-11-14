@@ -12,7 +12,6 @@ var _pkgRepo = typeof Packages_getAll === 'function' ? {
   Packages_update: typeof Packages_repoUpdate === 'function' ? Packages_repoUpdate : (typeof Packages_update === 'function' ? Packages_update : null)
 } : (typeof require !== 'undefined' ? require('./PackageRepository.gs') : null);
 var _pkgStuRepo = typeof Students_getById === 'function' ? { Students_getById: Students_getById } : (typeof require !== 'undefined' ? require('../students/StudentRepository.gs') : null);
-var _pkgAudit = typeof recordAuditEvent === 'function' ? { recordAuditEvent: recordAuditEvent } : (typeof require !== 'undefined' ? require('../audit/AuditService.gs') : null);
 var _pkgReg = {
   get SHEET_NAMES() {
     return (typeof SHEET_NAMES !== 'undefined' && SHEET_NAMES) || (typeof require !== 'undefined' ? require('../sheets/SheetRegistry.gs').SHEET_NAMES : {});
@@ -274,18 +273,6 @@ function Packages_create(spreadsheet, data, actor) {
   var createdRecord = Object.assign({}, record, { package_id: id });
   mem[id] = createdRecord;
 
-  if (_pkgAudit && _pkgAudit.recordAuditEvent) {
-    _pkgAudit.recordAuditEvent(spreadsheet, _pkgReg, _pkgMap, {
-      actor_id: actor ? actor.actorId : 'SYSTEM',
-      actor_email: actor ? actor.email : '',
-      entity_type: 'PACKAGE',
-      entity_id: data.student_id,
-      action: 'CREATE',
-      after_summary: { student_id: data.student_id, purchased: record.classes_purchased },
-      request_id: actor ? actor.requestId : ''
-    });
-  }
-
   return { success: true, data: Packages_enrichWithBalance(spreadsheet, createdRecord) };
 }
 
@@ -445,18 +432,6 @@ function Packages_update(spreadsheet, targetId, data, actor) {
   updates.updated_at = new Date().toISOString();
 
   var updated = _pkgRepo.Packages_update(spreadsheet, existing.student_id, updates);
-
-  if (_pkgAudit && _pkgAudit.recordAuditEvent) {
-    _pkgAudit.recordAuditEvent(spreadsheet, _pkgReg, _pkgMap, {
-      actor_id: actor ? actor.actorId : 'SYSTEM',
-      actor_email: actor ? actor.email : '',
-      entity_type: 'PACKAGE',
-      entity_id: existing.student_id,
-      action: 'UPDATE',
-      after_summary: updates,
-      request_id: actor ? actor.requestId : ''
-    });
-  }
 
   return { success: true, data: Packages_enrichWithBalance(spreadsheet, Object.assign({}, existing, updates)) };
 }

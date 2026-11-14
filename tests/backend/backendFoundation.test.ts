@@ -21,10 +21,6 @@ import ResponseFactory from '../../02-backend/apps-script/api/ResponseFactory.gs
 import IdentityVerifier from '../../02-backend/apps-script/auth/IdentityVerifier.gs';
 // @ts-ignore
 import AdminAuthorization from '../../02-backend/apps-script/auth/AdminAuthorization.gs';
-// @ts-ignore
-import AuditService from '../../02-backend/apps-script/audit/AuditService.gs';
-// @ts-ignore
-import AuditRepository from '../../02-backend/apps-script/audit/AuditRepository.gs';
 
 describe('Phase 4 — Backend Foundation', () => {
   let spreadsheet: MockSpreadsheet;
@@ -103,23 +99,8 @@ describe('Phase 4 — Backend Foundation', () => {
     expect(executed).toBe(true);
   });
 
-  it('records sanitized operational audit entries without secrets', () => {
-    AuditService.recordAuditEvent(spreadsheet, SheetRegistry, HeaderMapper, {
-      actor_id: 'usr_admin',
-      actor_email: 'admin@example.com',
-      entity_type: 'STUDENT',
-      entity_id: 'stu_001',
-      action: 'CREATE',
-      before_summary: null,
-      after_summary: { student_id: 'stu_001', tokenSecret: 'sensitive_jwt_token', name: 'Dev' },
-      request_id: 'req_123'
-    });
-
+  it('confirms AuditLog tab is not created during bootstrap', () => {
     const auditSheet = spreadsheet.getSheetByName('AuditLog');
-    const logs = RowReader.readAllRecords(auditSheet, HeaderMapper);
-    expect(logs.length).toBe(1);
-    expect(logs[0].entity_id).toBe('stu_001');
-    expect(logs[0].after_summary).toContain('[REDACTED]');
-    expect(logs[0].after_summary).not.toContain('sensitive_jwt_token');
+    expect(auditSheet).toBeNull();
   });
 });

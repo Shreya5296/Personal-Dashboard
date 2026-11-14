@@ -11,7 +11,12 @@ import { Button } from '../../components/buttons/Button';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { EmptyState } from '../../components/feedback/EmptyState';
 
-export const PackageList: React.FC<{ studentId: string }> = ({ studentId }) => {
+export interface PackageListProps {
+  studentId: string;
+  onRenew?: () => void;
+}
+
+export const PackageList: React.FC<PackageListProps> = ({ studentId, onRenew }) => {
   const { token } = useAuth();
   const [packages, setPackages] = useState<Package[]>([]);
   const [balance, setBalance] = useState<PackageBalanceData | null>(null);
@@ -69,9 +74,16 @@ export const PackageList: React.FC<{ studentId: string }> = ({ studentId }) => {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
         <h4 style={{ margin: 0, fontSize: 'var(--font-size-base)', fontWeight: 600 }}>Class Packages</h4>
-        <Button variant="secondary" size="sm" onClick={() => setIsAdding(!isAdding)}>
-          {isAdding ? 'Cancel' : '+ Allocate Package'}
-        </Button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {onRenew && (
+            <Button variant="primary" size="sm" onClick={onRenew}>
+              Renew Package
+            </Button>
+          )}
+          <Button variant="secondary" size="sm" onClick={() => setIsAdding(!isAdding)}>
+            {isAdding ? 'Cancel' : '+ Allocate Package'}
+          </Button>
+        </div>
       </div>
 
       {isAdding && (

@@ -73,8 +73,8 @@ To prevent race conditions when updating student class credits or generating bat
 - `LockManager.gs` wraps sensitive persistence operations in `LockService.getScriptLock()`.
 - Maximum lock timeout: 10,000–15,000 milliseconds.
 
-## 5. Audit Logging (`AuditLog`)
+## 5. Audit Logging Removal & Idempotency Architecture
 
-Operationally and financially significant administrative actions (student creation, package creation, payment recording, session scheduling, session completion, and cancellation) record an audit event.
-- Stored internally with actor identity, timestamp, entity type, entity ID, action, request ID, and sanitized before/after summaries.
-- Secrets and tokens are never logged.
+Persistent audit logging and the `AuditLog` sheet have been completely removed across the application.
+- Operational idempotency (e.g. for package renewal and payment operations) is persisted independently using Google Apps Script's `PropertiesService.getScriptProperties()` with `CacheService` acceleration and in-memory caches.
+- Sensitive credentials, tokens, and personal secrets are never logged. Operational errors continue to be reported via technical diagnostics (`console.error`).

@@ -4,6 +4,7 @@
 
 var _pkgSvcH = typeof Packages_create === 'function' ? { Packages_create: Packages_create, Packages_update: Packages_update, Packages_enrichWithBalance: Packages_enrichWithBalance } : (typeof require !== 'undefined' ? require('./PackageService.gs') : null);
 var _pkgRepoH = typeof Packages_getByStudentId === 'function' ? { Packages_getByStudentId: Packages_getByStudentId, Packages_getAll: Packages_getAll, Packages_getById: Packages_getById } : (typeof require !== 'undefined' ? require('./PackageRepository.gs') : null);
+var _renSvcH = typeof Packages_renew === 'function' ? { Packages_renew: Packages_renew } : (typeof require !== 'undefined' ? require('./RenewalService.gs') : null);
 
 function registerPackageOperations(router) {
   var reg = router && router.registerOperation ? router.registerOperation : (typeof registerOperation === 'function' ? registerOperation : null);
@@ -90,6 +91,26 @@ function registerPackageOperations(router) {
       requestId: ctx.requestId
     });
   });
+
+  var renewHandler = function(ctx) {
+    var renewFn = typeof Packages_renew === 'function' ? Packages_renew : (_renSvcH && _renSvcH.Packages_renew);
+    if (!renewFn) {
+      return { success: false, code: 'UNAVAILABLE', message: 'Packages_renew function unavailable' };
+    }
+    var payload = ctx.payload || {};
+    if (!payload.idempotency_key && ctx.idempotencyKey) {
+      payload.idempotency_key = ctx.idempotencyKey;
+    }
+    return renewFn(ctx.spreadsheet, payload, {
+      actorId: ctx.actorId,
+      email: ctx.verifiedEmail,
+      verifiedEmail: ctx.verifiedEmail,
+      requestId: ctx.requestId
+    });
+  };
+
+  reg('packages.renew', renewHandler);
+  reg('students.renew', renewHandler);
 }
 
 if (typeof registerOperation === 'function') {

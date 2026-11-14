@@ -38,9 +38,6 @@ describe('Audit Findings Fixes: Migration Safety, Payment Ops, Notes & Class Ded
     ss.insertSheet('StudentNotes').rows = [
       ['student_id', 'student_name', 'note_date', 'note_text', 'follow_up_date']
     ];
-    ss.insertSheet('AuditLog').rows = [
-      ['audit_id', 'occurred_at', 'actor_id', 'actor_email', 'entity_type', 'entity_id', 'action', 'before_summary', 'after_summary', 'request_id', 'outcome', 'error_code']
-    ];
     return ss;
   }
 
@@ -51,8 +48,6 @@ describe('Audit Findings Fixes: Migration Safety, Payment Ops, Notes & Class Ded
   describe('1. Migration Safety & Archival', () => {
     it('archives legacy non-empty Payments before modifying active Payments tab and remaps rows', () => {
       const ss = new MockSpreadsheet();
-      // Setup operational sheets
-      ss.insertSheet('AuditLog').rows = [['audit_id', 'occurred_at', 'actor_id', 'actor_email', 'entity_type', 'entity_id', 'action', 'before_summary', 'after_summary', 'request_id', 'outcome', 'error_code']];
 
       // Setup legacy Payments with 15 columns and 2 data rows
       const legacyPay = ss.insertSheet('Payments');
@@ -85,7 +80,6 @@ describe('Audit Findings Fixes: Migration Safety, Payment Ops, Notes & Class Ded
 
     it('never overwrites an existing archive, creating a timestamped archive instead', () => {
       const ss = new MockSpreadsheet();
-      ss.insertSheet('AuditLog').rows = [['audit_id']];
 
       // Pre-existing archive sheet
       const existingArch = ss.insertSheet('FeeObligations_Archive');
@@ -103,16 +97,14 @@ describe('Audit Findings Fixes: Migration Safety, Payment Ops, Notes & Class Ded
       expect(existingArch.rows[1][0]).toBe('old_data_1');
     });
 
-    it('aborts safely before destructive changes if an operational tab is missing', () => {
+    it('executes safely without requiring AuditLog or any operational tabs', () => {
       const ss = new MockSpreadsheet();
-      // AuditLog is missing!
       const legacyPay = ss.insertSheet('Payments');
       legacyPay.rows = [['payment_id', 'student_id', 'amount'], ['pay_1', 'stu_1', 1000]];
 
-      expect(() => runApprovedSchemaMigration(ss)).toThrow(/Required operational tab missing: AuditLog/);
-
-      // Verify Payments was untouched because preflight aborted
-      expect(legacyPay.rows[0]).toEqual(['payment_id', 'student_id', 'amount']);
+      const res = runApprovedSchemaMigration(ss);
+      expect(res.success).toBe(true);
+      expect(ss.getSheetByName('AuditLog')).toBeNull();
     });
 
     it('is completely idempotent when rerun on an already-migrated sheet', () => {

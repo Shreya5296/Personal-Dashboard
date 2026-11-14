@@ -11,6 +11,7 @@ import {
   upsertMockMeetingLink,
   deleteMockMeetingLink,
 } from './mockClassOperations';
+import { handleMockRenewal } from './mockRenewalOperations';
 
 export function handleMockApiRequest<T>(operation: string, payload: Record<string, unknown>, reqId: string): ApiResponse<T> {
   const meta = { requestId: reqId, timestamp: new Date().toISOString() };
@@ -135,6 +136,9 @@ export function handleMockApiRequest<T>(operation: string, payload: Record<strin
     };
     MOCK_PAYMENTS.push(newPay);
     return { ok: true, data: newPay as T, meta };
+  }
+  if (operation === 'packages.renew' || operation === 'students.renew') {
+    return handleMockRenewal<T>(payload, reqId);
   }
   if (operation === 'system.health') {
     return { ok: true, data: { appsScriptConnected: true, schemaVersion: 2, appEnv: 'mock', activeSpreadsheetTabs: 7 } as T, meta };

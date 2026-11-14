@@ -88,9 +88,6 @@
 │   ├── DateTime.gs             # Timezone-safe date arithmetic
 │   ├── Money.gs                # Currency & rounding helpers
 │   └── InputRules.gs           # General string sanitation
-├── audit/                      # Audit trail
-│   ├── AuditService.gs         # Records administrative events
-│   └── AuditRepository.gs      # Persistence for AuditLog sheet
 ├── setup/                      # Migrations & maintenance operations
 │   ├── FinalCanonicalSchemaMigration.gs # Migrates Packages to 12 cols, ClassSessions to 8 cols, archives schedules
 │   ├── StudentIdMigration.gs   # Migrates 23 legacy IDs to STU_001..STU_026
