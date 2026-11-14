@@ -12,7 +12,6 @@ var _enrRepo = typeof Enrollments_getAll === 'function' ? {
   Enrollments_update: typeof Enrollments_repoUpdate === 'function' ? Enrollments_repoUpdate : Enrollments_update
 } : (typeof require !== 'undefined' ? require('./EnrollmentRepository.gs') : null);
 var _enrStuRepo = typeof Students_getById === 'function' ? { Students_getById: Students_getById } : (typeof require !== 'undefined' ? require('../students/StudentRepository.gs') : null);
-var _enrAudit = typeof recordAuditEvent === 'function' ? { recordAuditEvent: recordAuditEvent } : (typeof require !== 'undefined' ? require('../audit/AuditService.gs') : null);
 var _enrReg = {
   get SHEET_NAMES() {
     return (typeof SHEET_NAMES !== 'undefined' && SHEET_NAMES) || (typeof require !== 'undefined' ? require('../sheets/SheetRegistry.gs').SHEET_NAMES : {});
@@ -54,16 +53,6 @@ function Enrollments_create(spreadsheet, data, actor) {
 
   _enrRepo.Enrollments_insert(spreadsheet, record);
 
-  _enrAudit.recordAuditEvent(spreadsheet, _enrReg, _enrMap, {
-    actor_id: actor.actorId,
-    actor_email: actor.email,
-    entity_type: 'ENROLLMENT',
-    entity_id: id,
-    action: 'CREATE',
-    after_summary: { enrollment_id: id, student_id: data.student_id },
-    request_id: actor.requestId
-  });
-
   return { success: true, data: record };
 }
 
@@ -96,17 +85,6 @@ function Enrollments_update(spreadsheet, enrollmentId, updates, actor) {
   }
 
   var updated = _enrRepo.Enrollments_update(spreadsheet, enrollmentId, safeUpdates);
-
-  _enrAudit.recordAuditEvent(spreadsheet, _enrReg, _enrMap, {
-    actor_id: actor.actorId,
-    actor_email: actor.email,
-    entity_type: 'ENROLLMENT',
-    entity_id: enrollmentId,
-    action: 'UPDATE',
-    before_summary: existing,
-    after_summary: updated,
-    request_id: actor.requestId
-  });
 
   return { success: true, data: updated };
 }

@@ -51,10 +51,6 @@ describe('Absent Operational Tabs Regression (AppConfig, ImportBatches, ImportRo
     ss.insertSheet('StudentNotes').rows = [
       ['student_id', 'student_name', 'note_date', 'note_text', 'follow_up_date']
     ];
-    // 1 operational table
-    ss.insertSheet('AuditLog').rows = [
-      ['audit_id', 'occurred_at', 'actor_id', 'actor_email', 'entity_type', 'entity_id', 'action', 'before_summary', 'after_summary', 'request_id', 'outcome', 'error_code']
-    ];
     return ss;
   }
 
@@ -62,10 +58,11 @@ describe('Absent Operational Tabs Regression (AppConfig, ImportBatches, ImportRo
     spreadsheet = setupTarget7TabSpreadsheet();
   });
 
-  it('confirms AppConfig, ImportBatches, and ImportRowResults tabs are absent and not recreated by bootstrap', () => {
+  it('confirms AppConfig, ImportBatches, ImportRowResults, and AuditLog tabs are absent and not recreated by bootstrap', () => {
     expect(spreadsheet.getSheetByName('AppConfig')).toBeNull();
     expect(spreadsheet.getSheetByName('ImportBatches')).toBeNull();
     expect(spreadsheet.getSheetByName('ImportRowResults')).toBeNull();
+    expect(spreadsheet.getSheetByName('AuditLog')).toBeNull();
 
     // Run bootstrap on existing spreadsheet
     const bootstrapRes = SpreadsheetBootstrap.bootstrapSpreadsheet(spreadsheet, SheetRegistry, '2.0.0');
@@ -108,7 +105,7 @@ describe('Absent Operational Tabs Regression (AppConfig, ImportBatches, ImportRo
     }, actor);
     expect(pkgRes.success).toBe(true);
 
-    // 3. Record payment with idempotency (checked against AuditLog)
+    // 3. Record payment with idempotency (checked against durable store)
     const payRes = PaymentService.Payments_record(spreadsheet, {
       student_id: stuId,
       amount: 25000,
@@ -167,8 +164,8 @@ describe('Absent Operational Tabs Regression (AppConfig, ImportBatches, ImportRo
     expect(res.success).toBe(true);
     expect(res.verificationErrors.length).toBe(0);
 
-    // AuditLog preserved
-    expect(spreadsheet.getSheetByName('AuditLog')).not.toBeNull();
+    // AuditLog is absent
+    expect(spreadsheet.getSheetByName('AuditLog')).toBeNull();
     // Absent tabs still absent
     expect(spreadsheet.getSheetByName('AppConfig')).toBeNull();
     expect(spreadsheet.getSheetByName('ImportBatches')).toBeNull();

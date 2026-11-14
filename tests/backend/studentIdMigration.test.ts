@@ -160,10 +160,6 @@ describe('Student ID Migration Execution & Recovery Engine', () => {
       ClassSchedules: createMockSheet('ClassSchedules', ['schedule_id', 'student_id'], [
         ['csch_1', 'stu_legacy_1'],
       ]),
-      AuditLog: createMockSheet('AuditLog', ['audit_id', 'entity_type', 'entity_id', 'before_summary'], [
-        ['aud_1', 'STUDENT', 'stu_legacy_1', 'Created student record'],
-        ['aud_2', 'PACKAGE', 'pkg_1', 'Attached package for stu_legacy_1'],
-      ]),
     };
     const ss = createMockSpreadsheet(sheets);
     const result = runStudentIdMigration(ss as unknown as GoogleAppsScript.Spreadsheet.Spreadsheet);
@@ -179,11 +175,6 @@ describe('Student ID Migration Execution & Recovery Engine', () => {
     expect(sheets.MeetingLinks._getRawData()[1][1]).toBe('STU_002');
     expect(sheets.StudentNotes._getRawData()[1][1]).toBe('STU_002');
     expect(sheets.ClassSchedules._getRawData()[1][1]).toBe('STU_002');
-    // AuditLog: entity_id updated for entity_type === 'STUDENT'
-    expect(sheets.AuditLog._getRawData()[1][2]).toBe('STU_002');
-    // AuditLog: entity_type === 'PACKAGE' preserved without blind summary rewrite
-    expect(sheets.AuditLog._getRawData()[2][2]).toBe('pkg_1');
-    expect(sheets.AuditLog._getRawData()[2][3]).toBe('Attached package for stu_legacy_1');
   });
 
   it('resumes interrupted partial migration using existing backup mapping without generating new IDs', () => {
@@ -243,9 +234,6 @@ describe('Student ID Migration Execution & Recovery Engine', () => {
       MeetingLinks: createMockSheet('MeetingLinks', ['meeting_link_id', 'student_id'], [
         ['ml_1', 'stu_legacy_1'],
       ]),
-      AuditLog: createMockSheet('AuditLog', ['audit_id', 'entity_type', 'entity_id'], [
-        ['aud_1', 'STUDENT', 'stu_legacy_1'],
-      ]),
     };
     const ss = createMockSpreadsheet(sheets);
 
@@ -259,7 +247,6 @@ describe('Student ID Migration Execution & Recovery Engine', () => {
     expect(sheets.Students._getRawData()[2][0]).toBe('stu_legacy_1');
     expect(sheets.Packages._getRawData()[1][1]).toBe('stu_legacy_1');
     expect(sheets.MeetingLinks._getRawData()[1][1]).toBe('stu_legacy_1');
-    expect(sheets.AuditLog._getRawData()[1][2]).toBe('stu_legacy_1');
   });
 
   it('handles rollback safely when backup sheet is missing or empty', () => {

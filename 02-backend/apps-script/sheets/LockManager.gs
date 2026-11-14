@@ -1,17 +1,62 @@
 /**
  * LockManager: Manages concurrency locks for mutation serialization.
- * Always releases locks in a finally block.
+ * Fails closed if LockService is unavailable or lock acquisition fails.
+ * Always releases locks in a finally block and verifies release safety.
  */
 
-var _mockLockHeld = false;
+var _lockDepth = 0;
+var _heldScriptLock = null;
 
 function withLock(timeoutMs, actionFn) {
   var limit = timeoutMs || 10000;
-  var lock = null;
 
-  if (typeof LockService !== 'undefined') {
-    lock = LockService.getScriptLock();
-    var acquired = lock.tryLock(limit);
+  if (_lockDepth === 0) {
+    var ls = (typeof LockService !== 'undefined') ? LockService : (typeof globalThis !== 'undefined' ? globalThis.LockService : undefined);
+    if (!ls) {
+      return {
+        success: false,
+        code: 'LOCK_UNAVAILABLE',
+        message: 'LockService is not available'
+      };
+    }
+    if (typeof ls.getScriptLock !== 'function') {
+      return {
+        success: false,
+        code: 'LOCK_UNAVAILABLE',
+        message: 'LockService.getScriptLock is not available'
+      };
+    }
+
+    var lock = null;
+    try {
+      lock = ls.getScriptLock();
+    } catch (e) {
+      return {
+        success: false,
+        code: 'CONFLICT',
+        message: 'Exception acquiring script lock: ' + (e.message || String(e))
+      };
+    }
+
+    if (!lock || typeof lock.tryLock !== 'function') {
+      return {
+        success: false,
+        code: 'LOCK_UNAVAILABLE',
+        message: 'Valid ScriptLock could not be obtained'
+      };
+    }
+
+    var acquired = false;
+    try {
+      acquired = lock.tryLock(limit);
+    } catch (e) {
+      return {
+        success: false,
+        code: 'CONFLICT',
+        message: 'Exception during tryLock: ' + (e.message || String(e))
+      };
+    }
+
     if (!acquired) {
       return {
         success: false,
@@ -19,30 +64,54 @@ function withLock(timeoutMs, actionFn) {
         message: 'Could not acquire script lock within timeout; try again'
       };
     }
-  } else {
-    // In-memory test simulation
-    if (_mockLockHeld) {
-      return {
-        success: false,
-        code: 'CONFLICT',
-        message: 'Mock lock is currently held'
-      };
-    }
-    _mockLockHeld = true;
+    _heldScriptLock = lock;
   }
 
+  _lockDepth++;
+  var actionError = null;
+  var actionResult = null;
+
   try {
-    var result = actionFn();
-    return { success: true, result: result };
+    actionResult = actionFn();
+  } catch (err) {
+    actionError = err;
   } finally {
-    if (lock) {
-      try { lock.releaseLock(); } catch (e) {}
-    } else {
-      _mockLockHeld = false;
+    _lockDepth--;
+    var releaseError = null;
+    if (_lockDepth === 0 && _heldScriptLock) {
+      var lockToRelease = _heldScriptLock;
+      _heldScriptLock = null;
+      try {
+        lockToRelease.releaseLock();
+      } catch (relErr) {
+        releaseError = relErr;
+      }
+    }
+
+    if (actionError) {
+      return {
+        success: false,
+        code: 'EXECUTION_ERROR',
+        message: actionError.message || String(actionError)
+      };
+    }
+
+    if (releaseError) {
+      return {
+        success: false,
+        code: 'LOCK_RELEASE_ERROR',
+        message: 'Exception during lock release: ' + (releaseError.message || String(releaseError))
+      };
     }
   }
+
+  return { success: true, result: actionResult };
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { withLock: withLock };
+  module.exports = {
+    withLock: withLock,
+    _getLockDepth: function() { return _lockDepth; },
+    _resetLockState: function() { _lockDepth = 0; _heldScriptLock = null; }
+  };
 }

@@ -46,10 +46,6 @@ describe('Physical Schema Migration Runner (SchemaMigration.gs)', () => {
 
     const legacyNotes = spreadsheet.insertSheet('StudentNotes');
     legacyNotes.rows = [['note_id', 'student_id', 'note_type', 'note_text', 'follow_up_date', 'follow_up_status', 'created_at', 'updated_at', 'created_by']];
-
-    // Operational sheets (AuditLog is the sole required operational sheet)
-    const auditSheet = spreadsheet.insertSheet('AuditLog');
-    auditSheet.rows = [['audit_id', 'occurred_at', 'actor_id', 'actor_email', 'entity_type', 'entity_id', 'action', 'before_summary', 'after_summary', 'request_id', 'outcome', 'error_code']];
   });
 
   it('physically deletes obsolete columns, removes legacy tabs, and aligns exact target headers for all six tables', () => {
@@ -103,12 +99,7 @@ describe('Physical Schema Migration Runner (SchemaMigration.gs)', () => {
     expect(res.enrollmentsTab).toBe('PHYSICALLY_DELETED_EMPTY');
     expect(res.feeObligationsTab).toBe('PHYSICALLY_DELETED_EMPTY');
 
-    // 8. Operational sheets verification (AuditLog preserved)
-    expect(spreadsheet.getSheetByName('AuditLog')).not.toBeNull();
-
-    // 9. Audit log entry recorded
-    const auditSheet = spreadsheet.getSheetByName('AuditLog')!;
-    expect(auditSheet.rows.length).toBe(2);
-    expect(auditSheet.rows[1][6]).toBe('MIGRATE_PHYSICAL_SCHEMA');
+    // 8. Operational sheets: AuditLog is absent
+    expect(spreadsheet.getSheetByName('AuditLog')).toBeNull();
   });
 });

@@ -6,7 +6,6 @@ var _mlIdGen = typeof generateMeetingLinkId === 'function' ? { generateMeetingLi
 var _mlVal = typeof validateMeetingLinkInput === 'function' ? { validateMeetingLinkInput: validateMeetingLinkInput } : (typeof require !== 'undefined' ? require('./MeetingLinkValidation.gs') : null);
 var _mlRepo = typeof MeetingLinks_getAll === 'function' ? { MeetingLinks_getAll: MeetingLinks_getAll, MeetingLinks_getById: MeetingLinks_getById, MeetingLinks_getByStudentId: MeetingLinks_getByStudentId, MeetingLinks_insert: MeetingLinks_insert, MeetingLinks_update: MeetingLinks_update } : (typeof require !== 'undefined' ? require('./MeetingLinkRepository.gs') : null);
 var _mlStuRepo = typeof Students_getById === 'function' ? { Students_getById: Students_getById, Students_getAll: typeof Students_getAll === 'function' ? Students_getAll : null } : (typeof require !== 'undefined' ? require('../students/StudentRepository.gs') : null);
-var _mlAudit = typeof recordAuditEvent === 'function' ? { recordAuditEvent: recordAuditEvent } : (typeof require !== 'undefined' ? require('../audit/AuditService.gs') : null);
 var _mlReg = {
   get SHEET_NAMES() { return (typeof SHEET_NAMES !== 'undefined' && SHEET_NAMES) || (typeof require !== 'undefined' ? require('../sheets/SheetRegistry.gs').SHEET_NAMES : {}); },
   getExpectedHeaders: function(name) { return typeof getExpectedHeaders === 'function' ? getExpectedHeaders(name) : (typeof require !== 'undefined' ? require('../sheets/SheetRegistry.gs').getExpectedHeaders(name) : null); }
@@ -32,14 +31,6 @@ function MeetingLinks_create(spreadsheet, data, actor) {
   else { _mlRepo.MeetingLinks_insert(spreadsheet, record); }
 
   var linkId = _mlIdGen ? _mlIdGen.generateMeetingLinkId() : ('ml_' + data.student_id);
-  if (_mlAudit && _mlAudit.recordAuditEvent) {
-    _mlAudit.recordAuditEvent(spreadsheet, _mlReg, _mlMap, {
-      actor_id: actor ? actor.actorId : 'SYSTEM', actor_email: actor ? actor.email : '',
-      entity_type: 'MEETING_LINK', entity_id: data.student_id, action: existing ? 'UPDATE' : 'CREATE',
-      after_summary: { student_id: data.student_id, link1: record.meeting_link_1, link2: record.meeting_link_2 },
-      request_id: actor ? actor.requestId : ''
-    });
-  }
   return { success: true, data: Object.assign({}, record, { meeting_link_id: linkId, meeting_url: record.meeting_link_1, link_label: 'Primary Link', provider: 'Google Meet', is_preferred: true, link_status: 'ACTIVE' }) };
 }
 
@@ -68,14 +59,6 @@ function MeetingLinks_deleteSlot(spreadsheet, payload, actor) {
   var updated = _mlRepo.MeetingLinks_update(spreadsheet, studentId, updates);
   if (!updated) {
     return { success: false, code: 'UPDATE_FAILED', message: 'Failed to update meeting link in spreadsheet' };
-  }
-
-  if (_mlAudit && _mlAudit.recordAuditEvent) {
-    _mlAudit.recordAuditEvent(spreadsheet, _mlReg, _mlMap, {
-      actor_id: actor ? actor.actorId : 'SYSTEM', actor_email: actor ? actor.email : '',
-      entity_type: 'MEETING_LINK', entity_id: studentId, action: 'DELETE_SLOT',
-      after_summary: { student_id: studentId, cleared_field: field }, request_id: actor ? actor.requestId : ''
-    });
   }
 
   var refreshed = _mlRepo.MeetingLinks_getByStudentId(spreadsheet, studentId) || updated;

@@ -1,5 +1,5 @@
 /**
- * StudentService: Business logic, validation, audit integration, and lifecycle.
+ * StudentService: Business logic, validation, and lifecycle.
  */
 
 var _stuIdGen = typeof generateStudentId === 'function' ? { generateStudentId: generateStudentId } : (typeof require !== 'undefined' ? require('../shared/IdGenerator.gs') : null);
@@ -10,7 +10,6 @@ var _stuRepo = typeof Students_getAll === 'function' ? {
   Students_insert: Students_insert,
   Students_update: typeof Students_repoUpdate === 'function' ? Students_repoUpdate : Students_update
 } : (typeof require !== 'undefined' ? require('./StudentRepository.gs') : null);
-var _stuAudit = typeof recordAuditEvent === 'function' ? { recordAuditEvent: recordAuditEvent } : (typeof require !== 'undefined' ? require('../audit/AuditService.gs') : null);
 var _stuLock = typeof withLock === 'function' ? { withLock: withLock } : (typeof require !== 'undefined' ? require('../sheets/LockManager.gs') : null);
 var _stuSchedSvc = typeof Schedules_list === 'function' ? { Schedules_list: Schedules_list } : (typeof require !== 'undefined' ? require('../classes/ClassScheduleService.gs') : null);
 var _stuClsRepo = typeof Classes_getAll === 'function' ? { Classes_getAll: Classes_getAll } : (typeof require !== 'undefined' ? require('../classes/ClassRepository.gs') : null);
@@ -147,16 +146,6 @@ function Students_create(spreadsheet, data, actor) {
 
     _stuRepo.Students_insert(spreadsheet, record);
 
-    _stuAudit.recordAuditEvent(spreadsheet, _stuReg, _stuMap, {
-      actor_id: actor.actorId,
-      actor_email: actor.email,
-      entity_type: 'STUDENT',
-      entity_id: studentId,
-      action: 'CREATE',
-      after_summary: { student_id: studentId, name: record.student_name },
-      request_id: actor.requestId
-    });
-
     return { success: true, data: Students_enrich(record) };
   });
 
@@ -247,17 +236,6 @@ function Students_update(spreadsheet, studentId, updates, actor) {
 
   var updated = _stuRepo.Students_update(spreadsheet, studentId, safeUpdates);
 
-  _stuAudit.recordAuditEvent(spreadsheet, _stuReg, _stuMap, {
-    actor_id: actor.actorId,
-    actor_email: actor.email,
-    entity_type: 'STUDENT',
-    entity_id: studentId,
-    action: 'UPDATE',
-    before_summary: existing,
-    after_summary: updated,
-    request_id: actor.requestId
-  });
-
   return { success: true, data: Students_enrich(updated) };
 }
 
@@ -281,17 +259,6 @@ function Students_archive(spreadsheet, studentId, actor) {
     updated_at: now
   });
 
-  _stuAudit.recordAuditEvent(spreadsheet, _stuReg, _stuMap, {
-    actor_id: actor.actorId,
-    actor_email: actor.email,
-    entity_type: 'STUDENT',
-    entity_id: studentId,
-    action: 'ARCHIVE',
-    before_summary: { status: existing.status || existing.student_status },
-    after_summary: { status: 'INACTIVE', archived_at: now },
-    request_id: actor.requestId
-  });
-
   return { success: true, data: Students_enrich(updated) };
 }
 
@@ -304,17 +271,6 @@ function Students_reactivate(spreadsheet, studentId, actor) {
   var updated = _stuRepo.Students_update(spreadsheet, studentId, {
     status: 'ACTIVE',
     updated_at: now
-  });
-
-  _stuAudit.recordAuditEvent(spreadsheet, _stuReg, _stuMap, {
-    actor_id: actor.actorId,
-    actor_email: actor.email,
-    entity_type: 'STUDENT',
-    entity_id: studentId,
-    action: 'REACTIVATE',
-    before_summary: { status: existing.status || existing.student_status },
-    after_summary: { status: 'ACTIVE' },
-    request_id: actor.requestId
   });
 
   return { success: true, data: Students_enrich(updated) };

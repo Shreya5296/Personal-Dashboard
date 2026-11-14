@@ -92,7 +92,7 @@ function runApprovedSchemaMigration(spreadsheet) {
 
   try {
     // 0. Preflight: Verify operational tabs exist before any changes
-    var operationalTabs = ['AuditLog'];
+    var operationalTabs = [];
     for (var op = 0; op < operationalTabs.length; op++) {
       var opPreSheet = ss.getSheetByName(operationalTabs[op]);
       if (!opPreSheet) {
@@ -295,34 +295,6 @@ function runApprovedSchemaMigration(spreadsheet) {
     }
 
     var allPassed = verificationErrors.length === 0;
-
-    // 4. Log Audit Event if AuditLog sheet is present
-    var auditSheet = ss.getSheetByName('AuditLog');
-    if (auditSheet && allPassed) {
-      try {
-        var auditHeaders = auditSheet.getRange(1, 1, 1, auditSheet.getLastColumn()).getValues()[0];
-        var nowIso = new Date().toISOString();
-        var auditId = 'aud_mig_' + Date.now();
-        var auditRow = [];
-        for (var a = 0; a < auditHeaders.length; a++) {
-          var h = auditHeaders[a];
-          if (h === 'audit_id') auditRow.push(auditId);
-          else if (h === 'occurred_at') auditRow.push(nowIso);
-          else if (h === 'actor_id') auditRow.push('OWNER_MIGRATION');
-          else if (h === 'actor_email') auditRow.push('admin@personal-dashboard.local');
-          else if (h === 'entity_type') auditRow.push('SCHEMA');
-          else if (h === 'entity_id') auditRow.push(ss.getId());
-          else if (h === 'action') auditRow.push('MIGRATE_PHYSICAL_SCHEMA');
-          else if (h === 'before_summary') auditRow.push('Legacy CRM multi-column schema with Enrollments');
-          else if (h === 'after_summary') auditRow.push('Target 6-tab clean single-truth schema');
-          else if (h === 'outcome') auditRow.push('SUCCESS');
-          else auditRow.push('');
-        }
-        auditSheet.appendRow(auditRow);
-      } catch (e) {
-        // Non-blocking audit log append
-      }
-    }
 
     return {
       success: allPassed,

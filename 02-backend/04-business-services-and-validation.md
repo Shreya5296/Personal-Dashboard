@@ -49,7 +49,6 @@ The backend must provide the following service boundaries. They may be split int
 - `DashboardQueryService`: aggregate summaries and bounded dashboard queries.
 - `ImportService`: import orchestration and batch state management.
 - `ImportValidationService`: source mapping, row validation, duplicate detection, and preview.
-- `AuditService`: creation of append-oriented audit events.
 - `ConfigurationService`: validated non-secret application settings.
 
 A service may call another service when the workflow requires its rules. Avoid circular service dependencies. Shared calculations belong in a clearly named domain utility, not copied across services.
@@ -67,7 +66,7 @@ Every protected operation follows this sequence:
 7. Acquire a script lock for mutations that require concurrency protection.
 8. Re-read any state that may have changed while waiting for the lock.
 9. Apply the smallest safe set of writes.
-10. Record the outcome in the audit log according to the mutation's audit policy.
+10. Persist durable idempotency records where required.
 11. Return the persisted result or a structured error.
 12. Release locks in a `finally`-equivalent cleanup path.
 

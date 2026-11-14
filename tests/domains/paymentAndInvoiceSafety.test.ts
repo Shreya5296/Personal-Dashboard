@@ -15,10 +15,6 @@ import FeeRepository from '../../02-backend/apps-script/fees/FeeRepository.gs';
 import PaymentService from '../../02-backend/apps-script/payments/PaymentService.gs';
 // @ts-ignore
 import PaymentRepository from '../../02-backend/apps-script/payments/PaymentRepository.gs';
-// @ts-ignore
-import AuditService from '../../02-backend/apps-script/audit/AuditService.gs';
-// @ts-ignore
-import AuditRepository from '../../02-backend/apps-script/audit/AuditRepository.gs';
 
 import { calculateStudentCredits } from '../../src/domains/fees/creditCalculator';
 import { FeeObligation } from '../../src/domains/fees/feeTypes';
@@ -217,13 +213,14 @@ describe('Phase B & C — Payment Safety, Overpayment Boundaries & Backend Invoi
     expect(credits[0].totalPaid).toBe(0);
   });
 
-  it('preserves audit logging across fee creation and payment lifecycle', () => {
+  it('preserves payment and fee lifecycle without requiring AuditLog sheet', () => {
     const feeRes = FeeService.FeeObligations_create(spreadsheet, {
       student_id: studentId,
       obligation_description: 'Audit Test Fee',
       amount_due: 2500,
       due_date: '2026-11-20'
     }, actor);
+    expect(feeRes.success).toBe(true);
 
     const payRes = PaymentService.Payments_record(spreadsheet, {
       student_id: studentId,
@@ -232,17 +229,21 @@ describe('Phase B & C — Payment Safety, Overpayment Boundaries & Backend Invoi
       payment_method: 'UPI',
       idempotency_key: 'idemp_audit_test'
     }, actor);
+    expect(payRes.success).toBe(true);
 
-    const auditSheet = spreadsheet.getSheetByName(SheetRegistry.SHEET_NAMES.AUDIT_LOG);
-    const auditLogs = auditSheet.getDataRange().getValues();
-    // Headers + at least student create + fee create + payment record
-    expect(auditLogs.length).toBeGreaterThanOrEqual(4);
+    // Verify idempotency retry functions cleanly without AuditLog
+    const retryRes = PaymentService.Payments_record(spreadsheet, {
+      student_id: studentId,
+      fee_obligation_id: feeRes.data.fee_obligation_id,
+      amount: 2500,
+      payment_method: 'UPI',
+      idempotency_key: 'idemp_audit_test'
+    }, actor);
+    expect(retryRes.success).toBe(true);
+    expect(retryRes.meta?.idempotentRetry).toBe(true);
 
-    const feeAudit = auditLogs.find((row: any[]) => row[4] === 'FEE_OBLIGATION' && row[6] === 'CREATE');
-    expect(feeAudit).toBeDefined();
-
-    const payAudit = auditLogs.find((row: any[]) => row[4] === 'PAYMENT' && row[6] === 'RECORD');
-    expect(payAudit).toBeDefined();
+    const auditSheet = spreadsheet.getSheetByName('AuditLog');
+    expect(auditSheet).toBeNull();
   });
 
   it('prevents backend duplicate monthly invoice creation on retry or concurrency', () => {

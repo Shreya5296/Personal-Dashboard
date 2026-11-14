@@ -19,16 +19,14 @@ export interface StudentProfilePageProps {
   student: Student;
   onBack: () => void;
   onEdit: () => void;
+  onRenew?: () => void;
   onUpdate?: (updated: Student) => void;
 }
 
 type TabType = 'packages' | 'fees' | 'classes' | 'meeting-links' | 'notes';
 
 export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
-  student,
-  onBack,
-  onEdit,
-  onUpdate,
+  student, onBack, onEdit, onRenew, onUpdate,
 }) => {
   const { token } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('packages');
@@ -80,6 +78,11 @@ export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
           <ArrowLeftIcon size={14} /> Back to Directory
         </Button>
         <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+          {onRenew && (
+            <Button variant="secondary" size="sm" onClick={onRenew}>
+              Renew Package
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={() => setShowConfirmArchive(true)}>
             {isInactive ? 'Reactivate Student' : 'Archive Student'}
           </Button>
@@ -119,7 +122,7 @@ export const StudentProfilePage: React.FC<StudentProfilePageProps> = ({
       </div>
 
       <div>
-        {activeTab === 'packages' && <PackageList studentId={student.student_id} />}
+        {activeTab === 'packages' && <PackageList studentId={student.student_id} onRenew={onRenew} />}
         {activeTab === 'fees' && <FeeObligationList studentId={student.student_id} />}
         {activeTab === 'classes' && <ClassSchedule studentId={student.student_id} />}
         {activeTab === 'meeting-links' && <MeetingLinkList studentId={student.student_id} />}

@@ -13,8 +13,7 @@ var SHEET_NAMES = {
   CLASS_SESSIONS: 'ClassSessions',
   CLASS_SCHEDULES: 'ClassSchedules',
   MEETING_LINKS: 'MeetingLinks',
-  STUDENT_NOTES: 'StudentNotes',
-  AUDIT_LOG: 'AuditLog'
+  STUDENT_NOTES: 'StudentNotes'
 };
 
 var SHEET_SCHEMAS = {};
@@ -72,13 +71,6 @@ SHEET_SCHEMAS[SHEET_NAMES.MEETING_LINKS] = [
 // Table 6: Student Notes (5 columns)
 SHEET_SCHEMAS[SHEET_NAMES.STUDENT_NOTES] = [
   'student_id', 'student_name', 'note_date', 'note_text', 'follow_up_date'
-];
-
-// Operational Tab: AuditLog (Active - audit trail & transaction idempotency, 12 columns)
-SHEET_SCHEMAS[SHEET_NAMES.AUDIT_LOG] = [
-  'audit_id', 'occurred_at', 'actor_id', 'actor_email', 'entity_type',
-  'entity_id', 'action', 'before_summary', 'after_summary', 'request_id',
-  'outcome', 'error_code'
 ];
 
 function getCanonicalSheetNames() {

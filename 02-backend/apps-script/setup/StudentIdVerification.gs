@@ -105,22 +105,6 @@ function rollbackStudentIdMigration(spreadsheet) {
       if (sh) { var cIdx = getColIdx(sh, 'student_id'); if (cIdx > 0) stats[sheets[s]] = updateCol(sh, cIdx, reverseMap); }
     }
 
-    var auditSheet = ss.getSheetByName('AuditLog');
-    if (auditSheet && auditSheet.getLastRow() > 1) {
-      var eCol = getColIdx(auditSheet, 'entity_id'), tCol = getColIdx(auditSheet, 'entity_type');
-      if (eCol > 0 && tCol > 0) {
-        var eVals = auditSheet.getRange(2, eCol, auditSheet.getLastRow() - 1, 1).getValues();
-        var tVals = auditSheet.getRange(2, tCol, auditSheet.getLastRow() - 1, 1).getValues(), aUp = 0;
-        for (var a = 0; a < eVals.length; a++) {
-          if (String(tVals[a][0] || '').trim().toUpperCase() === 'STUDENT') {
-            var val = String(eVals[a][0] || '').trim();
-            if (val && reverseMap[val]) { eVals[a][0] = reverseMap[val]; aUp++; }
-          }
-        }
-        if (aUp > 0) { auditSheet.getRange(2, eCol, auditSheet.getLastRow() - 1, 1).setValues(eVals); stats.AuditLog = aUp; }
-      }
-    }
-
     var statusCol = getColIdx(backupSheet, 'status');
     if (statusCol > 0) {
       var sRange = backupSheet.getRange(2, statusCol, backupSheet.getLastRow() - 1, 1);

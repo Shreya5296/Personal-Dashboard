@@ -13,6 +13,7 @@ export interface StudentListProps {
   students: Student[];
   onSelectStudent: (student: Student) => void;
   onEditStudent: (student: Student) => void;
+  onRenewStudent?: (student: Student) => void;
   activeTab?: StudentStatusTab;
   onTabChange?: (tab: StudentStatusTab) => void;
   onDisplayedCountChange?: (count: number) => void;
@@ -22,6 +23,7 @@ export const StudentList: React.FC<StudentListProps> = ({
   students,
   onSelectStudent,
   onEditStudent,
+  onRenewStudent,
   activeTab: controlledTab,
   onTabChange,
   onDisplayedCountChange,
@@ -116,6 +118,7 @@ export const StudentList: React.FC<StudentListProps> = ({
                     onToggleExpand={handleToggleExpand}
                     onSelectStudent={onSelectStudent}
                     onEditStudent={onEditStudent}
+                    onRenewStudent={onRenewStudent}
                     schedule={getStudentSchedule(student.student_id)}
                     balance={bal}
                     financials={getStudentFinancials(student.student_id)}

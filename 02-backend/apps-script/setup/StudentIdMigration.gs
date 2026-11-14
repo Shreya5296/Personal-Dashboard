@@ -103,22 +103,6 @@ function runStudentIdMigration(spreadsheet) {
       if (sh) { var cIdx = findColIndex(sh, 'student_id'); if (cIdx > 0) stats[cascadeSheets[s]] = updateColumnWithMap(sh, cIdx, mapping); }
     }
 
-    var auditSheet = ss.getSheetByName('AuditLog');
-    if (auditSheet && auditSheet.getLastRow() > 1) {
-      var eCol = findColIndex(auditSheet, 'entity_id'), tCol = findColIndex(auditSheet, 'entity_type');
-      if (eCol > 0 && tCol > 0) {
-        var eVals = auditSheet.getRange(2, eCol, auditSheet.getLastRow() - 1, 1).getValues();
-        var tVals = auditSheet.getRange(2, tCol, auditSheet.getLastRow() - 1, 1).getValues(), aUp = 0;
-        for (var a = 0; a < eVals.length; a++) {
-          if (String(tVals[a][0] || '').trim().toUpperCase() === 'STUDENT') {
-            var val = String(eVals[a][0] || '').trim();
-            if (val && mapping[val]) { eVals[a][0] = mapping[val]; aUp++; }
-          }
-        }
-        if (aUp > 0) { auditSheet.getRange(2, eCol, auditSheet.getLastRow() - 1, 1).setValues(eVals); stats.AuditLog = aUp; }
-      }
-    }
-
     if (backupSheet && backupSheet.getLastRow() > 1) {
       var statusCol = findColIndex(backupSheet, 'status');
       if (statusCol > 0) {

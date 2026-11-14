@@ -7,7 +7,6 @@ var _clsVal = typeof validateClassScheduleInput === 'function' ? { validateClass
 var _clsRepo = typeof Classes_getAll === 'function' ? { Classes_getAll: Classes_getAll, Classes_getById: Classes_getById, Classes_findByRestorationId: Classes_findByRestorationId, Classes_insert: Classes_insert, Classes_update: Classes_update } : (typeof require !== 'undefined' ? require('./ClassRepository.gs') : null);
 var _clsStuRepo = typeof Students_getById === 'function' ? { Students_getById: Students_getById } : (typeof require !== 'undefined' ? require('../students/StudentRepository.gs') : null);
 var _clsPkgRepo = typeof Packages_getById === 'function' ? { Packages_getById: Packages_getById, Packages_getByStudentId: Packages_getByStudentId } : (typeof require !== 'undefined' ? require('../packages/PackageRepository.gs') : null);
-var _clsAudit = typeof recordAuditEvent === 'function' ? { recordAuditEvent: recordAuditEvent } : (typeof require !== 'undefined' ? require('../audit/AuditService.gs') : null);
 var _clsLock = typeof withLock === 'function' ? { withLock: withLock } : (typeof require !== 'undefined' ? require('../sheets/LockManager.gs') : null);
 var _clsReg = {
   get SHEET_NAMES() {
@@ -105,18 +104,6 @@ function Classes_schedule(spreadsheet, data, actor) {
     }
 
     _clsRepo.Classes_insert(spreadsheet, record);
-
-    if (_clsAudit && _clsAudit.recordAuditEvent) {
-      _clsAudit.recordAuditEvent(spreadsheet, _clsReg, _clsMap, {
-        actor_id: actor ? actor.actorId : 'SYSTEM',
-        actor_email: actor ? actor.email : '',
-        entity_type: 'CLASS_SESSION',
-        entity_id: record.student_id + '__' + classDate + '__' + classTime,
-        action: 'SCHEDULE',
-        after_summary: { student_id: record.student_id, date: classDate, time: classTime },
-        request_id: actor ? actor.requestId : ''
-      });
-    }
 
     if (normalized.package_id) {
       if (typeof globalThis !== 'undefined') {
@@ -243,18 +230,6 @@ function Classes_batchSchedule(spreadsheet, data, actor) {
       created.push(outRecord);
     }
 
-    if (_clsAudit && _clsAudit.recordAuditEvent) {
-      _clsAudit.recordAuditEvent(spreadsheet, _clsReg, _clsMap, {
-        actor_id: actor ? actor.actorId : 'SYSTEM',
-        actor_email: actor ? actor.email : '',
-        entity_type: 'CLASS_SESSION',
-        entity_id: studentId,
-        action: 'BATCH_SCHEDULE',
-        after_summary: { student_id: studentId, count: created.length },
-        request_id: actor ? actor.requestId : ''
-      });
-    }
-
     return { success: true, count: created.length, data: created };
   });
 
@@ -300,18 +275,6 @@ function Classes_complete(spreadsheet, data, actor) {
     attendance_status: att,
     deduct_class: deduct
   });
-
-  if (_clsAudit && _clsAudit.recordAuditEvent) {
-    _clsAudit.recordAuditEvent(spreadsheet, _clsReg, _clsMap, {
-      actor_id: actor ? actor.actorId : 'SYSTEM',
-      actor_email: actor ? actor.email : '',
-      entity_type: 'CLASS_SESSION',
-      entity_id: sid,
-      action: 'COMPLETE',
-      after_summary: { attendance_status: att, deduct_class: deduct },
-      request_id: actor ? actor.requestId : ''
-    });
-  }
 
   var returnData = Object.assign({}, updated, {
     session_status: 'COMPLETED',
@@ -488,18 +451,6 @@ function Classes_cancel(spreadsheet, data, actor) {
         }
       }
     } catch (e) {}
-  }
-
-  if (_clsAudit && _clsAudit.recordAuditEvent) {
-    _clsAudit.recordAuditEvent(spreadsheet, _clsReg, _clsMap, {
-      actor_id: actor ? actor.actorId : 'SYSTEM',
-      actor_email: actor ? actor.email : '',
-      entity_type: 'CLASS_SESSION',
-      entity_id: sid,
-      action: 'CANCEL',
-      after_summary: { session_status: 'CANCELLED', attendance_status: attStatus, deduct_class: deduct, reason: reason, replacement: replacementSession ? replacementSession.schedule_date : null },
-      request_id: actor ? actor.requestId : ''
-    });
   }
 
   var returnData = Object.assign({}, updated, {

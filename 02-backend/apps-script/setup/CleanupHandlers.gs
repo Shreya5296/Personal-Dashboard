@@ -49,7 +49,6 @@ function registerCleanupOperations(router) {
       ];
 
       var protectedTabs = [
-        { name: 'AuditLog', minRows: 1, expectedCols: 12 },
         { name: 'StudentNotes', minRows: 1, expectedCols: 5 }
       ];
 
@@ -178,33 +177,6 @@ function registerCleanupOperations(router) {
           afterRows: protSheet.getLastRow(),
           preserved: protSheet.getLastRow() >= preflightState[protName].rows
         };
-      }
-
-      // 5. Append audit log entry to AuditLog
-      var auditSheet = ss.getSheetByName('AuditLog');
-      var now = new Date().toISOString();
-      var auditId = 'aud_cleanup_' + new Date().getTime();
-      if (auditSheet) {
-        auditSheet.appendRow([
-          auditId,
-          now,
-          ctx.userEmail || 'usr_ashreya0502@gmail.com',
-          'SYSTEM_CLEANUP',
-          'DATA_CLEANUP',
-          'ALL_TARGETS',
-          'SUCCESS',
-          JSON.stringify({
-            action: 'PRE_LAUNCH_TEST_DATA_CLEANUP',
-            totalRowsCleared: totalRowsCleared,
-            clearedTabs: clearedResults,
-            authorizedBy: 'OWNER'
-          }),
-          'CLEANUP_SUCCESS',
-          '127.0.0.1',
-          'Personal Dashboard Pre-Launch Cleanup Routine',
-          now
-        ]);
-        protectedVerification['AuditLog'].afterRows = auditSheet.getLastRow();
       }
 
       lock.releaseLock();

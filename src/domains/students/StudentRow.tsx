@@ -18,6 +18,7 @@ export interface StudentRowProps {
   onToggleExpand: (studentId: string) => void;
   onSelectStudent: (student: Student) => void;
   onEditStudent: (student: Student) => void;
+  onRenewStudent?: (student: Student) => void;
   schedule: WeeklyScheduleEntry[];
   balance: { totalPurchased: number; totalConsumed: number; packages: Package[] };
   financials: StudentFinancialInfo;
@@ -31,6 +32,7 @@ export const StudentRow: React.FC<StudentRowProps> = ({
   onToggleExpand,
   onSelectStudent,
   onEditStudent,
+  onRenewStudent,
   schedule,
   balance,
   financials,
@@ -127,6 +129,7 @@ export const StudentRow: React.FC<StudentRowProps> = ({
               schedule={schedule}
               onEditStudent={onEditStudent}
               onSelectStudent={onSelectStudent}
+              onRenewStudent={onRenewStudent}
             />
           </td>
         </tr>

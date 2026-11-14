@@ -20,10 +20,11 @@ export interface StudentExpandedDetailsProps {
   schedule?: WeeklyScheduleEntry[];
   onEditStudent: (student: Student) => void;
   onSelectStudent: (student: Student) => void;
+  onRenewStudent?: (student: Student) => void;
 }
 
 export const StudentExpandedDetails: React.FC<StudentExpandedDetailsProps> = ({
-  student, meetingLink, balance, financials, schedule = [], onEditStudent, onSelectStudent,
+  student, meetingLink, balance, financials, schedule = [], onEditStudent, onSelectStudent, onRenewStudent,
 }) => {
   const primaryUrl = meetingLink?.meeting_link_1 || meetingLink?.meeting_url || '';
   const secondaryUrl = meetingLink?.meeting_link_2 || '';
@@ -130,6 +131,7 @@ export const StudentExpandedDetails: React.FC<StudentExpandedDetailsProps> = ({
       <div className={styles.actionsRow}>
         <Button variant="secondary" size="sm" onClick={() => onSelectStudent(student)}>View Full Profile</Button>
         <Button variant="outline" size="sm" onClick={() => onEditStudent(student)}>Edit Details</Button>
+        {onRenewStudent && <Button variant="primary" size="sm" onClick={() => onRenewStudent(student)}>Renew Package</Button>}
       </div>
     </div>
   );

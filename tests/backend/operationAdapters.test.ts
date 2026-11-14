@@ -465,4 +465,55 @@ describe('Backend Operation Adapters and Compatibility', () => {
     expect(batchUpdateRes.success).toBe(true);
     expect(batchUpdateRes.count).toBe(1);
   });
+
+  it('routes packages.renew and students.renew operations accurately', () => {
+    const createStu = registry['students.create']({
+      spreadsheet,
+      payload: { full_name: 'Renewal Tester', parent_name: 'Parent', phone: '9998887770' }
+    });
+    const sid = createStu.data.student_id;
+
+    registry['packages.create']({
+      spreadsheet,
+      payload: { student_id: sid, plan_type: 'Per Class', classes_purchased: 10, currency: 'INR' }
+    });
+
+    const renewRes = registry['packages.renew']({
+      spreadsheet,
+      payload: {
+        student_id: sid,
+        new_classes_purchased: 10,
+        currency: 'INR',
+        package_price: 15000,
+        idempotency_key: 'idemp_adapt_renew_1',
+        payment: { amount: 15000, currency: 'INR' }
+      },
+      actorId: 'usr_test',
+      verifiedEmail: 'ashreya0502@gmail.com',
+      requestId: 'req_test_ren'
+    });
+
+    expect(renewRes.success).toBe(true);
+    expect(renewRes.data.new_classes_purchased).toBe(10);
+    expect(renewRes.data.cumulative_purchased).toBe(20);
+    expect(renewRes.data.new_available_balance).toBe(20);
+    expect(renewRes.data.payment).toBeDefined();
+
+    // students.renew alias
+    const renewAliasRes = registry['students.renew']({
+      spreadsheet,
+      payload: {
+        student_id: sid,
+        new_classes_purchased: 5,
+        currency: 'INR',
+        idempotency_key: 'idemp_adapt_renew_2'
+      },
+      actorId: 'usr_test',
+      verifiedEmail: 'ashreya0502@gmail.com',
+      requestId: 'req_test_ren_2'
+    });
+    expect(renewAliasRes.success).toBe(true);
+    expect(renewAliasRes.data.cumulative_purchased).toBe(25);
+    expect(renewAliasRes.data.new_available_balance).toBe(25);
+  });
 });
